@@ -1,0 +1,202 @@
+<div class="sucursales-container">
+  <!-- Mensajes de alerta -->
+  <div *ngIf="mensaje" class="alert alert-{{ tipoMensaje }} mb-3">
+    <i class="fas me-2" [ngClass]="{
+      'fa-check-circle': tipoMensaje === 'success',
+      'fa-exclamation-circle': tipoMensaje === 'warning',
+      'fa-times-circle': tipoMensaje === 'error'
+    }"></i>
+    {{ mensaje }}
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h2 class="mb-0">
+        <i class="fas fa-plus me-2"></i>
+        {{ editando ? 'Editar Sucursal' : 'Crear Sucursal' }}
+      </h2>
+    </div>
+    <div class="card-body">
+      <form #formularioSucursal="ngForm" (ngSubmit)="crearSucursal(formularioSucursal)">
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label for="nombreSucursal" class="form-label">Nombre Sucursal <span class="text-danger">*</span></label>
+            <input 
+              type="text" 
+              class="form-control" 
+              id="nombreSucursal" 
+              placeholder="Ej: Sucursal Centro"
+              [(ngModel)]="nombreSucursal"
+              name="nombreSucursal"
+              required>
+          </div>
+          <div class="col-md-6">
+            <label for="cliente" class="form-label">Cliente <span class="text-danger">*</span></label>
+            <select 
+              class="form-control" 
+              id="cliente"
+              [(ngModel)]="clienteSeleccionado"
+              name="clienteSeleccionado"
+              required>
+              <option [value]="''" selected disabled>Seleccionar cliente...</option>
+              <option *ngFor="let cliente of clientes" [value]="cliente.rut">
+                {{ cliente.nombre1 || cliente.cliente || cliente.rut }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label for="ciudad" class="form-label">Ciudad</label>
+            <input 
+              type="text" 
+              class="form-control" 
+              id="ciudad" 
+              placeholder="Ej: Santiago"
+              [(ngModel)]="ciudad"
+              name="ciudad">
+          </div>
+          <div class="col-md-6">
+            <label for="dirección" class="form-label">Dirección <span class="text-danger">*</span></label>
+            <input 
+              type="text" 
+              class="form-control" 
+              id="dirección" 
+              placeholder="Ej: Calle Principal 123"
+              [(ngModel)]="direccion"
+              name="direccion"
+              required>
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label for="teléfono" class="form-label">Teléfono</label>
+            <input 
+              type="tel" 
+              class="form-control" 
+              id="teléfono" 
+              placeholder="Ej: +56 9 1234 5678"
+              [(ngModel)]="telefono"
+              name="telefono">
+          </div>
+          <div class="col-md-6">
+            <label for="email" class="form-label">Email</label>
+            <input 
+              type="email" 
+              class="form-control" 
+              id="email" 
+              placeholder="Ej: contacto@sucursal.cl"
+              [(ngModel)]="email"
+              name="email">
+          </div>
+        </div>
+
+        <div class="form-group mb-3">
+          <label for="observaciones" class="form-label">Observaciones</label>
+          <textarea 
+            class="form-control" 
+            id="observaciones" 
+            rows="3" 
+            placeholder="Agregar observaciones..."
+            [(ngModel)]="observaciones"
+            name="observaciones"></textarea>
+        </div>
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary" [disabled]="guardando">
+            <i class="fas me-2" [ngClass]="guardando ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+            {{ guardando ? 'Guardando...' : (editando ? 'Actualizar Sucursal' : 'Crear Sucursal') }}
+          </button>
+          <button *ngIf="editando" type="button" class="btn btn-secondary" (click)="cancelarEdicion()">
+            <i class="fas fa-times me-2"></i>
+            Cancelar
+          </button>
+          <button type="reset" class="btn btn-outline-secondary">
+            <i class="fas fa-redo me-2"></i>
+            Limpiar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Lista de sucursales existentes -->
+  <div class="card mt-4">
+    <div class="card-header">
+      <h2 class="mb-0">
+        <i class="fas fa-list me-2"></i>
+        Sucursales Existentes ({{ sucursales.length }})
+      </h2>
+    </div>
+    <div class="card-body">
+      <!-- Loading -->
+      <div *ngIf="cargando" class="text-center p-4">
+        <i class="fas fa-spinner fa-spin me-2"></i>
+        Cargando sucursales...
+      </div>
+
+      <!-- Tabla de sucursales -->
+      <div *ngIf="!cargando && sucursales.length > 0" class="table-responsive">
+        <table class="table table-sm table-hover">
+          <thead class="table-light">
+            <tr>
+              <th>Nombre</th>
+              <th>Cliente (RUT)</th>
+              <th>Dirección</th>
+              <th>Teléfono</th>
+              <th>Email</th>
+              <th style="width: 100px;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let sucursal of sucursales">
+              <td><strong>{{ sucursal.name }}</strong></td>
+              <td>{{ sucursal.code || sucursal.rut || '-' }}</td>
+              <td>{{ sucursal.address || '-' }}</td>
+              <td>{{ sucursal.contact_phone || '-' }}</td>
+              <td>{{ sucursal.contact_name || '-' }}</td>
+              <td>
+                <button 
+                  class="btn btn-sm btn-info" 
+                  (click)="abrirModalImpresoras(sucursal)"
+                  title="Asignar impresoras">
+                  <i class="fas fa-link"></i>
+                </button>
+                <button 
+                  class="btn btn-sm btn-warning" 
+                  (click)="editarSucursal(sucursal)"
+                  title="Editar">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button 
+                  class="btn btn-sm btn-danger" 
+                  (click)="deleteSucursal(sucursal.id)" 
+                  title="Eliminar">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Sin sucursales -->
+      <div *ngIf="!cargando && sucursales.length === 0" class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>
+        No hay sucursales creadas aún. ¡Crea una nueva!
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de asignación de impresoras -->
+  <app-asignar-impresoras 
+    *ngIf="mostrarModalImpresoras"
+    [sucursal]="sucursalSeleccionada"
+    (cerrar)="cerrarModalImpresoras()"
+    (actualizado)="onActualizadoImpresoras()">
+  </app-asignar-impresoras>
+</div>
+
+

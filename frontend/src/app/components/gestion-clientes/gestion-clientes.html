@@ -1,0 +1,286 @@
+<div class="container-fluid py-4">
+  <div class="row mb-4">
+    <div class="col">
+      <h2><i class="fas fa-building"></i> Gestión de Clientes</h2>
+      <p class="text-muted">Administrar clientes, bases de datos y keys de agentes</p>
+    </div>
+    <div class="col-auto">
+      <button class="btn btn-primary" (click)="abrirModalCrear()">
+        <i class="fas fa-plus"></i> Nuevo Cliente
+      </button>
+    </div>
+  </div>
+
+  <!-- Mensajes -->
+  <div *ngIf="error" class="alert alert-danger alert-dismissible fade show">
+    {{ error }}
+    <button type="button" class="btn-close" (click)="error = ''"></button>
+  </div>
+  <div *ngIf="success" class="alert alert-success alert-dismissible fade show">
+    {{ success }}
+    <button type="button" class="btn-close" (click)="success = ''"></button>
+  </div>
+
+  <!-- Tabla de clientes -->
+  <div class="card">
+    <div class="card-body">
+      <div *ngIf="loading" class="text-center py-5">
+        <div class="spinner-border text-primary"></div>
+        <p class="mt-2">Cargando clientes...</p>
+      </div>
+
+      <div class="table-responsive" *ngIf="!loading">
+        <table class="table table-hover">
+          <thead class="table-light">
+            <tr>
+              <th>RUT</th>
+              <th>Nombre</th>
+              <th>Código</th>
+              <th>Estado</th>
+              <th>Contacto</th>
+              <th>Ciudad</th>
+              <th class="text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let cliente of clientes">
+              <td><code>{{ cliente.rut }}</code></td>
+              <td><strong>{{ cliente.nombre }}</strong></td>
+              <td><code>{{ cliente.code }}</code></td>
+              <td>
+                <span [class]="getStatusBadge(cliente.status || 'active')">
+                  {{ getStatusText(cliente.status || 'active') }}
+                </span>
+              </td>
+              <td>{{ cliente.contacto_email || '-' }}</td>
+              <td>{{ cliente.ciudad || '-' }}</td>
+              <td class="text-center">
+                <div class="btn-group btn-group-sm">
+                  <button class="btn btn-outline-primary" (click)="abrirModalEditar(cliente)" title="Editar">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button class="btn btn-outline-info" (click)="abrirModalKeys(cliente)" title="Agent Keys">
+                    <i class="fas fa-key"></i>
+                  </button>
+                  <button class="btn btn-outline-danger" (click)="eliminarCliente(cliente)" title="Eliminar">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="clientes.length === 0">
+              <td colspan="7" class="text-center text-muted py-4">
+                No hay clientes registrados
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Crear/Editar Cliente -->
+<div class="modal fade" [class.show]="showModal" [style.display]="showModal ? 'block' : 'none'" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-building"></i>
+          {{ editando ? 'Editar Cliente' : 'Nuevo Cliente' }}
+        </h5>
+        <button type="button" class="btn-close" (click)="cerrarModal()"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Key generada (solo al crear) -->
+        <div *ngIf="generatedKey" class="alert alert-warning">
+          <h5><i class="fas fa-exclamation-triangle"></i> ¡Guarde esta Key!</h5>
+          <p>Esta es la key de activación del agente. <strong>No se mostrará de nuevo.</strong></p>
+          <div class="input-group">
+            <input type="text" class="form-control font-monospace" [value]="generatedKey" readonly>
+            <button class="btn btn-outline-secondary" (click)="copiarKey()">
+              <i class="fas fa-copy"></i> Copiar
+            </button>
+          </div>
+          <div class="mt-3">
+            <button class="btn btn-success" (click)="cerrarModalConKey()">
+              <i class="fas fa-check"></i> Ya guardé la key, continuar
+            </button>
+          </div>
+        </div>
+
+        <form *ngIf="!generatedKey">
+          <div class="row g-3">
+            <!-- Datos básicos -->
+            <div class="col-12">
+              <h6 class="text-muted border-bottom pb-2">Datos Básicos</h6>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">RUT <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" [(ngModel)]="clienteForm.rut" name="rut" 
+                     placeholder="76.123.456-7" [disabled]="editando">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Nombre <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" [(ngModel)]="clienteForm.nombre" name="nombre"
+                     placeholder="Empresa ABC Ltda">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Código <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" [(ngModel)]="clienteForm.code" name="code"
+                     placeholder="empresa-abc" [disabled]="editando"
+                     pattern="[a-z0-9\-]+">
+              <small class="text-muted">Solo minúsculas, números y guiones</small>
+            </div>
+
+            <!-- Estado (solo edición) -->
+            <div class="col-md-4" *ngIf="editando">
+              <label class="form-label">Estado</label>
+              <select class="form-select" [(ngModel)]="clienteForm.status" name="status">
+                <option value="active">Activo</option>
+                <option value="suspended">Suspendido</option>
+                <option value="ended">Terminado</option>
+              </select>
+            </div>
+
+            <!-- Dirección -->
+            <div class="col-12 mt-4">
+              <h6 class="text-muted border-bottom pb-2">Dirección</h6>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Dirección</label>
+              <input type="text" class="form-control" [(ngModel)]="clienteForm.direccion" name="direccion">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Comuna</label>
+              <input type="text" class="form-control" [(ngModel)]="clienteForm.comuna" name="comuna">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Ciudad</label>
+              <input type="text" class="form-control" [(ngModel)]="clienteForm.ciudad" name="ciudad">
+            </div>
+
+            <!-- Contacto principal -->
+            <div class="col-12 mt-4">
+              <h6 class="text-muted border-bottom pb-2">Contacto Principal</h6>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Nombre</label>
+              <input type="text" class="form-control" [(ngModel)]="clienteForm.contacto_nombre" name="contacto_nombre">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Email</label>
+              <input type="email" class="form-control" [(ngModel)]="clienteForm.contacto_email" name="contacto_email">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Teléfono</label>
+              <input type="text" class="form-control" [(ngModel)]="clienteForm.contacto_telefono" name="contacto_telefono">
+            </div>
+
+            <!-- Contacto TI -->
+            <div class="col-12 mt-4">
+              <h6 class="text-muted border-bottom pb-2">Contacto TI</h6>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Nombre</label>
+              <input type="text" class="form-control" [(ngModel)]="clienteForm.ti_nombre" name="ti_nombre">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Email</label>
+              <input type="email" class="form-control" [(ngModel)]="clienteForm.ti_email" name="ti_email">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Teléfono</label>
+              <input type="text" class="form-control" [(ngModel)]="clienteForm.ti_telefono" name="ti_telefono">
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer" *ngIf="!generatedKey">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>
+        <button type="button" class="btn btn-primary" (click)="guardarCliente()" [disabled]="guardando">
+          <span *ngIf="guardando" class="spinner-border spinner-border-sm me-1"></span>
+          {{ editando ? 'Actualizar' : 'Crear Cliente' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop fade" [class.show]="showModal" *ngIf="showModal"></div>
+
+<!-- Modal Agent Keys -->
+<div class="modal fade" [class.show]="showKeysModal" [style.display]="showKeysModal ? 'block' : 'none'" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-key"></i> Agent Keys - {{ selectedCliente?.nombre }}
+        </h5>
+        <button type="button" class="btn-close" (click)="cerrarModalKeys()"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Generar nueva key -->
+        <div class="card mb-4">
+          <div class="card-body">
+            <h6>Generar Nueva Key</h6>
+            <div class="row g-2">
+              <div class="col">
+                <input type="text" class="form-control" [(ngModel)]="newKeyName" 
+                       placeholder="Nombre del agente (ej: Agente Sucursal Norte)">
+              </div>
+              <div class="col-auto">
+                <button class="btn btn-success" (click)="generarNuevaKey()">
+                  <i class="fas fa-plus"></i> Generar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lista de keys -->
+        <div *ngIf="loadingKeys" class="text-center py-3">
+          <div class="spinner-border spinner-border-sm"></div>
+        </div>
+
+        <table class="table table-sm" *ngIf="!loadingKeys">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Estado</th>
+              <th>Último uso</th>
+              <th>IP</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let key of agentKeys" [class.table-danger]="!key.active">
+              <td>{{ key.name }}</td>
+              <td>
+                <span [class]="key.active ? 'badge bg-success' : 'badge bg-danger'">
+                  {{ key.active ? 'Activa' : 'Revocada' }}
+                </span>
+              </td>
+              <td>{{ key.last_seen_at || 'Nunca' }}</td>
+              <td><code>{{ key.last_ip || '-' }}</code></td>
+              <td>
+                <button *ngIf="key.active" class="btn btn-sm btn-outline-danger" (click)="revocarKey(key)">
+                  Revocar
+                </button>
+                <button *ngIf="!key.active" class="btn btn-sm btn-outline-success" (click)="activarKey(key)">
+                  Activar
+                </button>
+              </td>
+            </tr>
+            <tr *ngIf="agentKeys.length === 0">
+              <td colspan="5" class="text-center text-muted">No hay keys registradas</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModalKeys()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop fade" [class.show]="showKeysModal" *ngIf="showKeysModal"></div>

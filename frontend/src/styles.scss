@@ -1,0 +1,76 @@
+/* You can add global styles to this file, and also import other style files */
+
+/* Importar Google Fonts - JetBrains Mono */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+/* Importar Bootstrap */
+@import '../node_modules/bootstrap/dist/css/bootstrap.min.css';
+
+/* Importar Font Awesome */
+@import '../node_modules/@fortawesome/fontawesome-free/css/all.min.css';
+
+/* Estilos globales */
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f8f9fa;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.bg-aqua > .card{
+    background-color: #48b0f7 !important; 
+    color: #fff !important;
+}
+.bg-login {
+    /* The image used */
+    background-image: url("https://www.tecnodatasa.cl/wp-content/uploads/2019/10/home0.jpg");
+
+    /* Full height */
+    height: 100%; 
+
+    /* Center and scale the image nicely */
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+
+.centered-logo {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+  
+.centered-logo img {
+    max-width: 50%;
+    max-height: 50%;
+}
+ 
+@media (max-width: 768px) {
+    .centered-logo img {
+        max-width: 60%;
+        max-height: 60%;
+    }
+}
+  
+@media (max-width: 576px) {
+    .centered-logo img {
+        max-width: 50%;
+        max-height: 50%;
+    }
+}
+
+.user-name{
+	font-size: 12px;
+	font-family: Roboto, "Helvetica Neue";
+}
+
+.flex-spacer[_ngcontent-wif-c1] {
+    flex-grow: 1;
+}
+
+.rounded-full {
+    border-radius: 9999px !important;
+}

@@ -1,0 +1,155 @@
+.sucursales-container {
+  padding: 16px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.card {
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  background: #fff;
+}
+
+.card-header {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+  padding: 16px;
+  border-radius: 8px 8px 0 0;
+}
+
+.card-header h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #212529;
+  display: flex;
+  align-items: center;
+}
+
+.card-body {
+  padding: 24px;
+}
+
+.form-label {
+  font-weight: 500;
+  color: #495057;
+  margin-bottom: 6px;
+  
+  .text-danger {
+    color: #dc3545;
+  }
+}
+
+.form-control:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.table {
+  margin-bottom: 0;
+}
+
+.table thead th {
+  font-weight: 600;
+  color: #495057;
+  border-bottom: 2px solid #dee2e6;
+}
+
+.table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.btn-warning {
+  color: #fff;
+  background-color: #ffc107;
+  border-color: #ffc107;
+
+  &:hover {
+    background-color: #e0a800;
+    border-color: #d39e00;
+  }
+}
+
+.btn-danger {
+  color: #fff;
+  background-color: #dc3545;
+  border-color: #dc3545;
+
+  &:hover {
+    background-color: #bb2d3b;
+    border-color: #b02a37;
+  }
+}
+
+.btn-info {
+  color: #fff;
+  background-color: #17a2b8;
+  border-color: #17a2b8;
+
+  &:hover {
+    background-color: #138496;
+    border-color: #117a8b;
+  }
+}
+
+.btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.alert {
+  border-radius: 6px;
+  border: 1px solid;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.alert-success {
+  background-color: #d4edda;
+  border-color: #c3e6cb;
+  color: #155724;
+}
+
+.alert-error {
+  background-color: #f8d7da;
+  border-color: #f5c6cb;
+  color: #721c24;
+}
+
+.alert-warning {
+  background-color: #fff3cd;
+  border-color: #ffeeba;
+  color: #856404;
+}
+
+.alert-info {
+  background-color: #e7f3ff;
+  border-color: #b3d9ff;
+  color: #004085;
+}
+
+.gap-2 {
+  gap: 8px;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.p-4 {
+  padding: 1.5rem;
+}
+

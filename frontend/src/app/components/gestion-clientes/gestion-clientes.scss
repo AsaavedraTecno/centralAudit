@@ -1,0 +1,51 @@
+.container-fluid {
+  max-width: 1400px;
+}
+
+.table {
+  th {
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    color: #6c757d;
+  }
+  
+  td {
+    vertical-align: middle;
+  }
+}
+
+.btn-group-sm .btn {
+  padding: 0.25rem 0.5rem;
+}
+
+.modal {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-lg {
+  max-width: 900px;
+}
+
+.font-monospace {
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  background-color: #f8f9fa;
+}
+
+code {
+  background-color: #f8f9fa;
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.25rem;
+  color: #d63384;
+}
+
+.alert-warning {
+  border-left: 4px solid #ffc107;
+}
+
+.card {
+  border: 1px solid rgba(0, 0, 0, 0.125);
+  border-radius: 0.5rem;
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}

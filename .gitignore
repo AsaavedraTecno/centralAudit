@@ -1,0 +1,71 @@
+# Backend (Laravel)
+audit-central/.env
+audit-central/.env.local
+audit-central/.env.*.local
+audit-central/node_modules/
+audit-central/vendor/
+audit-central/storage/logs/
+audit-central/storage/framework/cache/
+audit-central/storage/framework/sessions/
+audit-central/storage/framework/views/
+audit-central/bootstrap/cache/
+audit-central/.DS_Store
+audit-central/Thumbs.db
+audit-central/*.log
+audit-central/npm-debug.log*
+audit-central/yarn-debug.log*
+audit-central/yarn-error.log*
+
+# Frontend (Angular)
+frontend/node_modules/
+frontend/dist/
+frontend/out-tsc/
+frontend/.DS_Store
+frontend/Thumbs.db
+frontend/*.log
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/angular.json.bak
+
+# IDE/Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.c9/
+*.sublime-workspace
+*.sublime-project
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+.directory
+
+# Dependencies lock (opcional, descomenta si lo necesitas)
+# audit-central/composer.lock
+# frontend/package-lock.json
+# frontend/yarn.lock
+
+# Environment files
+*.env
+*.env.local
+*.env.*.local
+
+# Build outputs
+dist/
+build/
+out/
+.cache/
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Misc
+.turbo/
+.nx/
