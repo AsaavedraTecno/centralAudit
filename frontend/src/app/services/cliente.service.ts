@@ -59,6 +59,11 @@ export class ClienteService {
     );
   }
 
+  // Obtener lista simple de clientes (sin paginación) - para formularios
+  getClientesList(): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/clients`);
+  }
+
   // Obtener un cliente por código
   getCliente(code: string): Observable<Cliente> {
     return this.http.get<any>(`${this.baseUrl}/clients/${code}`).pipe(

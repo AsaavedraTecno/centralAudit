@@ -6,6 +6,11 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\PrinterController;
+use App\Http\Controllers\RoleController;
+use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\UserCentralController;
+use App\Http\Controllers\UserTenantAssignmentController;
+use App\Http\Controllers\AuditLogController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -30,6 +35,36 @@ Route::prefix('agent')->group(function () {
 // Rutas protegidas (requieren token Sanctum)
 Route::middleware('auth:sanctum')->group(function () {
     
+    // =============================================
+    // RBAC CENTRAL - Gestión de Roles, Permisos, Usuarios
+    // =============================================
+    Route::prefix('admin')->group(function () {
+        
+        // Roles
+        Route::get('roles-list', [RoleController::class, 'list']);
+        Route::post('roles/{role}/permissions', [RoleController::class, 'assignPermissions']);
+        Route::apiResource('roles', RoleController::class);
+
+        // Permisos
+        Route::get('permissions', [PermissionController::class, 'index']);
+        Route::get('permissions/categories', [PermissionController::class, 'categories']);
+
+        // Usuarios centrales
+        Route::apiResource('users', UserCentralController::class);
+        Route::post('users/{user}/role', [UserCentralController::class, 'assignRole']);
+        Route::patch('users/{user}/active', [UserCentralController::class, 'toggleActive']);
+        Route::post('users/{user}/reset-password', [UserCentralController::class, 'resetPassword']);
+
+        // Asignación de clientes a usuarios
+        Route::apiResource('user-assignments', UserTenantAssignmentController::class);
+        Route::get('user-assignments/available/{userId}', [UserTenantAssignmentController::class, 'availableTenants']);
+
+        // Auditoría
+        Route::get('audit-logs', [AuditLogController::class, 'index']);
+        Route::get('audit-logs/stats', [AuditLogController::class, 'stats']);
+        Route::get('audit-logs/{log}', [AuditLogController::class, 'show']);
+    });
+
     // =============================================
     // Auth
     // =============================================

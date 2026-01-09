@@ -35,6 +35,8 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->api(append: [
             \App\Http\Middleware\ResolveTenantFromDomain::class,
+            \App\Http\Middleware\CheckPermission::class,
+            \App\Http\Middleware\AuditLog::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

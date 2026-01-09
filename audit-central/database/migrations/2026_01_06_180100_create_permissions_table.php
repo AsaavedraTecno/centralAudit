@@ -10,8 +10,9 @@ return new class extends Migration
     {
         Schema::create('permissions', function (Blueprint $table) {
             $table->id();
-            $table->string('name')->unique(); // manage_printers, view_alerts, etc
+            $table->string('name')->unique(); // ver_clientes, crear_cliente, etc
             $table->string('description')->nullable();
+            $table->string('category')->default('general'); // clientes, usuarios, reportes, etc
             $table->timestamps();
         });
     }

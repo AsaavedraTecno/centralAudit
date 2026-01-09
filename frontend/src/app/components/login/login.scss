@@ -1,0 +1,51 @@
+/* Estilos para el componente Login */
+.bg-login {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+}
+
+.card {
+  border-radius: 15px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.form-control {
+  border-radius: 10px;
+  padding: 12px 15px;
+}
+
+.btn-primary {
+  border-radius: 10px;
+  padding: 12px 30px;
+  font-weight: 600;
+}
+
+.centered-logo {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0.8;
+}
+
+.centered-logo img {
+  max-width: 150px;
+  height: auto;
+}
+
+.fadeIn {
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.input-group .btn {
+  border-left: none;
+}
+
+.input-group .btn:hover {
+  background-color: #f8f9fa;
+}

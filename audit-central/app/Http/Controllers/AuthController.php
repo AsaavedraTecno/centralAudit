@@ -27,9 +27,10 @@ class AuthController extends Controller
             ]);
         }
 
+        // Validar que el usuario esté activo
         if (!$user->active) {
             throw ValidationException::withMessages([
-                'email' => ['Usuario desactivado.'],
+                'email' => ['Esta cuenta ha sido deshabilitada. Contacta al administrador.'],
             ]);
         }
 
@@ -42,7 +43,13 @@ class AuthController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
-                'role' => $user->role,
+                'role' => $user->getRoleName(),
+                'permissions' => $user->getPermissions()->pluck('name'),
+                'tenants' => $user->tenantAssignments()->with('tenant')->get()->map(fn($a) => [
+                    'id' => $a->tenant_id,
+                    'name' => $a->tenant->name,
+                    'scope' => $a->scope,
+                ]),
             ],
         ]);
     }
@@ -69,12 +76,13 @@ class AuthController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
-                'role' => $user->role,
-            ],
-            'permissions' => [
-                'can_manage' => $user->canManage(),
-                'can_export' => $user->canExport(),
-                'can_configure_printers' => $user->canConfigurePrinters(),
+                'role' => $user->getRoleName(),
+                'permissions' => $user->getPermissions()->pluck('name'),
+                'tenants' => $user->tenantAssignments()->with('tenant')->get()->map(fn($a) => [
+                    'id' => $a->tenant_id,
+                    'name' => $a->tenant->name,
+                    'scope' => $a->scope,
+                ]),
             ],
         ]);
     }

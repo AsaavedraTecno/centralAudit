@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
-import { LoginComponent } from './login/login';
-import { Dashboard } from './dashboard/dashboard';
+import { LoginComponent } from './components/login/login';
+import { Dashboard } from './components/dashboard/dashboard';
 import { GestionClientesComponent } from './components/gestion-clientes/gestion-clientes';
 import { AuthGuard } from './guards/auth.guard';
 import { LoginGuard } from './guards/login.guard';

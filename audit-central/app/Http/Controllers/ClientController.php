@@ -29,18 +29,18 @@ class ClientController extends Controller
     {
         $user = $request->user();
 
-        $columns = ['id', 'rut', 'nombre', 'code', 'status', 'contacto_email', 'direccion', 'comuna', 'ciudad'];
+        $columns = ['id', 'code', 'name', 'status'];
 
-        // Superadmin ve todos
-        if ($user->isSuperAdmin()) {
+        // Superadmin y Admin ven todos
+        if ($user->isSuperAdmin() || $user->isAdmin()) {
             $tenants = Tenant::query()
-                ->orderBy('nombre')
+                ->orderBy('name')
                 ->get($columns);
         } else {
             // Otros roles ven solo los asignados
             $tenantColumns = array_map(fn($c) => "tenants.{$c}", $columns);
             $tenants = $user->tenants()
-                ->orderBy('nombre')
+                ->orderBy('name')
                 ->get($tenantColumns);
         }
 

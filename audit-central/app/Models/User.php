@@ -11,21 +11,11 @@ class User extends Authenticatable
 {
     use HasFactory, Notifiable, HasApiTokens;
 
-    // Roles disponibles
-    public const ROLE_SUPERADMIN = 'superadmin';
-    public const ROLE_TENANT_ADMIN = 'tenant_admin';
-    public const ROLE_SOPORTE = 'soporte';
-    public const ROLE_FINANZAS = 'finanzas';
-    public const ROLE_ANALISTA = 'analista';
-    public const ROLE_CLIENTE = 'cliente';
-    public const ROLE_VIEWER = 'viewer';
-
     protected $fillable = [
         'name',
         'email',
         'password',
-        'role',
-        'active',
+        'email_verified_at',
     ];
 
     protected $hidden = [
@@ -38,60 +28,103 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'active' => 'boolean',
         ];
     }
 
     /**
-     * Tenants a los que tiene acceso (para usuarios NO superadmin)
+     * Roles de BD CENTRAL (RBAC completo)
+     * Retorna todos los roles del usuario (normalmente 1, pero soporta múltiples)
+     */
+    public function roles()
+    {
+        return $this->belongsToMany(Role::class, 'user_role');
+    }
+
+    /**
+     * Obter el rol actual del usuario (el primero)
+     */
+    public function getRole(): ?Role
+    {
+        return $this->roles()->first();
+    }
+
+    /**
+     * Obter nombre del rol actual
+     */
+    public function getRoleName(): ?string
+    {
+        return $this->getRole()?->name;
+    }
+
+    /**
+     * Verificar si tiene un permiso específico
+     */
+    public function hasPermission(string $permissionName): bool
+    {
+        return $this->roles()
+            ->whereHas('permissions', function ($query) use ($permissionName) {
+                $query->where('name', $permissionName);
+            })
+            ->exists();
+    }
+
+    /**
+     * Tenants asignados a este usuario con su scope de acceso
+     */
+    public function tenantAssignments()
+    {
+        return $this->hasMany(UserTenantAssignment::class);
+    }
+
+    /**
+     * Tenants a los que tiene acceso
+     */
+    public function assignedTenants()
+    {
+        return $this->hasManyThrough(
+            Tenant::class,
+            UserTenantAssignment::class,
+            'user_id',
+            'id',
+            'id',
+            'tenant_id'
+        );
+    }
+
+    /**
+     * Alias para assignedTenants (para compatibilidad)
      */
     public function tenants()
     {
-        return $this->belongsToMany(Tenant::class, 'user_tenant')
-                    ->withTimestamps();
+        return $this->assignedTenants();
     }
 
     /**
-     * ¿Es superadmin? Ve todos los clientes
+     * ¿Es admin? (verifica si tiene rol admin)
+     */
+    public function isAdmin(): bool
+    {
+        return $this->roles()->where('name', 'admin')->exists();
+    }
+
+    /**
+     * ¿Es superadmin?
      */
     public function isSuperAdmin(): bool
     {
-        return $this->role === self::ROLE_SUPERADMIN;
+        return $this->roles()->where('name', 'superadmin')->exists();
     }
 
     /**
-     * ¿Puede gestionar (CRUD) clientes?
+     * Obtener permisos del usuario actual
      */
-    public function canManage(): bool
+    public function getPermissions()
     {
-        return in_array($this->role, [
-            self::ROLE_SUPERADMIN,
-            self::ROLE_TENANT_ADMIN,
-        ]);
-    }
-
-    /**
-     * ¿Puede exportar reportes?
-     */
-    public function canExport(): bool
-    {
-        return in_array($this->role, [
-            self::ROLE_SUPERADMIN,
-            self::ROLE_TENANT_ADMIN,
-            self::ROLE_FINANZAS,
-            self::ROLE_ANALISTA,
-        ]);
-    }
-
-    /**
-     * ¿Puede configurar impresoras?
-     */
-    public function canConfigurePrinters(): bool
-    {
-        return in_array($this->role, [
-            self::ROLE_SUPERADMIN,
-            self::ROLE_TENANT_ADMIN,
-            self::ROLE_SOPORTE,
-        ]);
+        return $this->roles()
+            ->with('permissions')
+            ->get()
+            ->pluck('permissions')
+            ->flatten()
+            ->unique('id');
     }
 }
