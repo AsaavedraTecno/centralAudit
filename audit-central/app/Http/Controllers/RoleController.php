@@ -30,6 +30,7 @@ class RoleController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|unique:roles|max:50',
             'description' => 'nullable|string|max:255',
+            'color' => 'nullable|string|max:7',
             'permissions' => 'nullable|array',
             'permissions.*' => 'exists:permissions,id',
         ]);
@@ -37,6 +38,7 @@ class RoleController extends Controller
         $role = Role::create([
             'name' => $validated['name'],
             'description' => $validated['description'] ?? null,
+            'color' => $validated['color'] ?? '#cccccc',
         ]);
 
         if (!empty($validated['permissions'])) {
@@ -69,6 +71,7 @@ class RoleController extends Controller
         $validated = $request->validate([
             'name' => "required|string|unique:roles,name,{$role->id}|max:50",
             'description' => 'nullable|string|max:255',
+            'color' => 'nullable|string|max:7',
             'permissions' => 'nullable|array',
             'permissions.*' => 'exists:permissions,id',
         ]);
@@ -76,6 +79,7 @@ class RoleController extends Controller
         $role->update([
             'name' => $validated['name'],
             'description' => $validated['description'] ?? null,
+            'color' => $validated['color'] ?? $role->color,
         ]);
 
         if (isset($validated['permissions'])) {
@@ -126,9 +130,10 @@ class RoleController extends Controller
      */
     public function list(): JsonResponse
     {
-        // Solo traemos id y name para que sea más liviano
-        $roles = Role::select('id', 'name')->get();
+        // Ahora también traemos el color para usarlo en los badges
+        $roles = Role::select('id', 'name', 'description', 'color')->get();
 
         return response()->json($roles);
     }
+
 }

@@ -1,0 +1,21 @@
+<div class="gestionClientes-container">
+  <div class="gestionClientes-tabs">
+
+    <a [routerLink]="['/gestion-clientes/listar-clientes']" 
+       routerLinkActive="active" 
+       class="gestionClientes-tab-button text-decoration-none">
+       <i class="fas fa-building me-2"></i> Lista Clientes
+    </a>
+
+    <a [routerLink]="['/gestion-clientes/crear-cliente']" 
+       routerLinkActive="active" 
+       class="gestionClientes-tab-button text-decoration-none">
+       <i class="fas fa-user-plus me-2"></i> Nuevo Cliente
+    </a>
+
+  </div>
+
+  <div class="gestionClientes-content">
+    <router-outlet></router-outlet>
+  </div>
+</div>

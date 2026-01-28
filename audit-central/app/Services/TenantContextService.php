@@ -73,8 +73,8 @@ class TenantContextService
             return null;
         }
 
-        // Superadmin tiene acceso a todo
-        if ($user->isSuperAdmin()) {
+        // Admin tiene acceso a todo
+        if ($user->isAdmin()) {
             return $tenant;
         }
 

@@ -1,0 +1,115 @@
+<div class="row justify-content-center mt-5 pt-4">
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white py-3">
+        <h5 class="mb-0 fw-bold" *ngIf="clienteSeleccionado">
+          <i class="fas fa-edit me-2"></i>Editando: {{ clienteSeleccionado.nombre }}
+        </h5>
+        <div *ngIf="cargando" class="spinner-border spinner-border-sm" role="status">
+          <span class="visually-hidden">Cargando...</span>
+        </div>
+      </div>
+
+      <div class="card-body p-4">
+        <!-- Alertas -->
+        <div *ngIf="error" class="alert alert-danger alert-dismissible fade show" role="alert">
+          <i class="fas fa-exclamation-circle me-2"></i>{{ error }}
+          <button type="button" class="btn-close" (click)="error = ''"></button>
+        </div>
+
+        <div *ngIf="success" class="alert alert-success alert-dismissible fade show" role="alert">
+          <i class="fas fa-check-circle me-2"></i>{{ success }}
+          <button type="button" class="btn-close" (click)="success = ''"></button>
+        </div>
+
+        <!-- Formulario -->
+        <div *ngIf="clienteSeleccionado" class="animate__animated animate__fadeIn">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label small fw-bold">RUT (No editable)</label>
+              <input type="text" class="form-control bg-light" [value]="clienteSeleccionado.rut" readonly>
+            </div>
+            <div class="col-md-8">
+              <label class="form-label small fw-bold">Razón Social</label>
+              <input type="text" class="form-control" [(ngModel)]="clienteSeleccionado.nombre" placeholder="Nombre de la empresa">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label small fw-bold text-secondary">Región (Casa Matriz)</label>
+              <ng-select [items]="regionesChile" bindLabel="NombreRegion" bindValue="NombreRegion"
+                         [(ngModel)]="clienteSeleccionado.region" (change)="actualizarComunas()"
+                         placeholder="Buscar región...">
+              </ng-select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-bold text-secondary">Comuna</label>
+              <ng-select [items]="comunasDisponibles" 
+                         [(ngModel)]="clienteSeleccionado.comuna"
+                         [disabled]="!clienteSeleccionado.region"
+                         placeholder="Seleccione comuna...">
+              </ng-select>
+            </div>
+
+            <div class="col-md-12">
+              <label class="form-label small fw-bold">Dirección Comercial Principal</label>
+              <input type="text" class="form-control" [(ngModel)]="clienteSeleccionado.direccion" placeholder="Calle, número, oficina o depto.">
+            </div>
+
+            <div class="col-md-12 mt-5">
+              <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                <h5 class="fw-bold text-warning mb-0">
+                  <i class="fas fa-users me-2"></i>Contactos Autorizados
+                </h5>
+                <button type="button" class="btn btn-sm btn-outline-warning shadow-sm" (click)="agregarContacto()">
+                  <i class="fas fa-plus me-1"></i> Agregar Contacto
+                </button>
+              </div>
+
+              <div *ngFor="let contacto of clienteSeleccionado.contactos; let i = index" class="card border-0 bg-light mb-3 shadow-sm animate__animated animate__fadeInUp">
+                <div class="card-body p-4">
+                  <div class="d-flex justify-content-between mb-3">
+                    <span class="badge bg-secondary">Contacto #{{ i + 1 }}</span>
+                      <button *ngIf="(clienteSeleccionado?.contactos?.length || 0) > 1" class="btn btn-link text-danger p-0" (click)="eliminarContacto(i)">                      <i class="fas fa-trash-alt me-1"></i> Quitar
+                    </button>
+                  </div>
+                  
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <label class="form-label small fw-bold">Nombre Completo</label>
+                      <input type="text" class="form-control form-control-sm" [(ngModel)]="contacto.nombre">
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label small fw-bold">Email</label>
+                      <input type="email" class="form-control form-control-sm" [(ngModel)]="contacto.email">
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label small fw-bold">Teléfono Principal</label>
+                      <input type="text" class="form-control form-control-sm" [(ngModel)]="contacto.telefono">
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label small fw-bold">Teléfono Alternativo</label>
+                      <input type="text" class="form-control form-control-sm" [(ngModel)]="contacto.telefono_alternativo">
+                    </div>
+                    <div class="col-md-12">
+                      <label class="form-label small text-muted">Comentarios específicos</label>
+                      <input type="text" class="form-control form-control-sm" [(ngModel)]="contacto.comentarios" placeholder="Ej: Gerente de Finanzas, Soporte Nivel 1...">
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12 mt-5 d-flex gap-2">
+              <button class="btn btn-primary btn-lg flex-grow-1" (click)='guardarCambios()' [disabled]="guardando">
+                <i class="fas fa-save me-2"></i> {{ guardando ? 'Guardando...' : 'Guardar Cambios' }}
+              </button>
+              <button class="btn btn-secondary btn-lg flex-grow-1" (click)='volver()' [disabled]="guardando">
+                <i class="fas fa-arrow-left me-2"></i> Atrás
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,178 @@
+/* Estilos específicos para la sección Admin Usuarios (sobrescribe ligeros ajustes) */
+
+/* Hacer que la columna de lista sea más ancha que la de formulario */
+.usuarios-container {
+	display: grid;
+	grid-template-columns: 1fr 1fr; /* restaurado 50/50 */
+	gap: 24px;
+	width: 100%;
+}
+
+/* Ajustes para el formulario de creación/edición */
+.usuarios-form-col .usuario-form {
+	background: #f8f9fa;
+	padding: 16px;
+	border-radius: 8px;
+}
+
+.usuarios-form-col .cliente-checkboxes {
+	background: white;
+	padding: 12px;
+	border-radius: 4px;
+	border: 1px solid #ddd;
+	max-height: 220px;
+	overflow: auto;
+}
+
+/* Mejor separación entre grupos y etiquetas más legibles */
+.usuarios-form-col .form-group {
+	margin-bottom: 14px;
+}
+
+/* Botones destacados para acciones de usuario */
+.usuarios-form-col .btn-primary {
+	background: #0d6efd;
+	border-color: #0d6efd;	
+	color: #fff;
+}
+
+.usuarios-form-col .btn-secondary {
+	background: #f8f9fa;
+	border-color: #ddd;
+	color: #333;
+}
+
+/* Tabla: permitir que el nombre tenga más espacio */
+.usuarios-list-col .usuarios-table td.name-col {
+	min-width: 150px;
+}
+
+/* Modales de edición/ eliminación adaptados para admin-usuarios */
+
+/* Estructura base del Modal */
+.modal-overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background-color: rgba(10, 10, 10, 0.8);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 1050; /* Asegura que esté por encima de otros elementos */
+	padding: 1rem;
+}
+
+.modal-content-editarUser,
+.modal-content-eliminarUser {
+	background-color: white;
+	border-radius: 8px;
+	box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	pointer-events: auto;
+}
+
+.modal-header {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	padding: 1rem 1rem;
+	border-bottom: 1px solid #dee2e6;
+	border-top-left-radius: 8px;
+	border-top-right-radius: 8px;
+}
+
+.modal-body {
+	position: relative;
+	flex: 1 1 auto;
+	padding: 1rem;
+}
+
+.modal-footer {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: flex-end;
+	padding: 0.75rem;
+	border-top: 1px solid #dee2e6;
+	border-bottom-right-radius: 8px;
+	border-bottom-left-radius: 8px;
+	gap: 0.5rem;
+}
+
+.modal-header .close {
+    padding: 1rem 1rem;
+    margin: -1rem -1rem -1rem auto;
+    background-color: transparent;
+    border: 0;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+.modal-content-eliminarUser,
+.modal-content-editarUser {
+	background-color: white;
+	border-radius: 8px;
+	box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	pointer-events: auto;
+	max-width: 600px;
+}
+
+.modal-content-eliminarUser {
+	max-width: 520px;
+}
+
+/* Responsive tweaks específicos */
+@media (max-width: 1024px) {
+	.usuarios-container {
+		grid-template-columns: 1fr;
+	}
+}
+
+/* Mostrar líneas (bordes) de la tabla y hacerla un poco más angosta */
+.usuarios-list-col .usuarios-table.table {
+    width: 95%;
+    margin: 0 auto;
+    border-collapse: collapse;
+    border: 1px solid #dee2e6;
+    table-layout: auto;
+}
+
+/* Columna de lista de roles */
+.usuarios-list-col .usuarios-list-content {
+	background: #f8f9fa;  
+	padding: 16px;
+	border-radius: 8px;
+}
+
+/* AQUÍ ESTÁ EL CAMBIO PRINCIPAL */
+.usuarios-list-col .usuarios-table.table th,
+.usuarios-list-col .usuarios-table.table td {
+    border: 1px solid #dee2e6;
+    padding: 3px 8px; 
+    font-size: 0.95rem; 
+    vertical-align: middle;
+}
+
+.usuarios-list-col .usuarios-table.table thead {
+    background: #f8f9fa;
+}
+
+/* NUEVO: Ajustar los botones dentro de la tabla para que no aumenten la altura */
+.usuarios-list-col .usuarios-table.table .btn-sm {
+    padding: 1px 6px; /* Botones más delgados */
+    font-size: 0.75rem; /* Iconos/texto más pequeños */
+    margin: 0 2px;
+}
+
+.usuarios-list-col .table-responsive {
+    padding: 8px;
+}

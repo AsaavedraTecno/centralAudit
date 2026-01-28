@@ -1,0 +1,51 @@
+/* Estilos específicos para el Listado de Clientes */
+
+.card {
+  border-radius: 12px;
+  overflow: hidden; // Para que el header respete el redondeado
+}
+
+// Estilo profesional para encabezados de tabla
+.table thead th {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: #6c757d;
+  letter-spacing: 0.5px;
+  border-top: none;
+  background-color: #f8f9fa;
+}
+
+// Ajuste para las celdas de la tabla
+.table tbody td {
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+  vertical-align: middle;
+}
+
+// Estilo para el RUT y textos secundarios
+small.text-primary {
+  font-size: 0.85rem;
+  opacity: 0.9;
+}
+
+// Efecto al pasar el mouse por la fila
+.table-hover tbody tr:hover {
+  background-color: rgba(0, 123, 255, 0.03); 
+  transition: background-color 0.2s ease;
+}
+
+// Botones de acción más elegantes
+.btn-group .btn {
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px !important;
+  margin: 0 2px;
+  
+  i {
+    font-size: 0.9rem;
+  }
+}
+
+// Estilo para el icono de "No hay datos"
+.opacity-25 {
+  opacity: 0.25;
+}

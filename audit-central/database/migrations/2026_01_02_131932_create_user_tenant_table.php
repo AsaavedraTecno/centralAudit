@@ -13,12 +13,19 @@ return new class extends Migration
     {
         Schema::create('user_tenant', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+
+            // Relación con el usuario global (Administradores o Clientes con acceso)
+            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+
+            // Relación con el Tenant (Empresa)
             $table->uuid('tenant_id');
-            $table->string('role')->default('viewer'); // superadmin|analyst|tech|viewer
+            $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+
+            // Atributos de acceso
+            $table->string('role')->default('viewer'); 
             $table->timestamps();
 
-            $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            // Evita que un usuario se asigne dos veces a la misma empresa
             $table->unique(['user_id', 'tenant_id']);
         });
     }

@@ -32,7 +32,8 @@
               }
             ],
             "styles": [
-              "src/styles.scss"
+              "src/styles.scss",
+              "./node_modules/@ng-select/ng-select/themes/default.theme.css"
             ],
             "server": "src/main.server.ts",
             "outputMode": "server",
@@ -65,11 +66,19 @@
           "defaultConfiguration": "production"
         },
         "serve": {
+          "options": {
+            "host": "0.0.0.0",
+            "allowedHosts": [
+              "localhost",
+              ".tecnodatasa.cl"
+            ]
+          },
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
               "buildTarget": "frontend:build:production"
             },
+
             "development": {
               "buildTarget": "frontend:build:development"
             }

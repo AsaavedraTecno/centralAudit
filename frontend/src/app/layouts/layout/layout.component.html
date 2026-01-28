@@ -1,0 +1,47 @@
+<div class="topbar">
+    <div class="topbar-content">
+        <div class="brand-center">
+        <img [src]="logoUrl" alt="Logo" class="logo" [class.hidden]="!logoUrl" (error)="logoUrl=''" />
+        </div>
+
+        <button (click)="logout()" class="btn btn-topbar">
+        <i class="fas fa-sign-out-alt me-1"></i>
+        Cerrar sesión
+        </button>
+    </div>
+  
+    <div class="tab-menu">
+      <a [routerLink]="['/monitoreo']" 
+       routerLinkActive="active" 
+       class="tab-button text-decoration-none">
+       <i class="fas fa-users me-2"></i> Monitoreo
+     </a>
+
+    <a [routerLink]="['/impresoras']" 
+       routerLinkActive="active" 
+       class="tab-button text-decoration-none">
+       <i class="fas fa-print me-2"></i> Impresoras
+    </a>
+
+    <a *ngIf="isAdmin()" 
+      [routerLink]="['/gestion-clientes']" 
+       routerLinkActive="active" 
+       class="tab-button text-decoration-none">
+       <i class="fas fa-cogs me-2"></i> Gestión Clientes
+    </a>
+
+    <a *ngIf="isAdmin()" 
+       [routerLink]="['/administracion']" 
+       routerLinkActive="active" 
+       class="tab-button text-decoration-none">
+       <i class="fas fa-sliders-h me-2"></i> Administración
+    </a>
+
+    </div>
+      <!-- Sub-tabs para Panel/Dashboard -->
+      
+</div>
+
+<div class="content-full">
+  <router-outlet></router-outlet>
+</div>

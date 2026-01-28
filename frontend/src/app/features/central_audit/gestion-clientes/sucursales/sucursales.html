@@ -1,0 +1,189 @@
+<div class="sucursales-container animate__animated animate__fadeIn">
+  
+  <div *ngIf="mensaje" class="alert alert-{{ tipoMensaje }} alert-dismissible fade show mb-3">
+    <i class="fas me-2" [ngClass]="{
+      'fa-check-circle': tipoMensaje === 'success',
+      'fa-exclamation-circle': tipoMensaje === 'warning',
+      'fa-times-circle': tipoMensaje === 'error'
+    }"></i>
+    {{ mensaje }}
+    <button type="button" class="btn-close" (click)="mensaje = ''"></button>
+  </div>
+
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white py-3">
+      <h5 class="mb-0 fw-bold text-primary">
+        <i class="fas" [ngClass]="editando ? 'fa-edit' : 'fa-plus-circle'"></i>
+        {{ editando ? 'Editar Sucursal' : 'Nueva Sucursal' }}
+      </h5>
+    </div>
+    <div class="card-body p-4">
+      <form #formularioSucursal="ngForm" (ngSubmit)="crearSucursal(formularioSucursal)">
+        
+        <h6 class="text-muted small fw-bold mb-3">GENERAL</h6>
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <label class="form-label small fw-bold">Cliente <span class="text-danger">*</span></label>
+            <select class="form-select" [(ngModel)]="clienteSeleccionado" name="clienteSeleccionado" 
+                    [disabled]="!!codigoCliente" required>
+              <option value="" disabled>Seleccione...</option>
+              <option *ngFor="let c of clientes" [value]="c.code || c.rut">
+                {{ c.nombre || c.rut }}
+              </option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-bold">Nombre Sucursal <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" [(ngModel)]="nombre" name="nombre" required>
+          </div>
+        </div>
+
+        <h6 class="text-muted small fw-bold mb-3 border-top pt-3">UBICACIÓN</h6>
+        <div class="row g-3 mb-4">
+          <div class="col-md-12">
+            <label class="form-label small fw-bold">Dirección</label>
+            <input type="text" class="form-control" [(ngModel)]="direccion" name="direccion">
+          </div>
+          
+          <div class="col-md-6">
+            <label class="form-label small fw-bold text-secondary">Región</label>
+            <ng-select 
+                [items]="regionesList" 
+                bindLabel="NombreRegion" 
+                bindValue="NombreRegion"
+                placeholder="Seleccione Región..."
+                [(ngModel)]="region" 
+                name="region"
+                (change)="onRegionChange()"
+                [clearable]="true">
+            </ng-select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label small fw-bold text-secondary">Comuna</label>
+            <ng-select 
+                [items]="comunasDisponibles" 
+                placeholder="Seleccione Comuna..."
+                [(ngModel)]="comuna" 
+                name="comuna"
+                [disabled]="!region"
+                [clearable]="true"
+                notFoundText="Seleccione una región primero">
+            </ng-select>
+          </div>
+        </div>
+
+        <h6 class="text-muted small fw-bold mb-3 border-top pt-3">CONTACTO</h6>
+        <div class="row g-3 mb-4">
+            <div class="col-md-6">
+                <label class="form-label small fw-bold">Nombre Contacto</label>
+                <input type="text" class="form-control" [(ngModel)]="nombreContacto" name="nombreContacto">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label small fw-bold">Email</label>
+                <input type="email" class="form-control" [(ngModel)]="emailContacto" name="emailContacto">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label small fw-bold">Teléfono Principal</label>
+                <input type="text" class="form-control" [(ngModel)]="telefonoContacto" name="telefonoContacto">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label small fw-bold">Teléfono Alternativo</label>
+                <input type="text" class="form-control" [(ngModel)]="telefonoAlternativo" name="telefonoAlternativo">
+            </div>
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label small fw-bold">Comentarios</label>
+          <textarea class="form-control" rows="2" [(ngModel)]="comentarios" name="comentarios"></textarea>
+        </div>
+
+        <div class="d-flex gap-2 justify-content-end">
+          <button *ngIf="editando" type="button" class="btn btn-light border" (click)="cancelarEdicion()">
+            Cancelar
+          </button>
+          <button type="submit" class="btn btn-primary px-4" [disabled]="guardando">
+            <i class="fas" [ngClass]="guardando ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+            {{ guardando ? 'Guardando...' : (editando ? 'Actualizar' : 'Crear') }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+      <h5 class="mb-0 fw-bold text-secondary">
+        <i class="fas fa-list-ul me-2"></i>Listado ({{ sucursales.length }})
+      </h5>
+    </div>
+    
+    <div class="card-body p-0">
+      <div *ngIf="cargando" class="text-center py-5">
+        <div class="spinner-border text-primary"></div>
+      </div>
+
+      <div *ngIf="!cargando && sucursales.length > 0" class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-4">Nombre</th>
+              <th>Ubicación</th>
+              <th>Contacto</th>
+              <th>Teléfonos</th>
+              <th class="text-end pe-4">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let s of sucursales">
+              <td class="ps-4">
+                <div class="fw-bold">{{ s.nombre }}</div>
+              </td>
+              <td>
+                <div class="small">{{ s.direccion || '-' }}</div>
+                <div class="small text-muted">
+                    {{ s.comuna }} {{ s.region ? ', ' + s.region : '' }}
+                </div>
+              </td>
+              <td>
+                <div class="small fw-bold">{{ s.nombre_contacto || '-' }}</div>
+                <div class="small text-muted">{{ s.email_contacto }}</div>
+              </td>
+              <td>
+                <div class="small"><i class="fas fa-phone me-1 text-muted"></i>{{ s.telefono_contacto || '-' }}</div>
+                <div class="small" *ngIf="s.telefono_alternativo">
+                    <i class="fas fa-mobile me-1 text-muted"></i>{{ s.telefono_alternativo }}
+                </div>
+              </td>
+              <td class="text-end pe-4">
+                <div class="btn-group">
+                  <button class="btn btn-sm btn-outline-info" (click)="abrirModalImpresoras(s)" title="Impresoras">
+                    <i class="fas fa-print"></i>
+                  </button>
+                  <button class="btn btn-sm btn-outline-warning" (click)="editarSucursal(s)" title="Editar">
+                    <i class="fas fa-pencil-alt"></i>
+                  </button>
+                  <button class="btn btn-sm btn-outline-danger" (click)="deleteSucursal(s.id)" title="Eliminar">
+                    <i class="fas fa-trash-alt"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div *ngIf="!cargando && sucursales.length === 0" class="text-center py-5">
+        <p class="text-muted">No hay sucursales registradas.</p>
+      </div>
+    </div>
+  </div>
+
+  <app-asignar-impresoras 
+    *ngIf="mostrarModalImpresoras"
+    [sucursal]="sucursalSeleccionada"
+    [clienteCode]="codigoCliente || clienteSeleccionado"
+    (cerrar)="cerrarModalImpresoras()"
+    (actualizado)="onActualizadoImpresoras()">
+  </app-asignar-impresoras>
+</div>

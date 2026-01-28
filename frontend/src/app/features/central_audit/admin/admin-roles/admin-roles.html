@@ -1,0 +1,169 @@
+<div class="roles-container">
+    <!-- Columna de formulario para crear rol -->
+    <div class="roles-form-col">
+      <h4><i class="fas fa-plus me-2"></i>Crear Nuevo Rol</h4>
+      <hr>
+      <div class="rol-form">
+        <div class="form-group">
+          <label for="rolName">Nombre del Rol</label>
+          <input type="text" id="rolName" class="form-control" [(ngModel)]="nuevoRol.name" placeholder="Ej: tecnico_nivel_1">
+        </div>
+        <div class="form-group">
+          <label for="rolDescription">Descripción</label>
+          <textarea id="rolDescription" class="form-control" [(ngModel)]="nuevoRol.description" rows="2"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Color del Rol</label>
+          <input class="form-control" 
+                 [style.background]="nuevoRol.color"
+                 [(colorPicker)]="nuevoRol.color" 
+                 [cpOutputFormat]="'hex'"
+                 [value]="nuevoRol.color"
+                 readonly />
+        </div>
+        <div class="form-group">
+          <label>Permisos</label>
+          <div class="permissions-checkboxes">
+            <div *ngIf="todosLosPermisos.length === 0" class="text-muted small py-2">
+              <i class="fas fa-spinner fa-spin me-1"></i>Cargando permisos...
+            </div>
+            <div *ngIf="todosLosPermisos.length > 0">
+              <div class="form-check checkbox-todos">
+                <input class="form-check-input" type="checkbox" id="seleccionarTodosNuevo" [checked]="seleccionarTodosNuevo" (change)="toggleSeleccionarTodos('new')">
+                <label class="form-check-label" for="seleccionarTodosNuevo"><strong>Todos los permisos</strong></label>
+              </div>
+              <div style="border-top: 1px solid #dee2e6; margin: 8px 0; padding-top: 8px;"></div>
+
+              <div class="permissions-grid">
+                <div *ngFor="let category of objectKeys(permisosDisponibles)">
+                  <div class="permission-category">{{ category }}</div>
+                  <div *ngFor="let permiso of permisosDisponibles[category]" class="form-check permission-item">
+                    <input class="form-check-input" type="checkbox" [id]="'permiso-new-' + permiso.id" [checked]="isPermisoSeleccionado(permiso.id, 'new')" (change)="togglePermiso(permiso.id, 'new')">
+                    <label class="form-check-label" [for]="'permiso-new-' + permiso.id">{{ permiso.name }}</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-primary w-100" (click)="crearRol()">Crear Rol</button>
+      </div>
+    </div>
+
+    <!-- Columna de lista de roles -->
+    <div class="roles-list-col">
+      <h4><i class="fas fa-tags me-2"></i>Lista de Roles</h4>
+      <hr>
+      <div class="roles-list-content">
+        <div *ngIf="loadingRoles" class="text-center py-3">
+			<div class="spinner-border spinner-border-sm text-primary"></div>
+			<p class="text-muted small mt-2">Cargando roles...</p>
+		</div>
+        <div *ngIf="!loadingRoles && roles.length === 0" class="alert alert-info small mb-0">
+			<i class="fas fa-info-circle me-2"></i>No se encontraron roles.
+		</div>
+        <div *ngIf="!loadingRoles && roles.length > 0" class="table-responsive">
+          <table class="table table-hover roles-table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Descripción</th>
+                <th class="text-center">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let rol of roles">
+                <td>
+                  <span class="color-dot" [style.background]="rol.color"></span>
+                  <strong>{{ rol.name }}</strong></td>
+                <td>{{ rol.description || 'N/A' }}</td>
+                <td class="text-center">
+                  <button class="btn btn-sm btn-outline-primary" (click)="abrirModalEditarRol(rol)">
+                    <i class="fas fa-edit"></i> Editar
+                  </button>
+                  <button class="btn btn-sm btn-outline-danger" (click)="abrirModalEliminarRol(rol)">
+                    <i class="fas fa-trash"></i> Eliminar
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+</div>
+
+<!-- Modal para Editar Rol -->
+<div class="modal-overlay" *ngIf="modalEditarRolAbierto" (click)="cerrarModalEditarRol()">
+  <div class="modal-content-editarRol" *ngIf="rolAEditar" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h5 class="modal-title">Editar Rol: {{ rolAEditar.name }}</h5>
+      <button type="button" class="close" (click)="cerrarModalEditarRol()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label for="editRolName">Nombre del Rol</label>
+        <input type="text" id="editRolName" class="form-control" [(ngModel)]="rolAEditar.name">
+      </div>
+      <div class="form-group">
+        <label for="editRolDescription">Descripción</label>
+        <textarea id="editRolDescription" class="form-control" [(ngModel)]="rolAEditar.description" rows="2"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Color del Rol</label>
+        <input class="form-control" 
+               [style.background]="rolAEditar.color"
+               [(colorPicker)]="rolAEditar.color" 
+               [cpOutputFormat]="'hex'"
+               [value]="rolAEditar.color"
+               readonly />
+      </div>
+      <div class="form-group">
+        <label>Permisos</label>
+        <div class="permissions-checkboxes">
+          <div *ngIf="todosLosPermisos.length > 0">
+            <div class="form-check checkbox-todos">
+              <input class="form-check-input" type="checkbox" id="seleccionarTodosEditar" [checked]="seleccionarTodosEditar" (change)="toggleSeleccionarTodos('edit')">
+              <label class="form-check-label" for="seleccionarTodosEditar"><strong>Todos los permisos</strong></label>
+            </div>
+            <div style="border-top: 1px solid #dee2e6; margin: 8px 0; padding-top: 8px;"></div>
+            <div class="permissions-grid">
+              <div *ngFor="let category of objectKeys(permisosDisponibles)">
+                <div class="permission-category">{{ category }}</div>
+                <div *ngFor="let permiso of permisosDisponibles[category]" class="form-check permission-item">
+                  <input class="form-check-input" type="checkbox" [id]="'permiso-edit-' + permiso.id" [checked]="isPermisoSeleccionado(permiso.id, 'edit')" (change)="togglePermiso(permiso.id, 'edit')">
+                  <label class="form-check-label" [for]="'permiso-edit-' + permiso.id">{{ permiso.name }}</label>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div *ngIf="todosLosPermisos.length === 0" class="text-muted small py-2">
+            <i class="fas fa-spinner fa-spin me-1"></i>Cargando permisos...
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="cerrarModalEditarRol()">Cancelar</button>
+      <button class="btn btn-primary" (click)="actualizarRol()">Guardar Cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para Eliminar Rol -->
+<div class="modal-overlay" *ngIf="modalEliminarRolAbierto" (click)="cerrarModalEliminarRol()">
+  <div class="modal-content-eliminarRol" *ngIf="rolAEliminar" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h5 class="modal-title">Confirmar Eliminación</h5>
+      <button type="button" class="close" (click)="cerrarModalEliminarRol()">&times;</button>
+    </div>
+    <div class="modal-body text-center">
+      <p class="mt-2">¿Estás seguro de que deseas eliminar el rol <strong>{{ rolAEliminar.name }}</strong>?</p>
+      <p class="text-danger small mt-2">Esta acción no se puede deshacer.</p>
+    </div>
+    <div class="modal-footer justify-content-center">
+      <button class="btn btn-secondary" (click)="cerrarModalEliminarRol()">Cancelar</button>
+      <button class="btn btn-danger" (click)="confirmarEliminarRol()">Sí, Eliminar</button>
+    </div>
+  </div>
+</div>

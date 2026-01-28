@@ -15,6 +15,7 @@ class AgentStatus extends Model
         'version',
         'last_seen_at',
         'status',
+        'snmp_community'
     ];
 
     protected $casts = [
@@ -43,6 +44,25 @@ class AgentStatus extends Model
             'ip_address' => $ip,
             'version' => $version,
             'status' => 'online',
+            
         ]);
+    }
+
+    // El agente pertenece a una sucursal específica
+    public function location(): BelongsTo
+    {
+        return $this->belongsTo(Location::class);
+    }
+
+    // El agente tiene varios rangos de IP para escanear (la lista que vimos)
+    public function scanRanges(): HasMany
+    {
+        return $this->hasMany(AgentScanRange::class);
+    }
+
+    // El agente es responsable de muchas impresoras encontradas
+    public function printers(): HasMany
+    {
+        return $this->hasMany(Printer::class);
     }
 }

@@ -10,13 +10,16 @@ class Location extends Model
     protected $connection = 'tenant';
 
     protected $fillable = [
-        'name',
-        'code',
-        'address',
-        'city',
-        'contact_name',
-        'contact_phone',
-        'active',
+        'nombre',
+        'direccion',
+        'comuna',
+        'region',
+        'nombre_contacto',
+        'email_contacto',
+        'telefono_contacto',
+        'telefono_alternativo',
+        'comentarios',
+        'activo'
     ];
 
     protected $casts = [
@@ -37,5 +40,11 @@ class Location extends Model
     public function scopeActive($query)
     {
         return $query->where('active', true);
+    }
+
+    // Una sucursal tiene muchos agentes instalados
+    public function agents(): HasMany
+    {
+        return $this->hasMany(Agent::class);
     }
 }

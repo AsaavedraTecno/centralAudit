@@ -17,20 +17,34 @@ class CreateTenantsTable extends Migration
     {
         Schema::create('tenants', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->string('code')->unique();                 // Slug legible (ej: "acmecorp")
-            $table->json('data')->nullable();                 // JSON requerido por Stancl Tenancy
+            $table->string('code')->unique(); 
+            $table->json('data')->nullable(); // Stancl requiere esto
 
-            // Identificación y administración del tenant
-            $table->string('name');                           // Nombre del cliente (informativo)
+            // --- Identificación ---
+            $table->string('nombre');
+            $table->string('rut')->unique();
 
-            // Conexión a la base de datos del tenant
-            $table->string('db_name')->unique();              // Nombre DB: audit-central_tenant_{uuid}
-            $table->string('db_host')->default('127.0.0.1');  // Host DB
-            $table->string('db_user')->default('postgres');   // Usuario DB
-            $table->text('db_password');                       // Password encriptado
+            // --- Conexión DB ---
+            $table->string('db_name')->unique();
+            $table->string('db_host')->default('127.0.0.1');
+            $table->string('db_user')->default('postgres');
+            $table->text('db_password');
 
-            // Estado y control
+            $table->string('direccion')->nullable();
+            $table->string('comuna')->nullable();
+            $table->string('region')->nullable();
+
+            // --- Estado ---
             $table->enum('status', ['active', 'suspended', 'maintenance'])->default('active');
+
+            // Relación con el usuario admin que lo crea
+            $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
+
+            //$table->integer('device_limit')->default(1); 
+            $table->integer('user_limit')->default(5);
+
+            // --- Personalización ---
+            $table->string('logo_url')->nullable()->after('nombre');
 
             $table->timestamps();
             $table->softDeletes();

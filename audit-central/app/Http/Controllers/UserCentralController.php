@@ -116,6 +116,16 @@ class UserCentralController extends Controller
         // Actualizar rol (reemplazar si cambia)
         $user->roles()->sync([$validated['role_id']]);
 
+        $tenantsData = [];
+        if ($request->has('tenants')) {
+            foreach ($request->tenants as $t) {
+                $tenantsData[$t['tenant_id']] = [
+                    'scope' => $t['scope'] ?? 'view' // Valor por defecto si no viene
+                ];
+            }
+        }
+        $user->tenants()->sync($tenantsData);           
+
         return response()->json([
             'message' => 'Usuario actualizado',
             'user' => $user->load(['roles', 'tenantAssignments']),

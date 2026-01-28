@@ -48,4 +48,19 @@ class PermissionController extends Controller
             'categories' => $categories,
         ]);
     }
+
+        /**
+     * Lista TODOS los permisos sin paginación (Para selectores/checkboxes)
+     * GET /api/admin/permissions-list
+     */
+    public function list(): JsonResponse
+    {
+        // Agrupar por categoría para una mejor UI. Asumimos que el modelo Permission tiene un campo 'category'.
+        // Si no lo tiene, puedes usar ->get() directamente.
+        $permissions = Permission::orderBy('category')->orderBy('name')->get()
+            ->groupBy('category');
+
+        return response()->json($permissions);
+    }
+
 }

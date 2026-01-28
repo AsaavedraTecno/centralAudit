@@ -1,0 +1,63 @@
+<div class="bg-login">
+    <br><br><br><br>
+    <div *ngIf="!loading" class="container animate__animated animate__fadeIn" style="opacity: 0.9;">
+        <div class="row justify-content-center">
+            <section class="text-center text-lg-start">
+                <div class="card mb-3">
+                    <div class="row g-0 d-flex align-items-center">
+                        <div class="col-lg-4 d-none d-lg-flex">
+                            <img [src]="logoUrl" alt="Logo"
+                                class="w-100 rounded-t-5 rounded-tr-lg-0 rounded-bl-lg-5 animate__animated animate__fadeIn" />
+                        </div>
+
+                        <div class="col-lg-7">
+                            <div class="card-body py-5 px-md-5">
+                                <h3 class="fw-bold mb-4 text-primary">Crear cuenta de Monitoreo</h3>
+                                <p class="text-muted mb-4 small">Configure su acceso administrativo para la gestión de impresoras.</p>
+
+                                <form (ngSubmit)="registrar()">
+                                    <div class="form-outline mb-3">
+                                        <input type="text" class="form-control" [(ngModel)]="regData.name" name="name" required>
+                                        <label class="form-label small fw-bold">Nombre Completo</label>
+                                    </div>
+
+                                    <div class="form-outline mb-3">
+                                        <input type="email" class="form-control" [(ngModel)]="regData.email" name="email" required>
+                                        <label class="form-label small fw-bold">Email Corporativo</label>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <input type="password" class="form-control" [(ngModel)]="regData.password" name="password" required>
+                                            <label class="form-label small fw-bold">Contraseña</label>
+                                        </div>
+                                        <div class="col-md-6 mb-4">
+                                            <input type="password" class="form-control" [(ngModel)]="regData.password_confirmation" name="confirm" required>
+                                            <label class="form-label small fw-bold">Confirmar</label>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-grid gap-2">
+                                        <button type="submit" class="btn btn-primary btn-lg shadow">
+                                            Ingresar
+                                        </button>
+                                    </div>
+
+                                    <div class="text-center mt-4">
+                                        <a routerLink="/login" class="text-decoration-none small fw-bold text-muted">
+                                            <i class="fas fa-arrow-left me-1"></i> Volver al ingreso
+                                        </a>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>    
+    </div>
+
+    <div class="centered-logo">
+        <img src="https://www.tecnodatasa.cl/wp-content/themes/tecnodata/img/logo.svg" alt="Tecnodata">
+    </div>
+</div>

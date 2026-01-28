@@ -26,6 +26,6 @@ class SettingSeeder extends Seeder
             );
         }
 
-        echo "✅ Configuraciones por defecto creadas\n";
+        \Log::info("✅ Configuraciones por defecto creadas");
     }
 }

@@ -1,0 +1,31 @@
+.bg-login {
+    // Imagen de fondo solicitada
+    background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), 
+                      url('https://www.tecnodatasa.cl/wp-content/uploads/2019/10/home0.jpg');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    height: 100vh;
+    width: 100%;
+    overflow-y: auto; // Permitir scroll si el formulario es largo
+    position: relative;
+
+    .card {
+        border-radius: 1rem;
+        border: none;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+    }
+
+    .centered-logo {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10;
+        img {
+            max-width: 150px;
+            filter: brightness(0) invert(1); // Logo en blanco
+            opacity: 0.8;
+        }
+    }
+}

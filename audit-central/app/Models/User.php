@@ -10,6 +10,8 @@ use Laravel\Sanctum\HasApiTokens;
 class User extends Authenticatable
 {
     use HasFactory, Notifiable, HasApiTokens;
+    // Use the default connection (central) for system users
+
 
     protected $fillable = [
         'name',
@@ -94,9 +96,14 @@ class User extends Authenticatable
     /**
      * Alias para assignedTenants (para compatibilidad)
      */
+    // App\Models\User.php
+
     public function tenants()
     {
-        return $this->assignedTenants();
+        // Usamos la tabla user_tenant_assignment como pivote
+        return $this->belongsToMany(Tenant::class, 'user_tenant_assignment', 'user_id', 'tenant_id')
+                    ->withPivot('scope')
+                    ->withTimestamps();
     }
 
     /**
@@ -105,14 +112,6 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return $this->roles()->where('name', 'admin')->exists();
-    }
-
-    /**
-     * ¿Es superadmin?
-     */
-    public function isSuperAdmin(): bool
-    {
-        return $this->roles()->where('name', 'superadmin')->exists();
     }
 
     /**

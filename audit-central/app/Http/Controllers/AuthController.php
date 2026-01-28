@@ -86,4 +86,57 @@ class AuthController extends Controller
             ],
         ]);
     }
+
+    public function register(Request $request)
+    {
+        // 1. Validar datos de entrada
+        $request->validate([
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|email|max:255',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        // Obtener el tenant actual inicializado por el middleware
+        $tenant = tenancy()->tenant ?? null;
+
+        if (! $tenant) {
+            return response()->json(['error' => 'No se pudo identificar el tenant.'], 400);
+        }
+
+        // 2-5. Ejecutar la comprobación de cupo y la creación dentro del contexto del tenant
+        $createdUser = null;
+
+        $tenant->run(function () use ($request, &$createdUser) {
+            // Límite de usuarios configurado en el tenant (fallback 5)
+            $limitePermitido = tenant('max_viewers') ?? 5;
+
+            // Contar usuarios actuales en la base de datos del cliente
+            $usuariosActuales = \App\Models\Tenant\User::count();
+
+            if ($usuariosActuales > 0 && $usuariosActuales >= $limitePermitido) {
+                abort(response()->json([
+                    'error' => 'Cupo de usuarios completo.',
+                    'message' => "Esta suscripción solo permite {$limitePermitido} usuarios."
+                ], 403));
+            }
+
+            // Crear el usuario en la BD del tenant
+            $createdUser = \App\Models\Tenant\User::create([
+                'name'     => $request->name,
+                'email'    => $request->email,
+                'password' => Hash::make($request->password),
+                'role'     => 'viewer',
+                'active'   => true,
+            ]);
+        });
+
+        // Si abort fue llamado dentro del run, la respuesta ya fue enviada. Si no, seguimos.
+        $user = $createdUser;
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Cuenta creada exitosamente en ' . tenant('nombre'),
+            'user'    => $user
+        ], 201);
+    }
 }

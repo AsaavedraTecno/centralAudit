@@ -21,7 +21,9 @@ class Tenant extends BaseTenant implements TenantWithDatabase
      * 
      * Solo guardar datos de administración del tenant, NO datos de negocio.
      * - id: Identificador único del tenant
-     * - name: Nombre de la empresa (informativo)
+     * - rut: RUT de la empresa (informativo)
+     * - code: Código único del tenant (slug del nombre)
+     * - nombre: Nombre de la empresa (informativo)
      * - db_name: Nombre de la base de datos del tenant
      * - db_host: Host donde corre la BD del tenant
      * - db_user: Usuario para acceder a la BD del tenant
@@ -33,12 +35,21 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         return [
             'id',
             'code',
-            'name',
+            'nombre',
+            'rut',
+            'direccion',
+            'region',                
+            'comuna',      
+            'device_limit',           
+            'timezone',               
+            'logo_url',               
+            'db_name',  
+            'status',
+
             'db_name',
             'db_host',
             'db_user',
             'db_password',
-            'status',
         ];
     }
 
@@ -97,53 +108,52 @@ class Tenant extends BaseTenant implements TenantWithDatabase
 
         // Generar code, db_name y credenciales automáticamente al crear
         static::creating(function (Tenant $tenant) {
-            // Generar UUID PRIMERO si no existe
             if (!$tenant->id) {
-                $tenant->id = \Illuminate\Support\Str::uuid();
+                $tenant->id = (string) \Illuminate\Support\Str::uuid();
             }
             
-            // Generar code (slug) del nombre si no está set
-            if (!$tenant->code && $tenant->name) {
-                $tenant->code = \Illuminate\Support\Str::slug($tenant->name, '');
+            if (!$tenant->code && $tenant->nombre) {
+                $tenant->code = \Illuminate\Support\Str::slug($tenant->nombre);
             }
-            
-            // Asignar db_name con el patrón: audit_central_t{8-chars}
-            // Ahora id ya existe
+
+            // Simplificamos la generación del db_name
             if (!$tenant->db_name) {
-                $shortId = substr($tenant->id, 0, 8);
-                $tenant->db_name = 'audit_central_t' . $shortId;
+                $tenant->db_name = 'audit_central_t' . substr($tenant->id, 0, 8);
             }
-            
-            // Usar las credenciales del .env para todas las BDs de tenant
-            if (!$tenant->db_host) {
-                $tenant->db_host = env('DB_HOST', 'localhost');
-            }
-            if (!$tenant->db_user) {
-                $tenant->db_user = env('DB_USERNAME', 'postgres');
-            }
-            if (!$tenant->db_password) {
-                $tenant->db_password = encrypt(env('DB_PASSWORD', ''));
-            }
-            
-            // Status por defecto
-            if (!$tenant->status) {
-                $tenant->status = 'active';
-            }
+
+            // Credenciales automáticas
+            $tenant->db_host = $tenant->db_host ?? env('DB_HOST', 'localhost');
+            $tenant->db_user = $tenant->db_user ?? env('DB_USERNAME', 'postgres');
+            $tenant->db_password = $tenant->db_password ?? encrypt(env('DB_PASSWORD', ''));
+            $tenant->status = $tenant->status ?? 'active';
         });
 
         // Crear dominio automáticamente después de guardar
         static::created(function (Tenant $tenant) {
-            // Generar dominio primario: {code}-{random}.app.cl
-            $randomString = \Illuminate\Support\Str::random(8);
-            $domainString = strtolower($tenant->code) . '-' . $randomString . '.app.cl';
-            
-            Domain::create([
-                'tenant_id' => $tenant->id,
-                'domain' => $domainString,
+            // Formato: usach-centralaudit.tecnodatasa.cl
+            $domainName = $tenant->code . '-centralaudit.tecnodatasa.cl';
+
+            $tenant->domains()->create([
+                'domain' => $domainName,
                 'type' => 'primary',
                 'status' => 'active',
             ]);
         });
+    }
+
+    /**
+     * Relación: Un Tenant tiene muchos contactos
+     */
+    public function contacts()
+    {
+        return $this->hasMany(TenantContact::class, 'tenant_id', 'id');
+    }
+
+    public function users()
+    {
+        return $this->belongsToMany(User::class, 'user_tenant_assignment', 'tenant_id', 'user_id')
+                    ->withPivot('scope')
+                    ->withTimestamps();
     }
 }
 

@@ -12,8 +12,10 @@ class Printer extends Model
     protected $connection = 'tenant';
 
     protected $fillable = [
+        'agent_id',
         'location_id',
         'name',
+        'ubicacion_fisica',
         'description',
         'model',
         'brand',
@@ -113,5 +115,17 @@ class Printer extends Model
     public function isColor(): bool
     {
         return $this->is_color ?? false;
+    }
+
+    // Para saber qué agente la monitorea
+    public function agent(): BelongsTo
+    {
+        return $this->belongsTo(Agent::class);
+    }
+
+    // Para saber en qué sucursal está sin pasar por el agente
+    public function location(): BelongsTo
+    {
+        return $this->belongsTo(Location::class);
     }
 }

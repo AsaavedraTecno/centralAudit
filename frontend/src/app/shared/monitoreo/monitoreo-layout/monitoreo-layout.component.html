@@ -1,0 +1,16 @@
+<div class="subtab-menu">
+    <a [routerLink]="['panel']" 
+        routerLinkActive="active" 
+        class="subtab-button text-decoration-none">
+        <i class="fas fa-users me-2"></i> Panel
+    </a>
+    <a [routerLink]="['dashboard']" 
+        routerLinkActive="active" 
+        class="subtab-button text-decoration-none">
+        <i class="fas fa-chart-bar me-2"></i> Dashboard
+    </a>
+</div>
+
+<div class="sub-content">
+  <router-outlet></router-outlet>
+</div>

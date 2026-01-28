@@ -1,99 +1,92 @@
+
 import { Sucursal } from "./sucursal";
 
-export interface Cliente {
-  // Nueva estructura (API Laravel)
-  id: string;
-  rut: string;
+// --- Estructura para un Contacto ---
+export interface Contacto {
+  id?: number; // El ID solo existirá para contactos ya guardados
   nombre: string;
-  code: string;
-  status: 'active' | 'suspended' | 'ended';
-  direccion?: string;
-  comuna?: string;
-  ciudad?: string;
-  region?: string;
-  contacto_nombre?: string;
-  contacto_email?: string;
-  contacto_telefono?: string;
-  ti_nombre?: string;
-  ti_email?: string;
-  ti_telefono?: string;
-  contrato_inicio?: string;
-  contrato_fin?: string;
-  created_at?: string;
-  updated_at?: string;
-  
-  // Para el árbol
-  sucursales?: Sucursal[];
-  expanded?: boolean;
-  loading?: boolean;
-
-  // Campos legacy (compatibilidad con código existente)
-  cliente?: string;      // alias de nombre
-  nombre1?: string;      // alias de nombre
-  contacto1?: string;    // alias contacto_nombre
-  telefono1?: string;    // alias contacto_telefono
-  cod_clie?: string;     // alias de code
+  email: string | null;
+  telefono: string | null;
+  telefono_alternativo: string | null;
+  comentarios: string | null;
 }
 
-// Clase implementación con getters legacy
-export class ClienteImpl implements Cliente {
-  id: string;
-  rut: string;
-  nombre: string;
+// --- Estructura Principal del Cliente (Tenant) ---
+export interface Cliente {
+  // --- Identificación ---
+  id: string; // Corresponde al ID del Tenant
   code: string;
-  status: 'active' | 'suspended' | 'ended';
+  nombre: string;
+  rut: string;
+  status: 'active' | 'suspended' | 'maintenance' | 'ended';
+
+  // --- Ubicación ---
   direccion?: string;
   comuna?: string;
-  ciudad?: string;
   region?: string;
-  contacto_nombre?: string;
-  contacto_email?: string;
-  contacto_telefono?: string;
-  ti_nombre?: string;
-  ti_email?: string;
-  ti_telefono?: string;
-  contrato_inicio?: string;
-  contrato_fin?: string;
-  created_at?: string;
-  updated_at?: string;
+  
+  // --- Personalización y Configuración ---
+  logo_url?: string;
+  
+  // --- Lista de Contactos ---
+  contactos?: Contacto[];
+
+  // --- Relaciones y Estado de la UI ---
   sucursales?: Sucursal[];
   expanded?: boolean;
   loading?: boolean;
+
+  // --- Timestamps ---
+  created_at?: string;
+  updated_at?: string;
+}
+
+// Clase de implementación para inicializar con valores por defecto
+export class ClienteImpl implements Cliente {
+  id: string;
+  code: string;
+  nombre: string;
+  rut: string;
+  status: 'active' | 'suspended' | 'maintenance' | 'ended';
+  
+  direccion?: string;
+  comuna?: string;
+  region?: string;
+  
+  logo_url?: string;
+  
+  contactos?: Contacto[];
+  
+  sucursales?: Sucursal[];
+  expanded?: boolean;
+  loading?: boolean;
+  created_at?: string;
+  updated_at?: string;
 
   constructor(data: Partial<Cliente>) {
     this.id = data.id ?? '';
-    this.rut = data.rut ?? '';
-    this.nombre = data.nombre ?? '';
     this.code = data.code ?? '';
+    this.nombre = data.nombre ?? '';
+    this.rut = data.rut ?? '';
     this.status = data.status ?? 'active';
+    
     this.direccion = data.direccion;
     this.comuna = data.comuna;
-    this.ciudad = data.ciudad;
     this.region = data.region;
-    this.contacto_nombre = data.contacto_nombre;
-    this.contacto_email = data.contacto_email;
-    this.contacto_telefono = data.contacto_telefono;
-    this.ti_nombre = data.ti_nombre;
-    this.ti_email = data.ti_email;
-    this.ti_telefono = data.ti_telefono;
-    this.contrato_inicio = data.contrato_inicio;
-    this.contrato_fin = data.contrato_fin;
+    
+    this.logo_url = data.logo_url;
+    
+    this.contactos = data.contactos ?? [];
+    
+    this.sucursales = data.sucursales;
+    this.expanded = data.expanded ?? false;
+    this.loading = data.loading ?? false;
     this.created_at = data.created_at;
     this.updated_at = data.updated_at;
-    this.sucursales = data.sucursales;
-    this.expanded = data.expanded;
-    this.loading = data.loading;
   }
-
-  // Alias legacy
-  get cliente(): string { return this.nombre; }
-  get nombre1(): string { return this.nombre; }
-  get contacto1(): string { return this.contacto_nombre ?? ''; }
-  get telefono1(): string { return this.contacto_telefono ?? ''; }
-  get cod_clie(): string { return this.code; }
 }
 
-// Factory para crear desde API response
+// Función helper para crear una instancia de Cliente
 export function createCliente(data: any): Cliente {
   return new ClienteImpl(data);
 }

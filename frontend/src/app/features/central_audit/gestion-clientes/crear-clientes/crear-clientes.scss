@@ -1,0 +1,69 @@
+/* src/styles.scss */
+/* Importamos el tema Bootstrap para ng-select */
+@import "@ng-select/ng-select/themes/default.theme.css";
+// Opcional: Si prefieres el estilo "Material Design" usa este otro:
+// @import "@ng-select/ng-select/themes/material.theme.css"; 
+
+
+// Fix para que el buscador sea visible y tenga altura
+.ng-select {
+    padding-bottom: 0;
+}
+
+.ng-select .ng-select-container {
+    min-height: 38px; /* Altura estándar de Bootstrap */
+    border-radius: 6px;
+    border: 1px solid #dee2e6;
+}
+
+.ng-dropdown-panel {
+    z-index: 9999 !important; /* Para que no se esconda detrás de nada */
+}
+
+.wizard-steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  .step-item {
+    text-align: center;
+    position: relative;
+    .step-circle {
+      width: 42px; height: 42px;
+      background: #fff; border: 2px solid #dee2e6;
+      border-radius: 50%; display: flex;
+      align-items: center; justify-content: center;
+      font-weight: bold; margin: 0 auto 8px;
+      transition: all 0.4s ease;
+      color: #adb5bd;
+    }
+    .step-label { font-size: 0.7rem; font-weight: 800; color: #adb5bd; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    &.active {
+      .step-circle { border-color: #0d6efd; color: #0d6efd; transform: scale(1.1); box-shadow: 0 4px 10px rgba(13, 110, 253, 0.15); }
+      .step-label { color: #0d6efd; }
+    }
+    &.done {
+      .step-circle { background: #198754; border-color: #198754; color: white; }
+      .step-label { color: #198754; }
+    }
+  }
+
+  .step-line {
+    flex: 0 0 70px; height: 2px; background: #dee2e6; margin: -20px 15px 0;
+  }
+}
+
+.font-monospace { letter-spacing: 2px; font-weight: bold; font-size: 1.1rem; }
+
+.card {
+  border-radius: 12px;
+}
+
+.table thead th {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: #6c757d;
+  letter-spacing: 0.5px;
+}
+

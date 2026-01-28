@@ -1,0 +1,112 @@
+<div class="modal-overlay" (click)="cerrarModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <!-- Header del modal -->
+    <div class="modal-header">
+      <h2>
+        <i class="fas fa-link me-2"></i>
+        Asignar Impresoras a: {{ sucursal?.nombre }}
+      </h2>
+      <button type="button" class="btn-close" (click)="cerrarModal()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <!-- Mensajes de alerta -->
+    <div *ngIf="mensaje" class="alert alert-{{ tipoMensaje }} mb-3">
+      <i class="fas me-2" [ngClass]="{
+        'fa-check-circle': tipoMensaje === 'success',
+        'fa-exclamation-circle': tipoMensaje === 'warning',
+        'fa-times-circle': tipoMensaje === 'error'
+      }"></i>
+      {{ mensaje }}
+    </div>
+
+    <!-- Body del modal -->
+    <div class="modal-body">
+      <!-- Loading -->
+      <div *ngIf="cargando" class="text-center p-4">
+        <i class="fas fa-spinner fa-spin me-2"></i>
+        Cargando impresoras...
+      </div>
+
+      <!-- Contenido -->
+      <div *ngIf="!cargando" class="modal-content-wrapper">
+        <!-- Impresoras disponibles -->
+        <div class="section">
+          <h3 class="section-title">
+            <i class="fas fa-plus-circle me-2 text-success"></i>
+            Impresoras Disponibles ({{ impressorasDisponibles.length }})
+          </h3>
+          <div *ngIf="impressorasDisponibles.length > 0" class="impresoras-list">
+            <div *ngFor="let impresora of impressorasDisponibles" class="impresora-item available">
+              <div class="impresora-info">
+                <h4>{{ impresora.nombre }}</h4>
+                <p class="text-muted">
+                  <small>
+                    <i class="fas fa-laptop me-1"></i>{{ impresora.modelo || 'N/A' }}
+                    <br/>
+                    <i class="fas fa-globe me-1"></i>{{ impresora.ip || 'Sin IP' }}
+                  </small>
+                </p>
+              </div>
+              <button 
+                class="btn btn-sm btn-success"
+                (click)="asignarImpresora(impresora)"
+                [disabled]="guardando"
+                title="Asignar a sucursal">
+                <i class="fas fa-arrow-right me-1"></i>
+                Asignar
+              </button>
+            </div>
+          </div>
+          <div *ngIf="impressorasDisponibles.length === 0" class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            No hay impresoras disponibles
+          </div>
+        </div>
+
+        <!-- Impresoras asignadas -->
+        <div class="section mt-4">
+          <h3 class="section-title">
+            <i class="fas fa-check-circle me-2 text-primary"></i>
+            Impresoras Asignadas ({{ impressorasAsignadas.length }})
+          </h3>
+          <div *ngIf="impressorasAsignadas.length > 0" class="impresoras-list">
+            <div *ngFor="let impresora of impressorasAsignadas" class="impresora-item assigned">
+              <div class="impresora-info">
+                <h4>{{ impresora.nombre }}</h4>
+                <p class="text-muted">
+                  <small>
+                    <i class="fas fa-laptop me-1"></i>{{ impresora.modelo || 'N/A' }}
+                    <br/>
+                    <i class="fas fa-globe me-1"></i>{{ impresora.ip || 'Sin IP' }}
+                  </small>
+                </p>
+              </div>
+              <button 
+                class="btn btn-sm btn-danger"
+                (click)="desasignarImpresora(impresora)"
+                [disabled]="guardando"
+                title="Desasignar de sucursal">
+                <i class="fas fa-arrow-left me-1"></i>
+                Desasignar
+              </button>
+            </div>
+          </div>
+          <div *ngIf="impressorasAsignadas.length === 0" class="alert alert-warning">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            No hay impresoras asignadas a esta sucursal
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer del modal -->
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="cerrarModal()">
+        <i class="fas fa-times me-2"></i>
+        Cerrar
+      </button>
+    </div>
+  </div>
+</div>

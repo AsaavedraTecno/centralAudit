@@ -15,6 +15,8 @@ return new class extends Migration
             $table->id();
             $table->string('name')->nullable();
             $table->string('description')->nullable();
+            $table->string('ubicacion_fisica')->nullable(); 
+            $table->foreignId('agent_id')->constrained('agent_status')->onDelete('cascade');
 
             // Sucursal/ubicación del cliente
             $table->foreignId('location_id')->constrained('locations')->cascadeOnDelete();

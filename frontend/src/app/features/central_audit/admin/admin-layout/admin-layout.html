@@ -1,0 +1,25 @@
+<div class="admin-container">
+  <div class="admin-tabs">
+    <a routerLink="usuarios" 
+       routerLinkActive="active" 
+       class="admin-tab-button text-decoration-none">
+       <i class="fas fa-user-tie me-2"></i> Usuarios
+    </a>
+
+    <a routerLink="roles" 
+       routerLinkActive="active" 
+       class="admin-tab-button text-decoration-none">
+       <i class="fas fa-key me-2"></i> Roles
+    </a>
+
+    <a routerLink="audit-logs" 
+       routerLinkActive="active" 
+       class="admin-tab-button text-decoration-none">
+       <i class="fas fa-history me-2"></i> Audit Logs
+    </a>
+  </div>
+
+  <div class="admin-content">
+    <router-outlet></router-outlet>
+  </div>
+</div>

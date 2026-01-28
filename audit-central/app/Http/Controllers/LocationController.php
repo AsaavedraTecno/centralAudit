@@ -18,7 +18,6 @@ class LocationController extends Controller
 
     /**
      * Lista sucursales de un cliente
-     * GET /api/clients/{code}/sucursales
      */
     public function index(Request $request, string $code): JsonResponse
     {
@@ -29,9 +28,20 @@ class LocationController extends Controller
         }
 
         $locations = $this->tenantContext->run($tenant, function () {
-            return Location::active()
-                ->orderBy('name')
-                ->get(['id', 'name', 'code', 'address', 'city', 'contact_name', 'contact_phone']);
+            return Location::where('activo', true)
+                ->orderBy('nombre')
+                ->get([
+                    'id', 
+                    'nombre', 
+                    'direccion', 
+                    'comuna', 
+                    'region', 
+                    'nombre_contacto', 
+                    'telefono_contacto',
+                    'telefono_alternativo',
+                    'comentarios',
+                    'activo'
+                ]);
         });
 
         return response()->json([
@@ -41,7 +51,6 @@ class LocationController extends Controller
 
     /**
      * Detalle de una sucursal
-     * GET /api/clients/{code}/sucursales/{id}
      */
     public function show(Request $request, string $code, int $id): JsonResponse
     {
@@ -53,7 +62,7 @@ class LocationController extends Controller
 
         $location = $this->tenantContext->run($tenant, function () use ($id) {
             return Location::with(['printers' => function ($query) {
-                $query->select('id', 'location_id', 'name', 'model', 'brand', 'serial_number', 'ip_address', 'status');
+                $query->select('id', 'location_id', 'model', 'serial_number', 'status');
             }])->find($id);
         });
 
@@ -68,16 +77,10 @@ class LocationController extends Controller
 
     /**
      * Crear sucursal
-     * POST /api/clients/{code}/sucursales
      */
     public function store(Request $request, string $code): JsonResponse
     {
         $user = $request->user();
-
-        if (!$user->canManage()) {
-            return response()->json(['error' => 'No autorizado'], 403);
-        }
-
         $tenant = $this->tenantContext->getTenantWithAccess($code, $user);
 
         if (!$tenant) {
@@ -85,18 +88,21 @@ class LocationController extends Controller
         }
 
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'code' => 'required|string|max:50',
-            'address' => 'nullable|string|max:255',
-            'city' => 'nullable|string|max:100',
-            'contact_name' => 'nullable|string|max:255',
-            'contact_phone' => 'nullable|string|max:20',
+            'nombre'               => 'required|string|max:255',
+            'direccion'            => 'nullable|string|max:255',
+            'comuna'               => 'nullable|string|max:100',
+            'region'               => 'nullable|string|max:100',
+            'nombre_contacto'      => 'nullable|string|max:255',
+            'email_contacto'       => 'nullable|email|max:255',
+            'telefono_contacto'    => 'nullable|string|max:20',
+            'telefono_alternativo' => 'nullable|string|max:20',
+            'comentarios'          => 'nullable|string',
         ]);
 
         $location = $this->tenantContext->run($tenant, function () use ($validated) {
             return Location::create([
                 ...$validated,
-                'active' => true,
+                'activo' => true,
             ]);
         });
 
@@ -108,16 +114,10 @@ class LocationController extends Controller
 
     /**
      * Actualizar sucursal
-     * PUT /api/clients/{code}/sucursales/{id}
      */
     public function update(Request $request, string $code, int $id): JsonResponse
     {
         $user = $request->user();
-
-        if (!$user->canManage()) {
-            return response()->json(['error' => 'No autorizado'], 403);
-        }
-
         $tenant = $this->tenantContext->getTenantWithAccess($code, $user);
 
         if (!$tenant) {
@@ -125,21 +125,23 @@ class LocationController extends Controller
         }
 
         $validated = $request->validate([
-            'name' => 'sometimes|string|max:255',
-            'address' => 'nullable|string|max:255',
-            'city' => 'nullable|string|max:100',
-            'contact_name' => 'nullable|string|max:255',
-            'contact_phone' => 'nullable|string|max:20',
-            'active' => 'sometimes|boolean',
+            'nombre'               => 'sometimes|string|max:255',
+            'direccion'            => 'nullable|string|max:255',
+            'comuna'               => 'nullable|string|max:100',
+            'region'               => 'nullable|string|max:100',
+            'nombre_contacto'      => 'nullable|string|max:255',
+            'email_contacto'       => 'nullable|email|max:255',
+            'telefono_contacto'    => 'nullable|string|max:20',
+            'telefono_alternativo' => 'nullable|string|max:20',
+            'comentarios'          => 'nullable|string',
+            'activo'               => 'sometimes|boolean',
         ]);
 
         $location = $this->tenantContext->run($tenant, function () use ($id, $validated) {
             $location = Location::find($id);
-            
             if ($location) {
                 $location->update($validated);
             }
-
             return $location;
         });
 
@@ -154,18 +156,11 @@ class LocationController extends Controller
     }
 
     /**
-     * Eliminar/desactivar sucursal
-     * DELETE /api/clients/{code}/sucursales/{id}
+     * Eliminar/desactivar sucursal (Soft Delete manual)
      */
     public function destroy(Request $request, string $code, int $id): JsonResponse
     {
-        $user = $request->user();
-
-        if (!$user->canManage()) {
-            return response()->json(['error' => 'No autorizado'], 403);
-        }
-
-        $tenant = $this->tenantContext->getTenantWithAccess($code, $user);
+        $tenant = $this->tenantContext->getTenantWithAccess($code, $request->user());
 
         if (!$tenant) {
             return response()->json(['error' => 'Cliente no encontrado o sin acceso'], 403);
@@ -173,13 +168,10 @@ class LocationController extends Controller
 
         $deleted = $this->tenantContext->run($tenant, function () use ($id) {
             $location = Location::find($id);
-            
             if ($location) {
-                // Soft delete: solo desactivar
-                $location->update(['active' => false]);
+                $location->update(['activo' => false]);
                 return true;
             }
-
             return false;
         });
 
@@ -187,8 +179,6 @@ class LocationController extends Controller
             return response()->json(['error' => 'Sucursal no encontrada'], 404);
         }
 
-        return response()->json([
-            'message' => 'Sucursal desactivada',
-        ]);
+        return response()->json(['message' => 'Sucursal desactivada']);
     }
 }

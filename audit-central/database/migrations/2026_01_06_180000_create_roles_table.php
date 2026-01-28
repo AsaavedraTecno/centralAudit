@@ -12,6 +12,8 @@ return new class extends Migration
             $table->id();
             $table->string('name')->unique(); // admin, tecnico, ventas, soporte
             $table->string('description')->nullable();
+            $table->string('color')->nullable()->after('description');
+
             $table->timestamps();
         });
     }

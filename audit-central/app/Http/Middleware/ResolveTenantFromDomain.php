@@ -2,7 +2,7 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\Domain;
+use Stancl\Tenancy\Database\Models\Domain;
 use App\Models\Tenant;
 use Closure;
 use Illuminate\Http\Request;
@@ -10,61 +10,58 @@ use Stancl\Tenancy\Facades\Tenancy;
 
 class ResolveTenantFromDomain
 {
-    /**
-     * Resolver tenant desde dominio/subdominio
-     * 
-     * Soporta:
-     * - empresa1.app.cl → tenant: empresa-abc
-     * - custom.domain.com → tenant: empresa-def
-     * - localhost:8000 → header X-Tenant-Code
-     */
     public function handle(Request $request, Closure $next)
     {
         $host = $request->getHost();
 
-        // 1. Si viene header X-Tenant-Code (para testing, API calls)
+        // 1. Si viene header X-Tenant-Code (Para API/Postman) - prioridad para pruebas locales
         if ($request->hasHeader('X-Tenant-Code')) {
             $tenantId = $request->header('X-Tenant-Code');
-            $tenant = Tenant::where('id', $tenantId)->first();
 
-            if (!$tenant || $tenant->status !== 'active') {
-                return response()->json([
-                    'error' => 'Tenant no encontrado o inactivo',
-                ], 404);
+            // Si el valor parece un UUID, intentar buscar por id
+            if (preg_match('/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/', $tenantId)) {
+                $tenant = Tenant::find($tenantId);
+
+            // Si se pasó un dominio completo (contiene un punto), resolver por Domain
+            } elseif (str_contains($tenantId, '.')) {
+                $domainRecord = Domain::where('domain', $tenantId)->first();
+                $tenant = $domainRecord?->tenant ?? null;
+
+            // Si no es UUID ni dominio, buscar por code (slug)
+            } else {
+                $tenant = Tenant::where('code', $tenantId)->first();
             }
 
-            Tenancy::initialize($tenant);
-            $request->attributes->set('tenant', $tenant);
-            return $next($request);
-        }
-
-        // 2. Buscar dominio en tabla domains (BD central)
-        $domain = Domain::resolveByHost($host);
-
-        if ($domain) {
-            $tenant = $domain->tenant;
-
-            if ($tenant->status !== 'active') {
-                return response()->json([
-                    'error' => 'Tenant suspendido',
-                ], 403);
+            if ($tenant && $tenant->status === 'active') {
+                Tenancy::initialize($tenant);
+                return $next($request);
             }
 
-            Tenancy::initialize($tenant);
-            $request->attributes->set('tenant', $tenant);
+            return response()->json(['error' => 'Tenant no encontrado o inactivo'], 404);
+        }
+
+        // 2. Si es un dominio central, saltar la inicialización de tenant
+        $centralDomains = config('tenancy.central_domains');
+        if (in_array($host, $centralDomains)) {
             return $next($request);
         }
 
-        // 3. Para localhost/127.0.0.1 en desarrollo: permitir sin tenant
-        // (útil para testing)
-        if (in_array($host, ['localhost', '127.0.0.1']) && 
-            in_array(env('APP_ENV'), ['local', 'testing'])) {
-            return $next($request);
+        // 3. Buscar el dominio en la tabla 'domains' de la BD Central
+        // Usamos where('domain', $host) en lugar de resolveByHost
+        $domainRecord = Domain::where('domain', $host)->first();
+
+        if ($domainRecord) {
+            $tenant = $domainRecord->tenant;
+
+            if ($tenant && $tenant->status === 'active') {
+                Tenancy::initialize($tenant);
+                return $next($request);
+            }
+            
+            return response()->json(['error' => 'Tenant inactivo o suspendido'], 403);
         }
 
-        // 4. Dominio no reconocido
-        return response()->json([
-            'error' => 'Dominio no autorizado',
-        ], 404);
+        // 4. Si llegamos aquí, el dominio no está autorizado
+        return response()->json(['error' => 'Dominio no autorizado: ' . $host], 404);
     }
 }
