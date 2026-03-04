@@ -18,6 +18,8 @@ export interface Cliente {
   code: string;
   nombre: string;
   rut: string;
+  printers_count?: number;
+  
   status: 'active' | 'suspended' | 'maintenance' | 'ended';
 
   // --- Ubicación ---
@@ -47,6 +49,7 @@ export class ClienteImpl implements Cliente {
   code: string;
   nombre: string;
   rut: string;
+  printers_count?: number;
   status: 'active' | 'suspended' | 'maintenance' | 'ended';
   
   direccion?: string;
@@ -68,6 +71,7 @@ export class ClienteImpl implements Cliente {
     this.code = data.code ?? '';
     this.nombre = data.nombre ?? '';
     this.rut = data.rut ?? '';
+    this.printers_count = data.printers_count ?? 0;
     this.status = data.status ?? 'active';
     
     this.direccion = data.direccion;

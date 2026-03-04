@@ -3,28 +3,37 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Route;
-use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
-use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
+use App\Http\Controllers\Tenant\TenantAuthController; 
+use App\Http\Controllers\Tenant\TenantClientController; 
+use App\Http\Controllers\Tenant\TenantLocationController; 
+use App\Http\Controllers\Tenant\TenantPrinterController; 
+
+
+
 
 /*
 |--------------------------------------------------------------------------
 | Tenant Routes
 |--------------------------------------------------------------------------
-|
-| Here you can register the tenant routes for your application.
-| These routes are loaded by the TenantRouteServiceProvider.
-|
-| Feel free to customize them however you want. Good luck!
-|
+| Estas rutas se cargan automáticamente con el prefijo /api y los 
+| middlewares de Tenancy gracias al TenancyServiceProvider.
 */
 
-Route::middleware([
-    'web',
-    InitializeTenancyByDomain::class,
-    PreventAccessFromCentralDomains::class,
-])->group(function () {
-    Route::get('/', function () {
-        dd(\App\Models\User::all());
-        return 'This is your multi-tenant application. The id of the current tenant is ' . tenant('id');
-    });
+
+Route::post('/login', [TenantAuthController::class, 'login']);
+Route::post('/register', [TenantAuthController::class, 'register']);
+
+// Rutas que requieren que el usuario esté logueado dentro del tenant
+Route::middleware('auth:tenant-api')->group(function () {
+    
+    Route::get('/me', [TenantAuthController::class, 'me']);
+    Route::post('/logout', [TenantAuthController::class, 'logout']);
+
+    Route::get('/clients', [TenantClientController::class, 'index']);
+
+    Route::get('tenants/{code}/sucursales', [TenantLocationController::class, 'index']);
+
+    Route::get('tenants/{code}/sucursales/{id}/impresoras', [TenantPrinterController::class, 'index']);
+    
+
 });

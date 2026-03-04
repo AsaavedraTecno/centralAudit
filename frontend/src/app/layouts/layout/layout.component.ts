@@ -6,10 +6,11 @@ import { Component, inject, Inject, PLATFORM_ID, signal, OnInit, OnDestroy } fro
 import { CommonModule, isPlatformBrowser } from '@angular/common'; // <--- Importante para que funcionen los *ngIf
 import { RouterModule, Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { ToastComponent } from '../../shared/components/toast/toast.component'; // Ajusta la ruta
 
 @Component({
   selector: 'app-layoutComponent',
-  imports: [RouterOutlet,CommonModule, RouterModule],
+  imports: [RouterOutlet,CommonModule, RouterModule, ToastComponent],
   templateUrl: './layout.component.html',
   styleUrls: ['./layout.component.scss']
 })
@@ -23,6 +24,7 @@ export class layoutComponent implements OnInit, OnDestroy {
   
   public logoUrl: string = 'https://www.tecnodatasa.cl/wp-content/uploads/2024/07/Frame-39628.png';
 
+  isCentralDomain: boolean = false; 
 
   constructor(
     private inactivityService: InactivityService,
@@ -30,13 +32,20 @@ export class layoutComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {
-    if (isPlatformBrowser(this.platformId)) {
-      this.userRole = localStorage.getItem('role') || '';
+      if (isPlatformBrowser(this.platformId)) {
+        this.userRole = localStorage.getItem('role') || '';
+        
+        // DETERMINAR SI ES EL DOMINIO CENTRAL
+        const hostname = window.location.hostname;
+        const centralDomain = 'centralaudit.tecnodatasa.cl';
+        
+        // Es central solo si es el dominio exacto o localhost
+        // tecnodatin.centralaudit... NO será central
+        this.isCentralDomain = (hostname === centralDomain || hostname === 'localhost' || hostname === '127.0.0.1');
+      }
     }
-  }
 
   ngOnInit(): void {
-    // Escuchar advertencias de sesión
 
     if (isPlatformBrowser(this.platformId)) {
 
@@ -60,17 +69,19 @@ export class layoutComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           console.error('Error de sesión:', err);
-          // Si falla la sesión, mandamos al login
           this.router.navigate(['/login']);
         }
       });
     }
   }
 
-  // Helpers para mostrar/ocultar opciones del menú
-  isSuperAdmin(): boolean { return this.userRole === 'superadmin'; }
-  isAdmin(): boolean { return this.userRole === 'admin' || this.userRole === 'superadmin'; }
+  canSeeGlobalAdmin(): boolean {
+    return this.isCentralDomain && (this.userRole === 'admin' || this.userRole === 'superadmin');
+  }
 
+  isAdmin(): boolean { 
+      return this.userRole === 'admin' || this.userRole === 'superadmin'; 
+    }
   logout(): void { 
     this.authService.logout2(); 
   }

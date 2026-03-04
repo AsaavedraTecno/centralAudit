@@ -1,0 +1,69 @@
+<!-- frontend/src/app/shared/monitoreo/vistas-personalizadas/vista-selector/vista-selector.component.html -->
+
+<div class="vista-selector-wrapper">
+  <!-- Dropdown de vistas -->
+  <div class="dropdown">
+    <button
+      class="btn btn-sm btn-outline-secondary dropdown-toggle"
+      type="button"
+      id="vistaDropdown"
+      data-bs-toggle="dropdown"
+      aria-expanded="false"
+      [disabled]="loading"
+    >
+      <i class="fas fa-eye me-2"></i>
+      {{ obtenerNombreVistaActiva() }}
+    </button>
+
+    <ul class="dropdown-menu" aria-labelledby="vistaDropdown">
+      <!-- Cargando -->
+      <li *ngIf="loading" class="dropdown-item disabled">
+        <span class="spinner-border spinner-border-sm me-2"></span>
+        Cargando...
+      </li>
+
+      <!-- Error -->
+      <li *ngIf="error && !loading" class="dropdown-item disabled text-danger">
+        <i class="fas fa-exclamation-circle me-2"></i>
+        {{ error }}
+      </li>
+
+      <!-- Vistas disponibles -->
+      <li *ngFor="let vista of vistas">
+        <button
+          class="dropdown-item"
+          [class.active]="vistaActiva?.id === vista.id"
+          (click)="seleccionarVista(vista)"
+          type="button"
+        >
+          <i class="fas fa-check me-2" *ngIf="vistaActiva?.id === vista.id"></i>
+          {{ vista.nombre }}
+          <small class="text-muted d-block" *ngIf="vista.descripcion">
+            {{ vista.descripcion }}
+          </small>
+        </button>
+      </li>
+
+      <!-- Separador -->
+      <li *ngIf="vistas.length > 0" class="dropdown-divider"></li>
+
+      <!-- Botón administrar vistas -->
+      <li>
+        <a
+          class="dropdown-item text-primary"
+          routerLink="/monitoreo/vistas"
+          type="button"
+        >
+          <i class="fas fa-cog me-2"></i>
+          Administrar vistas
+        </a>
+      </li>
+    </ul>
+  </div>
+
+  <!-- Mensaje de error si hay -->
+  <div *ngIf="error && !loading" class="alert alert-danger alert-sm mt-2">
+    <i class="fas fa-exclamation-triangle me-2"></i>
+    {{ error }}
+  </div>
+</div>

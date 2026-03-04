@@ -14,7 +14,7 @@ return [
     */
 
     'defaults' => [
-        'guard' => env('AUTH_GUARD', 'web'),
+        'guard' => env('AUTH_GUARD', 'api'),
         'passwords' => env('AUTH_PASSWORD_BROKER', 'users'),
     ],
 
@@ -40,6 +40,17 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+        // MUNDO CENTRAL: Para administradores globales
+        'api' => [
+            'driver' => 'passport',
+            'provider' => 'users',
+        ],
+
+        // MUNDO TENANT: Para usuarios de cada empresa
+        'tenant-api' => [
+            'driver' => 'passport',
+            'provider' => 'tenant_users', // <--- Usa el modelo App\Models\Tenant\User
+        ],
     ],
 
     /*
@@ -63,6 +74,11 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', App\Models\User::class),
+        ],
+
+        'tenant_users' => [ 
+            'driver' => 'eloquent',
+            'model' => App\Models\Tenant\User::class,
         ],
 
         // 'users' => [

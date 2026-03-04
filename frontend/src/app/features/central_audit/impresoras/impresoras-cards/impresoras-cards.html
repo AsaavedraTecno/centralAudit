@@ -1,0 +1,60 @@
+<div class="printer-grid">
+
+  <div *ngFor="let imp of impresoras"
+       class="p-card shadow-sm"
+       [ngClass]="{'is-inactive': imp.estado !== 1}">
+
+    <div class="p-card-header">
+
+      <span class="status-label">
+        <i class="fas fa-circle me-1"
+           [ngClass]="imp.estado === 1 ? 'text-success' : 'text-danger'"></i>
+
+        {{ imp.estado === 1 ? 'Activa' : 'Inactiva' }}
+      </span>
+
+      <button class="btn-card"
+              (click)="verDetalles.emit(imp)">
+        <i class="fas fa-eye"></i>
+      </button>
+
+    </div>
+
+    <div class="p-card-body">
+
+      <h6 class="nombre-clickeable"
+          (click)="verDetalles.emit(imp)">
+        {{ imp.nombre }}
+      </h6>
+
+      <code class="d-block mb-3 text-muted">
+        {{ imp.serie }}
+      </code>
+
+      <div class="toner-mini-container">
+        <span class="t-bar k"
+                [style.width.%]="imp.tonerBlack || 0"
+                [title]="'Black ' + (imp.tonerBlack || 0) + '%'">
+          </span>
+          
+          <span class="t-bar c" 
+                [style.width.%]="imp.tonerCyan || 0"
+                [title]="'Cyan ' + (imp.tonerCyan || 0) + '%'">
+          </span>
+
+          <span class="t-bar m" 
+                [style.width.%]="imp.tonerMagenta || 0"
+                [title]="'Magenta ' + (imp.tonerMagenta || 0) + '%'">
+          </span>
+          
+          <span class="t-bar y" 
+                [style.width.%]="imp.tonerYellow || 0"
+                [title]="'Yellow ' + (imp.tonerYellow || 0) + '%'">
+          </span>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>

@@ -19,17 +19,16 @@ export class ImpresoraService {
     );
   }
 
-  // Nueva API: requiere clientCode y sucursalId
   getImpresoras(clientCode: string, sucursalId: string | number): Observable<any> {
-    return this.http.get<any>(`${this.baseUrl}/clients/${clientCode}/sucursales/${sucursalId}/impresoras`).pipe(
+    const url = `${this.baseUrl}/tenants/${clientCode}/sucursales/${sucursalId}/impresoras?all=true`;
+
+    return this.http.get<any>(url).pipe(     
       map(response => {
-        const impresoras = response.data ?? response.impresoras ?? [];
-        return { data: impresoras };
+        return { data: response.impresoras || [] };      
       })
     );
   }
 
-  // Legacy - mantener por compatibilidad pero redirigir
   getSeriesBySucursal(sucursalId: string | number, clientCode?: string): Observable<any> {
     if (clientCode) {
       return this.getImpresoras(clientCode, sucursalId);
@@ -46,6 +45,15 @@ export class ImpresoraService {
     );
   }
 
+  updateEstado(clientCode: string, serie: string, estadoNumerico: number): Observable<any> {
+    const statusString = estadoNumerico === 1 ? 'active' : 'not active';
+    
+    // URL dinámica con el código del cliente
+    return this.http.patch(`${this.baseUrl}/tenants/${clientCode}/impresoras/${serie}/status`, { 
+      status: statusString 
+    });
+  }
+
   asignarASucursal(serie: string, ip: string, sucursalId: string | number): Observable<any> {
     return this.http.post(
       `${this.baseUrl}/sucursales/${sucursalId}/asignar-impresora`,
@@ -57,6 +65,26 @@ export class ImpresoraService {
     return this.http.delete(
       `${this.baseUrl}/sucursales/${sucursalId}/desasignar-impresora`,
       { body: { serie, ip } }
+    );
+  }
+
+  updateAdminFields(clientCode: string, printerId: number, data: any): Observable<any> {
+    const payload = {
+      internal_id: data.internal_id,
+      secondary_serial: data.secondary_serial,
+      custom_location: data.custom_location,
+      comments: data.comments,
+      custom_field_1: data.custom_field_1,
+      custom_field_2: data.custom_field_2
+    };
+
+    return this.http.patch(`${this.baseUrl}/tenants/${clientCode}/impresoras/${printerId}/admin-fields`, payload);
+    
+  }
+
+  obtenerDetalleImpresora(clientCode: string, locationId: number, printerId: number): Observable<any> {
+    return this.http.get(
+      `${this.baseUrl}/tenants/${clientCode}/sucursales/${locationId}/impresoras/${printerId}`
     );
   }
 }

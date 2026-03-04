@@ -125,4 +125,10 @@ export class EditarClientesComponent implements OnInit {
       this.router.navigate(['/gestion-clientes/listar-clientes']);
     }
   }
+
+  autoResize(event: Event): void {
+    const textarea = event.target as HTMLTextAreaElement;
+    textarea.style.height = 'auto';
+    textarea.style.height = `${textarea.scrollHeight}px`;
+  }
 }

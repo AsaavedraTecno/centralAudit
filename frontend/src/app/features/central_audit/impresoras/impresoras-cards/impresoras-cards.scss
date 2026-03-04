@@ -1,0 +1,77 @@
+.printer-grid { 
+  display: grid; 
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+  gap: 20px; 
+  /* Esta transición hace que las tarjetas "vuelen" a su nueva posición al ordenar */
+  transition: all 0.5s ease-in-out; 
+}
+
+.p-card {
+  background: white; 
+  border-radius: 12px; 
+  border: 1px solid #e1e4e8; 
+  /* Un solo bloque de transición para todo */
+  transition: opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease, box-shadow 0.3s ease;
+  
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+  }
+
+  /* Estado cuando la impresora está desactivada */
+  &.is-inactive {
+    opacity: 0.6;
+    background: #f8f9fa;
+    filter: grayscale(0.8);
+    box-shadow: none !important;
+    transform: none !important;
+  }
+
+  .p-card-header { 
+    padding: 12px; display: flex; justify-content: space-between; 
+    border-bottom: 1px solid #f1f3f5; 
+    .status-label { font-size: 0.7rem; font-weight: bold; } 
+  }
+
+  .p-card-body { 
+    padding: 15px; 
+    .nombre-clickeable { 
+      cursor: pointer; color: #0d6efd; font-weight: 800; 
+      &:hover { text-decoration: underline; } 
+    } 
+  }
+
+  .btn-card { 
+    background: none; border: none; color: #888; padding: 4px 8px; 
+    &:hover { color: #0d6efd; } 
+  }
+}
+
+.toner-mini-container { 
+  height: 5px; display: flex; gap: 2px; background: #eee; 
+  border-radius: 3px; overflow: hidden; 
+  .t-bar { 
+    height: 100%; transition: 0.4s; 
+    &.k { background: #000; } 
+    &.c { background: #00bcd4; } 
+    &.m { background: #e91e63; } 
+    &.y { background: #ffeb3b; } 
+  } 
+}
+
+/* Switch Estilo iOS */
+.ios-switch {
+  position: relative; display: inline-block; width: 36px; height: 18px;
+  input { opacity: 0; width: 0; height: 0; }
+  .ios-slider {
+    position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; 
+    background: #ccc; transition: .4s; border-radius: 18px;
+    &:before { 
+      position: absolute; content: ""; height: 14px; width: 14px; 
+      left: 2px; bottom: 2px; background: white; transition: .4s; border-radius: 50%; 
+    }
+  }
+  input:checked + .ios-slider { background: #28a745; }
+  input:checked + .ios-slider:before { transform: translateX(18px); }
+}
+

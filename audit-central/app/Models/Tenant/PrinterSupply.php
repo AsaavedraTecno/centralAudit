@@ -13,8 +13,11 @@ class PrinterSupply extends Model
     protected $fillable = [
         'printer_id',
         'supply_type',
+        'name',
         'percentage',
         'status',
+        'serial_number',
+        'description',
         'read_at',
     ];
 

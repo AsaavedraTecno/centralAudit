@@ -15,7 +15,11 @@ return new class extends Migration
             $table->id();
             $table->string('name')->nullable();
             $table->string('description')->nullable();
-            $table->string('ubicacion_fisica')->nullable(); 
+
+            $table->string('internal_id')->nullable()->index(); // ID tipo WH-128
+            $table->string('secondary_serial')->nullable();     // Serie 2
+            $table->string('custom_location')->nullable();      // Ubicación manual (no SNMP)
+
             $table->foreignId('agent_id')->constrained('agent_status')->onDelete('cascade');
 
             // Sucursal/ubicación del cliente
@@ -46,6 +50,10 @@ return new class extends Migration
             // Monitoreo
             $table->timestamp('last_seen_at')->nullable();
             $table->timestamp('last_counter_at')->nullable();
+
+            $table->text('comments')->nullable(); // Glosa de amplio carácter
+            $table->string('custom_field_1')->nullable(); // Campo libre 1
+            $table->string('custom_field_2')->nullable(); // Campo libre 2
 
             // Extras
             $table->text('notes')->nullable();

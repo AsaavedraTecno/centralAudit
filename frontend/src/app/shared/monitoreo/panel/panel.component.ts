@@ -5,7 +5,6 @@ import { ClienteTreeComponent } from '../cliente-tree/cliente-tree';
 @Component({
   selector: 'app-panel',
   standalone: true,
-  // Ya no importamos componentes hijos aquí, solo RouterModule y CommonModule
   imports: [CommonModule, ClienteTreeComponent],
   templateUrl: './panel.html',
   styleUrls: ['./panel.scss']

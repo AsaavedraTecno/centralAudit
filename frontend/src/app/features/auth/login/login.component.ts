@@ -47,7 +47,7 @@ export class LoginComponent implements OnInit {
 
         // 2. Solo si el dominio NO es el central, activamos el modo cliente
         // Comprobamos si el dominio empieza con algo antes de "centralaudit"
-        if (hostname.includes('centralaudit.tecnodatasa.cl') && hostname !== 'centralaudit.tecnodatasa.cl') {
+        if (hostname.includes('.centralaudit.tecnodatasa.cl') && hostname !== 'centralaudit.tecnodatasa.cl') {
           // Es un subdominio de cliente (ej: test2-centralaudit...)
           this.isCentral = false;
         } else if (hostname === 'centralaudit.tecnodatasa.cl' || hostname === 'localhost') {
@@ -142,14 +142,36 @@ export class LoginComponent implements OnInit {
   /**
    * Centraliza el guardado de datos en localStorage para evitar errores de SSR
    */
-  private saveSession(response: any): void {
+private saveSession(response: any): void {
     if (isPlatformBrowser(this.platformId)) {
-      localStorage.setItem("token", response["token"]);
-      localStorage.setItem("idUser", response["user_id"]);
-      localStorage.setItem("id_user", response["id_user"]);
-      localStorage.setItem("idEmpresa", response["empresa_id"]);
-      localStorage.setItem("role", response["role"]);
-      localStorage.setItem("permisos", JSON.stringify(response["permissions"]));
+      
+      // Guardamos el token (Laravel devuelve 'access_token' o 'token')
+      const token = response.access_token || response.token;
+      localStorage.setItem("token", token);
+
+      // El usuario viene dentro de un objeto 'user'
+      if (response.user) {
+          localStorage.setItem("idUser", response.user.id); // UUID
+          localStorage.setItem("id_user", response.user.id); // Duplicado por compatibilidad legacy
+          localStorage.setItem("email", response.user.email);
+          localStorage.setItem("name", response.user.name);
+          
+          // OJO: Si el tenant_id no viene explícito en el user, 
+          // a veces es útil guardarlo si el backend lo mandó en el root del json
+          if (response.tenant_id) {
+              localStorage.setItem("idEmpresa", response.tenant_id);
+          }
+          
+          // Roles y Permisos (Si tu User model en backend los devuelve)
+          if (response.user.role) {
+              localStorage.setItem("role", response.user.role);
+          }
+          
+          // Si envías permisos como array
+          if (response.user.permissions) {
+              localStorage.setItem("permisos", JSON.stringify(response.user.permissions));
+          }
+      }
     }
   }
 

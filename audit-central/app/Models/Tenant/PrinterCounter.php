@@ -14,6 +14,11 @@ class PrinterCounter extends Model
         'total_pages',
         'bw_pages',
         'color_pages',
+        'copy_pages',
+        'print_pages',
+        'scan_pages',
+        'fax_pages',
+        'duplex_pages',
         'collected_at',
     ];
 

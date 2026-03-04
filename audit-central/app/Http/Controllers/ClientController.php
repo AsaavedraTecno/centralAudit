@@ -29,42 +29,40 @@ class ClientController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        // 1. Validación
+        // 1. Validación (se mantiene igual)
         $validated = $request->validate([
-            'rut' => 'required|string|max:12|unique:tenants,rut',
-            'nombre' => 'required|string|max:255',
+            'rut'       => 'required|string|max:12|unique:tenants,rut',
+            'nombre'    => 'required|string|max:255',
             'direccion' => 'required|string|max:255',
-            'region' => 'required|string|max:100',
-            'comuna' => 'required|string|max:100',
-            'contactos' => 'required|array|min:1',
-            'contactos.*.nombre' => 'required|string',
-            'contactos.*.email' => 'required|email',
+            'region'    => 'required|string|max:100',
+            'comuna'    => 'required|string|max:100',
+
+            'contactos'            => 'required|array|min:1',
+            'contactos.*.nombre'   => 'required|string',
+            'contactos.*.email'    => 'required|email',
             'contactos.*.telefono' => 'nullable|string',
 
-            // Campos de la Sucursal (Paso 2 del Wizard)
-            'sucursal_nombre' => 'required|string|max:255',
-            'sucursal_direccion' => 'required|string|max:255',
-            'sucursal_nombre_contacto' => 'nullable|string|max:255',
-            'sucursal_email_contacto' => 'nullable|email|max:255',
-            'sucursal_telefono_contacto' => 'nullable|string|max:50',
+            'sucursal_nombre'               => 'required|string|max:255',
+            'sucursal_direccion'            => 'required|string|max:255',
+            'sucursal_nombre_contacto'      => 'nullable|string|max:255',
+            'sucursal_email_contacto'       => 'nullable|email|max:255',
+            'sucursal_telefono_contacto'    => 'nullable|string|max:50',
             'sucursal_telefono_alternativo' => 'nullable|string|max:50',
-            'sucursal_comentarios' => 'nullable|string',
+            'sucursal_comentarios'          => 'nullable|string',
         ]);
 
         try {
-            // --- PASO 1: CREAR TENANT (Fuera de transacción para Postgres) ---
+            // --- PASO 1: CREAR TENANT (DB Central) ---
             $tenant = Tenant::create([
-                'nombre'    => $validated['nombre'],
-                'rut'       => $validated['rut'],
-                'direccion' => $validated['direccion'],
-                'region'    => $validated['region'],
-                'comuna'    => $validated['comuna'],
-                'created_by'=> $request->user()->id,
+                'nombre'     => $validated['nombre'],
+                'rut'        => $validated['rut'],
+                'direccion'  => $validated['direccion'],
+                'region'     => $validated['region'],
+                'comuna'     => $validated['comuna'],
+                'created_by' => $request->user()->id,
             ]);
 
-            // A partir de aquí, si algo falla, el catch borrará el $tenant.
-
-            // --- PASO 2: CONTACTOS COMERCIALES ---
+            // --- PASO 2: CONTACTOS COMERCIALES (DB Central) ---
             foreach ($validated['contactos'] as $con) {
                 TenantContact::create([
                     'tenant_id' => $tenant->id,
@@ -74,61 +72,77 @@ class ClientController extends Controller
                 ]);
             }
 
-            // --- PASO 3: GENERAR LLAVE DE AGENTE ---
-            $plainKey = strtoupper(Str::random(16));
-            $key = AgentKey::create([
-                'tenant_id' => $tenant->id,
-                'name'      => 'Acceso Inicial: ' . $validated['sucursal_nombre'],
-                'key_hash'  => hash('sha256', $plainKey),
-                'active'    => true
-            ]);
+            // --- PASO 3: GENERAR LLAVE (DB Central) ---
+            $keyData = AgentKey::generateForTenant(
+                $tenant->id,
+                'Acceso Inicial: ' . $validated['sucursal_nombre'],
+                null // location_id null por ahora
+            );
 
-            // --- PASO 4: SETUP INICIAL EN LA DB DEL TENANT ---
-            $agentInternalId = $tenant->run(function () use ($validated, $key) {
-                Location::create([
-                    'nombre'             => $validated['sucursal_nombre'],
-                    'direccion'          => $validated['sucursal_direccion'],
-                    'comuna'             => $validated['comuna'], 
-                    'region'             => $validated['region'],
-                    'nombre_contacto'    => $validated['sucursal_nombre_contacto'],
-                    'email_contacto'     => $validated['sucursal_email_contacto'],
-                    'telefono_contacto'  => $validated['sucursal_telefono_contacto'],
-                    'telefono_alternativo' => $validated['sucursal_telefono_alternativo'],
-                    'comentarios'        => $validated['sucursal_comentarios'],
-                    'activo'             => true,
+            // --- PASO 4: SETUP EN TENANT DB ---
+            // Al entrar aquí, Laravel cambia la conexión por defecto al Tenant
+            $tenant->run(function () use ($validated, $keyData) {
+
+                // Crear sucursal (DB Tenant - Correcto)
+                $sucursal = Location::create([
+                    'nombre'                 => $validated['sucursal_nombre'],
+                    'direccion'              => $validated['sucursal_direccion'],
+                    'comuna'                 => $validated['comuna'],
+                    'region'                 => $validated['region'],
+                    'nombre_contacto'        => $validated['sucursal_nombre_contacto'] ?? null,
+                    'email_contacto'         => $validated['sucursal_email_contacto'] ?? null,
+                    'telefono_contacto'      => $validated['sucursal_telefono_contacto'] ?? null,
+                    'telefono_alternativo'   => $validated['sucursal_telefono_alternativo'] ?? null,
+                    'comentarios'            => $validated['sucursal_comentarios'] ?? null,
+                    'activo'                 => true,
                 ]);
 
-                $agent = AgentStatus::create([
-                    'agent_id'     => $key->id, 
-                    'hostname'     => 'ESPERANDO INSTALACIÓN',
-                    'status'       => 'offline',
-                    'last_seen_at' => now(),
+                // Crear agent_status (DB Tenant - Correcto)
+                AgentStatus::create([
+                    'agent_id'    => (string) $keyData['id'],
+                    'location_id' => $sucursal->id,
+                    'hostname'    => 'ESPERANDO INSTALACIÓN',
+                    'status'      => 'offline',
+                    'last_seen_at'=> now(),
                 ]);
 
-                return $agent->id;
+                // --- CORRECCIÓN AQUÍ ---
+                // AgentKey está en la DB Central. Como estamos dentro de run(), 
+                // debemos forzar la conexión 'pgsql' (o como se llame tu conexión principal).
+                
+                DB::connection('pgsql') // <--- IMPORTANTE: Usa el nombre de tu conexión central
+                    ->table('agent_keys')
+                    ->where('id', $keyData['id'])
+                    ->update(['location_id' => $sucursal->id]);
             });
 
             return response()->json([
                 'success'     => true,
-                'agent_key'   => $plainKey,
+                'agent_key'   => $keyData['key'],
                 'domain'      => $tenant->domains()->first()->domain,
-                'agent_id'    => $agentInternalId,
-                'client_code' => $tenant->code
+                'agent_id'    => $keyData['id'],
+                'client_code' => $tenant->code,
             ], 201);
 
         } catch (\Exception $e) {
-            // --- LIMPIEZA MANUAL (En lugar de Rollback) ---
-            // Si el tenant alcanzó a crearse, lo borramos para que Stancl 
-            // también elimine la base de datos que Postgres dejó a medias.
+            // Limpieza manual si falla
             if (isset($tenant)) {
-                $tenant->delete();
+                // Forzamos desconexión para evitar bloqueo "Object in use" en Postgres
+                DB::disconnect('tenant'); 
+                
+                // Intentamos borrar (esto puede fallar si la conexión sigue sucia, pero se intenta)
+                try {
+                    $tenant->delete();
+                } catch (\Exception $delEx) {
+                    Log::error("No se pudo hacer rollback del tenant: " . $delEx->getMessage());
+                }
             }
 
             Log::error("Fallo creación de infraestructura: " . $e->getMessage());
-            
+
             return response()->json([
                 'error'   => 'No se pudo crear la infraestructura.',
-                'details' => $e->getMessage()
+                'details' => $e->getMessage(),
             ], 500);
         }
     }
@@ -168,10 +182,35 @@ class ClientController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
-        $columns = ['id', 'code', 'nombre', 'status', 'rut', 'region', 'comuna', 'created_at'];
-        $query = $user->isAdmin() ? Tenant::query() : $user->tenants();
         
-        return response()->json(['clients' => $query->orderBy('nombre')->get($columns)]);
+        $columns = ['id', 'code', 'nombre', 'status', 'rut', 'region', 'comuna', 'created_at'];
+        
+        $query = $user->isAdmin() ? Tenant::query() : $user->tenants();
+
+        $clients = $query->with(['agentKeys' => function($q) {
+            $q->select('id', 'tenant_id', 'active', 'key_hash'); 
+        }])
+        ->orderBy('nombre')
+        ->get($columns)
+        ->map(function ($client) {
+
+            $printerCount = 0;
+
+            try {
+
+                $printerCount = $client->run(function () {
+                    return \App\Models\Tenant\Printer::count();
+                });
+
+            } catch (\Exception $e) {}
+
+            $client->printers_count = $printerCount;
+
+            return $client;
+
+        });
+
+        return response()->json(['clients' => $clients]);
     }
 
     /**
@@ -280,7 +319,7 @@ class ClientController extends Controller
         });
 
         return response()->json([
-            'client'    => $tenant->only(['nombre', 'code']),
+            'client'    => $tenant->only(['nombre', 'code', 'rut']),
             'locations' => $data,
         ]);
     }

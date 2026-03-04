@@ -18,6 +18,11 @@ return new class extends Migration
             $table->string('status')->default('online'); // online, offline, error
             $table->string('label')->nullable();
             $table->string('snmp_community')->default('public');
+            $table->integer('scan_interval_minutes')->default(15);
+            $table->foreignId('location_id')
+                            ->nullable()
+                            ->constrained('locations')
+                            ->nullOnDelete();
             
             $table->timestamps();
 

@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, NgForm } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { NgSelectModule } from '@ng-select/ng-select'; // <--- Importante
+import { NgSelectModule } from '@ng-select/ng-select';
 
 // Modelos y Servicios
 import { Sucursal } from '../../../../models/sucursal';
@@ -11,13 +11,13 @@ import { ClienteService } from '../../../../core/services/cliente.service';
 import { ClienteIndexedDbService } from '../../../../core/services/cliente-indexed-db.service';
 import { AsignarImpresoras } from '../../asignar-impresoras/asignar-impresoras';
 
-// Data Geográfica (Ajusta la ruta si es necesario)
+// Data Geográfica
 import { CHILE_DATA } from '../../../../data/chile-data'; 
 
 @Component({
   selector: 'app-sucursales',
   standalone: true,
-  imports: [CommonModule, FormsModule, AsignarImpresoras, NgSelectModule], // <--- Agregar NgSelectModule
+  imports: [CommonModule, FormsModule, AsignarImpresoras, NgSelectModule],
   templateUrl: './sucursales.html',
   styleUrls: ['./sucursales.scss']
 })
@@ -37,14 +37,14 @@ export class SucursalesComponent implements OnInit {
   region: string = '';
   
   // Data para Selects
-  regionesList = CHILE_DATA.regiones; // Cargamos la data importada
+  regionesList = CHILE_DATA.regiones;
   comunasDisponibles: string[] = [];
 
   // Contacto
   nombreContacto: string = '';
   emailContacto: string = '';
-  telefonoContacto: string = '';
-  telefonoAlternativo: string = '';
+  telefonoContacto: string = '+56 ';
+  telefonoAlternativo: string = '+56 ';
   comentarios: string = '';
   
   // Estado
@@ -52,6 +52,7 @@ export class SucursalesComponent implements OnInit {
   guardando: boolean = false;
   editando: boolean = false;
   sucursalEditId: number | null = null;
+  intentoGuardar: boolean = false;
   
   // Modal Impresoras
   mostrarModalImpresoras: boolean = false;
@@ -82,28 +83,69 @@ export class SucursalesComponent implements OnInit {
     this.loadClientes();
   }
 
-  // --- LÓGICA DE REGIONES Y COMUNAS ---
+  // ============ TELÉFONO CON FORMATO AUTOMÁTICO ============
+
+  formatearTelefono(field: 'telefonoContacto' | 'telefonoAlternativo'): void {
+    let valor = this[field];
+    
+    // Eliminar todo menos números
+    let soloNumeros = valor.replace(/\D/g, '');
+    
+    // Si empieza con 56, quitamos el 56 inicial
+    if (soloNumeros.startsWith('56')) {
+      soloNumeros = soloNumeros.substring(2);
+    }
+    
+    // Solo permitimos 9 dígitos
+    soloNumeros = soloNumeros.substring(0, 9);
+    
+    // Formatear: +56 9 8232 2323
+    if (soloNumeros.length === 0) {
+      this[field] = '+56 ';
+    } else if (soloNumeros.length <= 1) {
+      this[field] = '+56 ' + soloNumeros;
+    } else if (soloNumeros.length <= 4) {
+      this[field] = '+56 ' + soloNumeros.substring(0, 1) + ' ' + soloNumeros.substring(1);
+    } else {
+      this[field] = '+56 ' + soloNumeros.substring(0, 1) + ' ' + 
+                    soloNumeros.substring(1, 5) + ' ' + 
+                    soloNumeros.substring(5);
+    }
+  }
+
+  // ============ VALIDACIONES ============
+
+  esEmailValido(email: string): boolean {
+    if (!email) return true; // Opcional
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return regex.test(email);
+  }
+
+  esTelefonoValido(telefono: string): boolean {
+    if (!telefono || telefono === '+56 ') return true; // Opcional
+    // Debe tener formato +56 9 XXXX XXXX (exactamente 9 dígitos después del +56)
+    const soloNumeros = telefono.replace(/\D/g, '');
+    return soloNumeros.length === 11 && soloNumeros.startsWith('56'); // 56 + 9 dígitos
+  }
+
+  // ============ LÓGICA DE REGIONES Y COMUNAS ============
 
   onRegionChange(): void {
-    // 1. Buscamos el objeto región en la data
     const regionFound = this.regionesList.find(r => r.NombreRegion === this.region);
-    
-    // 2. Actualizamos las comunas disponibles
     this.comunasDisponibles = regionFound ? regionFound.comunas : [];
 
-    // 3. Si la comuna seleccionada ya no pertenece a la nueva región, la limpiamos
     if (this.comuna && !this.comunasDisponibles.includes(this.comuna)) {
       this.comuna = '';
     }
   }
 
-  // --- CARGA DE DATOS ---
+  // ============ CARGA DE DATOS ============
 
   loadSucursalesDelCliente(clientCode: string): void {
     this.cargando = true;
     this.sucursalService.getByClientCode(clientCode).subscribe({
       next: (response: any) => {
-        this.sucursales = response.sucursales || response;
+        this.sucursales = response.sucursales || response.data || response;
         this.cargando = false;
       },
       error: (error) => {
@@ -134,10 +176,49 @@ export class SucursalesComponent implements OnInit {
     });
   }
 
-  // --- CRUD ---
+  // ============ VALIDACIÓN DEL FORMULARIO ============
 
-  crearSucursal(formulario: any): void {
-    if (!this.validarFormulario()) return;
+  validarFormulario(): boolean {
+    // Nombre
+    if (!this.nombre || !this.nombre.trim()) {
+      this.mostrarMensaje('Nombre es obligatorio', 'warning');
+      return false;
+    }
+
+    // Cliente
+    if (!this.clienteSeleccionado) {
+      this.mostrarMensaje('Seleccione un cliente', 'warning');
+      return false;
+    }
+
+    // Email (si está presente)
+    if (this.emailContacto && !this.esEmailValido(this.emailContacto)) {
+      this.mostrarMensaje('Email no válido', 'warning');
+      return false;
+    }
+
+    // Teléfonos (si están presentes)
+    if (this.telefonoContacto && this.telefonoContacto !== '+56 ' && !this.esTelefonoValido(this.telefonoContacto)) {
+      this.mostrarMensaje('Teléfono principal debe tener 9 dígitos (ej: +56 9 8232 2323)', 'warning');
+      return false;
+    }
+
+    if (this.telefonoAlternativo && this.telefonoAlternativo !== '+56 ' && !this.esTelefonoValido(this.telefonoAlternativo)) {
+      this.mostrarMensaje('Teléfono alternativo debe tener 9 dígitos (ej: +56 9 8232 2323)', 'warning');
+      return false;
+    }
+
+    return true;
+  }
+
+  // ============ CRUD ============
+
+  crearSucursal(formulario: NgForm): void {
+    this.intentoGuardar = true;
+
+    if (!this.validarFormulario()) {
+      return;
+    }
 
     this.guardando = true;
 
@@ -148,8 +229,8 @@ export class SucursalesComponent implements OnInit {
       region: this.region,
       nombre_contacto: this.nombreContacto,
       email_contacto: this.emailContacto,
-      telefono_contacto: this.telefonoContacto,
-      telefono_alternativo: this.telefonoAlternativo,
+      telefono_contacto: this.telefonoContacto === '+56 ' ? undefined : this.telefonoContacto,
+      telefono_alternativo: this.telefonoAlternativo === '+56 ' ? undefined : this.telefonoAlternativo,
       comentarios: this.comentarios,
       activo: true
     };
@@ -171,6 +252,7 @@ export class SucursalesComponent implements OnInit {
         else this.loadSucursales();
 
         this.guardando = false;
+        this.intentoGuardar = false;
         if (formulario) formulario.resetForm();
       },
       error: (error) => {
@@ -184,16 +266,14 @@ export class SucursalesComponent implements OnInit {
   editarSucursal(sucursal: Sucursal): void {
     this.editando = true;
     this.sucursalEditId = sucursal.id;
+    this.intentoGuardar = false;
     
     this.nombre = sucursal.nombre;
     this.clienteSeleccionado = this.codigoCliente || this.clienteSeleccionado;
     this.direccion = sucursal.direccion || '';
     
-    // --- Lógica Especial para Selects en Edición ---
+    // Región
     this.region = sucursal.region || '';
-    
-    // Al setear la región, debemos cargar manualmente las comunas disponibles para esa región
-    // de lo contrario, el select de comunas aparecería vacío aunque tenga valor.
     if (this.region) {
       const regionFound = this.regionesList.find(r => r.NombreRegion === this.region);
       this.comunasDisponibles = regionFound ? regionFound.comunas : [];
@@ -202,16 +282,15 @@ export class SucursalesComponent implements OnInit {
     }
     
     this.comuna = sucursal.comuna || '';
-    // -----------------------------------------------
 
     this.nombreContacto = sucursal.nombre_contacto || '';
     this.emailContacto = sucursal.email_contacto || '';
-    this.telefonoContacto = sucursal.telefono_contacto || '';
-    this.telefonoAlternativo = sucursal.telefono_alternativo || '';
+    this.telefonoContacto = sucursal.telefono_contacto || '+56 ';
+    this.telefonoAlternativo = sucursal.telefono_alternativo || '+56 ';
     this.comentarios = sucursal.comentarios || '';
     
     setTimeout(() => {
-      document.querySelector('.card-body')?.scrollIntoView({ behavior: 'smooth' });
+      document.querySelector('.form-section')?.scrollIntoView({ behavior: 'smooth' });
     }, 100);
   }
 
@@ -219,9 +298,9 @@ export class SucursalesComponent implements OnInit {
     if (!confirm('¿Eliminar sucursal?')) return;
     
     const code = this.codigoCliente || this.clienteSeleccionado;
-    if(!code) {
-       this.mostrarMensaje('No se puede determinar el cliente', 'error');
-       return;
+    if (!code) {
+      this.mostrarMensaje('No se puede determinar el cliente', 'error');
+      return;
     }
 
     this.sucursalService.delete(id, code).subscribe({
@@ -234,19 +313,7 @@ export class SucursalesComponent implements OnInit {
     });
   }
 
-  // --- UTILS ---
-
-  private validarFormulario(): boolean {
-    if (!this.nombre.trim()) {
-      this.mostrarMensaje('Nombre es obligatorio', 'warning');
-      return false;
-    }
-    if (!this.clienteSeleccionado) {
-      this.mostrarMensaje('Seleccione un cliente', 'warning');
-      return false;
-    }
-    return true;
-  }
+  // ============ UTILS ============
 
   private limpiarFormulario(): void {
     this.nombre = '';
@@ -255,16 +322,17 @@ export class SucursalesComponent implements OnInit {
     this.direccion = '';
     this.region = '';
     this.comuna = '';
-    this.comunasDisponibles = []; // Limpiar lista de comunas
+    this.comunasDisponibles = [];
     
     this.nombreContacto = '';
     this.emailContacto = '';
-    this.telefonoContacto = '';
-    this.telefonoAlternativo = '';
+    this.telefonoContacto = '+56 ';
+    this.telefonoAlternativo = '+56 ';
     this.comentarios = '';
     
     this.editando = false;
     this.sucursalEditId = null;
+    this.intentoGuardar = false;
   }
 
   private mostrarMensaje(texto: string, tipo: 'success' | 'error' | 'warning' | ''): void {
@@ -277,7 +345,7 @@ export class SucursalesComponent implements OnInit {
     this.limpiarFormulario();
   }
 
-  // --- MODAL IMPRESORAS ---
+  // ============ MODAL IMPRESORAS ============
 
   abrirModalImpresoras(sucursal: Sucursal): void {
     this.sucursalSeleccionada = sucursal;
@@ -287,15 +355,21 @@ export class SucursalesComponent implements OnInit {
   cerrarModalImpresoras(): void {
     this.mostrarModalImpresoras = false;
     if (this.sucursalSeleccionada?.id) {
-       this.indexedDbService.limpiarBaseDatos().catch(console.warn);
+      this.indexedDbService.limpiarBaseDatos().catch(console.warn);
     }
     this.sucursalSeleccionada = null;
-    if(this.codigoCliente) this.loadSucursalesDelCliente(this.codigoCliente);
+    if (this.codigoCliente) this.loadSucursalesDelCliente(this.codigoCliente);
   }
 
   onActualizadoImpresoras(): void {
     sessionStorage.removeItem('clienteTreeExpandedNodes');
     sessionStorage.removeItem('clienteTreeClientesWithData');
     this.indexedDbService.limpiarBaseDatos();
+  }
+
+  autoResize(event: Event): void {
+    const textarea = event.target as HTMLTextAreaElement;
+    textarea.style.height = 'auto';
+    textarea.style.height = `${textarea.scrollHeight}px`;
   }
 }

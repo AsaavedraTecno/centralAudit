@@ -15,27 +15,22 @@ return [
     |
     */
 
-    'paths' => ['api/*', 'sanctum/csrf-cookie'],
+    'paths' => ['api/*', 'tenant/*'],
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['*'],
+    'allowed_origins' => ['*'
+            /*'https://centralaudit.tecnodatasa.cl',
+            'http://localhost:4200',    // Asegúrate de que esta URL sea exacta
+            'http://127.0.0.1:4200',    // Opcional, pero útil si usas la IP*/
+        ],
+    'allowed_origins_patterns' => ['*localhost*', '*.centralaudit.tecnodatasa.cl'],
 
-    'allowed_origins_patterns' => [],
-
-    'allowed_headers' => [
-        'Content-Type',
-        'X-Requested-With',
-        'Authorization',
-        'Accept',
-        'X-Tenant-Domain',
-        'X-Tenant-Code',
-    ],
+    'allowed_headers' => ['*'],
 
     'exposed_headers' => [],
 
     'max_age' => 0,
 
-    'supports_credentials' => true,
-
+    'supports_credentials' => false,
 ];

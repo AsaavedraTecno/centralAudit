@@ -4,9 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Tenant\Printer;
 use App\Models\Tenant\Location;
+use App\Models\Tenant; 
 use App\Services\TenantContextService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str; 
+use Stancl\Tenancy\Facades\Tenancy;
 
 class PrinterController extends Controller
 {
@@ -18,26 +21,48 @@ class PrinterController extends Controller
     }
 
     /**
-     * Lista impresoras de una sucursal con supplies y contadores
-     * GET /api/clients/{code}/sucursales/{locationId}/impresoras
+     * Helper privado para encontrar el Tenant sin romper la base de datos.
+     * Soluciona el error SQL: "invalid text representation for uuid"
      */
+    private function resolveTenant(string $code)
+    {
+        // 1. Si el código es un UUID válido (ej: 16ff531e...), buscamos por ID
+        if (Str::isUuid($code)) {
+            return Tenant::where('id', $code)->first();
+        }
+
+        // 2. Si es texto (ej: "prueba-agent"), buscamos por slug/id string si existiera, o retornamos null.
+        // Esto evita que Postgres explote al comparar texto con una columna UUID.
+        return Tenant::where('code', $code)->first();
+    }
+
     public function index(Request $request, string $code, int $locationId): JsonResponse
     {
         $tenant = $this->tenantContext->getTenantWithAccess($code, $request->user());
-
+        
         if (!$tenant) {
-            return response()->json(['error' => 'Cliente no encontrado o sin acceso'], 403);
+            return response()->json(['error' => 'Cliente no encontrado'], 404);
         }
 
-        $printers = $this->tenantContext->run($tenant, function () use ($locationId) {
+        $printers = $this->tenantContext->run($tenant, function () use ($locationId, $request) {
             $location = Location::find($locationId);
 
             if (!$location) {
                 return null;
             }
+            $query = Printer::where('location_id', $locationId);
+                if ($request->has('only_active')) {
+                    $query->where('status', 'active');
+                }
 
-            return Printer::where('location_id', $locationId)
-                ->with(['latestCounter', 'latestSupply', 'activeAlerts'])
+                return $query->with([
+                    'latestCounter',
+                    'firstCounterToday',
+                    'firstCounterThisMonth',
+                    'lastCounterYesterday',
+                    'supplies' => fn($q) => $q->where('read_at', '>=', now()->subDays(5))->orderBy('read_at', 'desc'),
+                    'activeAlerts'
+                ])
                 ->orderBy('name')
                 ->get()
                 ->map(fn($printer) => $this->formatPrinterResponse($printer));
@@ -47,59 +72,53 @@ class PrinterController extends Controller
             return response()->json(['error' => 'Sucursal no encontrada'], 404);
         }
 
-        return response()->json([
-            'impresoras' => $printers,
-        ]);
+        return response()->json(['impresoras' => $printers]);
     }
 
-    /**
-     * Detalle de una impresora
-     * GET /api/clients/{code}/sucursales/{locationId}/impresoras/{id}
-     */
     public function show(Request $request, string $code, int $locationId, int $id): JsonResponse
     {
-        $tenant = $this->tenantContext->getTenantWithAccess($code, $request->user());
+        $tenant = Tenant::where('code', $code)->firstOrFail();
 
-        if (!$tenant) {
-            return response()->json(['error' => 'Cliente no encontrado o sin acceso'], 403);
-        }
+        Tenancy::initialize($tenant);
 
-        $printer = $this->tenantContext->run($tenant, function () use ($locationId, $id) {
-            return Printer::where('location_id', $locationId)
+        try {
+            $printer = Printer::where('location_id', $locationId)
                 ->where('id', $id)
-                ->with(['latestCounter', 'latestSupply', 'activeAlerts', 'locationRelation'])
+                ->with([
+                    'latestCounter', 
+                    'firstCounterToday',      
+                    'lastCounterYesterday',  
+                    'firstCounterThisMonth',
+                    'supplies' => fn($q) => $q->limit(50)->orderBy('read_at', 'desc'),
+                    'activeAlerts', 
+                    'locationRelation'
+                ])
                 ->first();
-        });
 
-        if (!$printer) {
-            return response()->json(['error' => 'Impresora no encontrada'], 404);
+            if (!$printer) {
+                return response()->json(['error' => 'Impresora no encontrada'], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $this->formatPrinterResponse($printer, true),
+            ]);
+
+        } finally {
+            Tenancy::end();
         }
-
-        return response()->json([
-            'impresora' => $this->formatPrinterResponse($printer, true),
-        ]);
     }
 
-    /**
-     * Historial de contadores de una impresora
-     * GET /api/clients/{code}/sucursales/{locationId}/impresoras/{id}/counters
-     */
     public function counters(Request $request, string $code, int $locationId, int $id): JsonResponse
     {
-        $tenant = $this->tenantContext->getTenantWithAccess($code, $request->user());
-
-        if (!$tenant) {
-            return response()->json(['error' => 'Cliente no encontrado o sin acceso'], 403);
-        }
+        $tenant = $this->resolveTenant($code);
+        if (!$tenant) return response()->json(['error' => 'Cliente no encontrado'], 404);
 
         $days = $request->input('days', 30);
 
         $counters = $this->tenantContext->run($tenant, function () use ($id, $days) {
             $printer = Printer::find($id);
-
-            if (!$printer) {
-                return null;
-            }
+            if (!$printer) return null;
 
             return $printer->counters()
                 ->where('collected_at', '>=', now()->subDays($days))
@@ -107,35 +126,21 @@ class PrinterController extends Controller
                 ->get();
         });
 
-        if ($counters === null) {
-            return response()->json(['error' => 'Impresora no encontrada'], 404);
-        }
+        if ($counters === null) return response()->json(['error' => 'Impresora no encontrada'], 404);
 
-        return response()->json([
-            'counters' => $counters,
-        ]);
+        return response()->json(['counters' => $counters]);
     }
 
-    /**
-     * Historial de supplies de una impresora
-     * GET /api/clients/{code}/sucursales/{locationId}/impresoras/{id}/supplies
-     */
     public function supplies(Request $request, string $code, int $locationId, int $id): JsonResponse
     {
-        $tenant = $this->tenantContext->getTenantWithAccess($code, $request->user());
-
-        if (!$tenant) {
-            return response()->json(['error' => 'Cliente no encontrado o sin acceso'], 403);
-        }
+        $tenant = $this->resolveTenant($code);
+        if (!$tenant) return response()->json(['error' => 'Cliente no encontrado'], 404);
 
         $days = $request->input('days', 30);
 
         $supplies = $this->tenantContext->run($tenant, function () use ($id, $days) {
             $printer = Printer::find($id);
-
-            if (!$printer) {
-                return null;
-            }
+            if (!$printer) return null;
 
             return $printer->supplies()
                 ->where('read_at', '>=', now()->subDays($days))
@@ -143,71 +148,151 @@ class PrinterController extends Controller
                 ->get();
         });
 
-        if ($supplies === null) {
-            return response()->json(['error' => 'Impresora no encontrada'], 404);
-        }
+        if ($supplies === null) return response()->json(['error' => 'Impresora no encontrada'], 404);
 
-        return response()->json([
-            'supplies' => $supplies,
-        ]);
+        return response()->json(['supplies' => $supplies]);
     }
 
-    /**
-     * Formatea la respuesta de impresora para el frontend
-     */
     private function formatPrinterResponse(Printer $printer, bool $includeDetails = false): array
     {
         $counter = $printer->latestCounter;
-        $supply = $printer->latestSupply;
+
+        $impresoHoy = 0;
+        $impresoMes = 0;
+
+        if ($counter) {
+            // CÁLCULO DE HOY: Usamos la última lectura de ayer. 
+            // Si ayer no existía la impresora, usamos la primera de hoy como plan B.
+            if ($printer->relationLoaded('lastCounterYesterday') && $printer->lastCounterYesterday) {
+                $impresoHoy = max(0, $counter->total_pages - $printer->lastCounterYesterday->total_pages);
+            } elseif ($printer->relationLoaded('firstCounterToday') && $printer->firstCounterToday) {
+                $impresoHoy = max(0, $counter->total_pages - $printer->firstCounterToday->total_pages);
+            }
+
+            // CÁLCULO DEL MES
+            if ($printer->relationLoaded('firstCounterThisMonth') && $printer->firstCounterThisMonth) {
+                $impresoMes = max(0, $counter->total_pages - $printer->firstCounterThisMonth->total_pages);
+            }
+        }
+
+        // Obtenemos mapa de suministros
+        $suppliesMap = $printer->supplies
+            ->sortByDesc('read_at')
+            ->unique('supply_type')
+            ->pluck('percentage', 'supply_type')
+            ->toArray();
+
+        $findSmart = function(array $mustHave, array $mustNotHave = []) use ($suppliesMap) {
+            foreach ($suppliesMap as $type => $percent) {
+                $typeLower = strtolower($type);
+                $hasAll = true;
+                foreach ($mustHave as $word) {
+                    if (!str_contains($typeLower, strtolower($word))) {
+                        $hasAll = false;
+                        break;
+                    }
+                }
+                $hasForbidden = false;
+                foreach ($mustNotHave as $word) {
+                    if (str_contains($typeLower, strtolower($word))) {
+                        $hasForbidden = true;
+                        break;
+                    }
+                }
+                if ($hasAll && !$hasForbidden) {
+                    return $percent; 
+                }
+            }
+            return null; 
+        };
+
 
         $response = [
-            // Identificación
             'id' => $printer->id,
+            'internal_id' => $printer->internal_id, 
+            'brand' => $printer->brand,
             'nombre' => $printer->name,
-            'descripcion' => $printer->description,
-            'ip' => $printer->ip_address,
             'modelo' => $printer->model,
             'serie' => $printer->serial_number,
-            'marca' => $printer->brand,
+            'ip' => $printer->ip_address,
             'estado' => $printer->status === 'active' ? 1 : 0,
-            'ubicacion' => $printer->location,
+            'ubicacion' => $printer->location, 
+            'descripcion' => $printer->description,
+
+            'secondary_serial' => $printer->secondary_serial,
+            'custom_location'  => $printer->custom_location,
+            'comments'         => $printer->comments,
+            'custom_field_1'   => $printer->custom_field_1,
+            'custom_field_2'   => $printer->custom_field_2,
+            'mac'              => $printer->mac_address,
+            'firmware'         => $printer->firmware_version,
+            'last_seen_at'     => $printer->last_seen_at?->toIso8601String(),
 
             // Contadores
             'paginasImpresas' => $counter?->total_pages ?? 0,
             'paginasBN' => $counter?->bw_pages ?? 0,
             'paginasColor' => $counter?->color_pages ?? 0,
+            'impresoHoy' => $impresoHoy,
+            'impresoMes' => $impresoMes,
 
-            // Toners
-            'tonerBlack' => $supply?->toner_black,
-            'tonerCyan' => $supply?->toner_cyan,
-            'tonerMagenta' => $supply?->toner_magenta,
-            'tonerYellow' => $supply?->toner_yellow,
+            // Suministros usando el Null Coalescing (??)
+            'tonerBlack'   => $findSmart(['black', 'toner']) 
+                           ?? $findSmart(['black', 'ink'])
+                           ?? $findSmart(['black', 'cartridge'], ['drum', 'imaging', 'unit']),
 
-            // Drums
-            'drumBlack' => $supply?->drum_black,
-            'drumCyan' => $supply?->drum_cyan,
-            'drumMagenta' => $supply?->drum_magenta,
-            'drumYellow' => $supply?->drum_yellow,
+            'tonerCyan'    => $findSmart(['cyan', 'toner']) 
+                           ?? $findSmart(['cyan', 'ink'])
+                           ?? $findSmart(['cyan', 'cartridge'], ['drum', 'imaging', 'unit']),
 
-            // Reveladores
-            'reveladorBlack' => $supply?->revelador_black,
-            'reveladorMagenta' => $supply?->revelador_magenta,
-            'reveladorYellow' => $supply?->revelador_yellow,
+            'tonerMagenta' => $findSmart(['magenta', 'toner']) 
+                           ?? $findSmart(['magenta', 'ink'])
+                           ?? $findSmart(['magenta', 'cartridge'], ['drum', 'imaging', 'unit']),
 
-            // Otros consumibles
-            'fusor' => $supply?->fusor,
-            'adfRoller' => $supply?->adf_roller,
-            'transferRoller' => $supply?->transfer_roller,
-            'mpRoller' => $supply?->mp_roller,
-            'retardPad' => $supply?->retard_pad,
-            'cajaResiduos' => $supply?->waste_box,
+            'tonerYellow'  => $findSmart(['yellow', 'toner']) 
+                           ?? $findSmart(['yellow', 'ink'])
+                           ?? $findSmart(['yellow', 'cartridge'], ['drum', 'imaging', 'unit']),
 
-            // Alertas activas
-            'alertas' => $printer->activeAlerts->count(),
+            'drumBlack'    => $findSmart(['black', 'drum']) ?? $findSmart(['black', 'imaging']),
+            'drumCyan'     => $findSmart(['cyan', 'drum']) ?? $findSmart(['cyan', 'imaging']),
+            'drumMagenta'  => $findSmart(['magenta', 'drum']) ?? $findSmart(['magenta', 'imaging']),
+            'drumYellow'   => $findSmart(['yellow', 'drum']) ?? $findSmart(['yellow', 'imaging']),
+
+            'fusor'          => $findSmart(['fuser']) ?? $findSmart(['fus']), 
+            'transferRoller' => $findSmart(['transfer']),
+            'cajaResiduos'   => $findSmart(['waste']), 
+            'adfRoller'      => $findSmart(['adf', 'roller']), 
+            'retardPad'      => $findSmart(['retard']) ?? $findSmart(['adf', 'pad']), 
+            'mpRoller'       => $findSmart(['mp', 'roller']) 
+                             ?? $findSmart(['mp', 'pad']) 
+                             ?? $findSmart(['tray', 'roller']),
+
+            'alertas' => $printer->relationLoaded('activeAlerts') ? $printer->activeAlerts->count() : 0,
         ];
 
         if ($includeDetails) {
+            // ← IMPORTANTE: Incluir el array completo de supplies con CRUM
+            $suppliesArray = $printer->supplies
+                ->sortByDesc('read_at')
+                ->unique('supply_type')
+                ->map(fn($supply) => [
+                    'id' => $supply->supply_type,
+                    'name' => $supply->name,
+                    'type' => $supply->type,
+                    'percentage' => (float)$supply->percentage,
+                    'status' => $supply->status,
+                    'serial_number' => $supply->serial_number, // ← AQUÍ ESTÁ EL CRUM
+                    'description' => $supply->description
+                ])
+                ->values()
+                ->all();
+
             $response = array_merge($response, [
+                'secondary_serial' => $printer->secondary_serial,
+                'custom_location'  => $printer->custom_location,
+                'comments'         => $printer->comments,
+                'custom_field_1'   => $printer->custom_field_1,
+                'custom_field_2'   => $printer->custom_field_2,
+                
                 'mac' => $printer->mac_address,
                 'hostname' => $printer->hostname,
                 'firmware' => $printer->firmware_version,
@@ -225,9 +310,68 @@ class PrinterController extends Controller
                     'message' => $a->message,
                     'raised_at' => $a->raised_at?->toIso8601String(),
                 ]),
+                
+                // ← NUEVO: Array completo de supplies para el modal
+                'supplies' => $suppliesArray,
             ]);
         }
 
         return $response;
+    }
+
+    public function updateStatus(Request $request, $code, $serie)
+    {
+        $request->validate([
+            'status' => 'required|in:active,not active'
+        ]);
+
+        // Buscamos el tenant por el código que viene en la URL
+        $tenant = $this->resolveTenant($code);
+        if (!$tenant) return response()->json(['error' => 'Tenant no encontrado'], 404);
+
+        // Entramos a la base de datos de ese cliente específico
+        $this->tenantContext->run($tenant, function () use ($serie, $request) {
+            $printer = Printer::where('serial_number', $serie)->firstOrFail();
+            $printer->update(['status' => $request->status]);
+        });
+
+        return response()->json(['message' => 'Estado actualizado con éxito']);
+    }
+
+    public function updateAdminFields(Request $request, $code, $id)
+    {
+        // Encontrar el tenant por código
+        $tenant = Tenant::where('code', $code)->firstOrFail();
+
+        // Inicializar tenancy para acceder a su BD
+        Tenancy::initialize($tenant);
+
+        try {
+            // Buscar la impresora en la BD del tenant
+            $printer = \App\Models\Tenant\Printer::findOrFail($id);
+
+            // Validar datos
+            $validated = $request->validate([
+                'internal_id'      => 'nullable|string|max:100',
+                'secondary_serial' => 'nullable|string|max:100',
+                'custom_location'  => 'nullable|string|max:255',
+                'comments'         => 'nullable|string',
+                'custom_field_1'   => 'nullable|string|max:255',
+                'custom_field_2'   => 'nullable|string|max:255',
+            ]);
+
+            // Actualizar
+            $printer->update($validated);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Datos de inventario actualizados',
+                'data'    => $printer
+            ]);
+
+        } finally {
+            // Terminar tenancy para volver a la BD central
+            Tenancy::end();
+        }
     }
 }

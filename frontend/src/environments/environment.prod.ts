@@ -1,5 +1,7 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://tu-dominio-de-produccion.com/api' // <-- ¡IMPORTANTE! Cambia esto por la URL real de tu servidor
+  apiUrl: 'https://apicentralaudit.tecnodatasa.cl/api', // <-- ¡IMPORTANTE! Cambia esto por la URL real de tu servidor
+  tenantUrl: 'https://apicentralaudit.tecnodatasa.cl/tenant' // <-- ¡IMPORTANTE! Cambia esto por la URL real de tu servidor
+
 };
 

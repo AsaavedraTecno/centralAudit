@@ -23,7 +23,7 @@ class Location extends Model
     ];
 
     protected $casts = [
-        'active' => 'boolean',
+        'activo' => 'boolean',
     ];
 
     /**
@@ -39,7 +39,7 @@ class Location extends Model
      */
     public function scopeActive($query)
     {
-        return $query->where('active', true);
+        return $query->where('activo', true);
     }
 
     // Una sucursal tiene muchos agentes instalados

@@ -1,747 +1,633 @@
-import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, ViewChild, ElementRef, HostListener, PLATFORM_ID, Inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, ViewChild, ElementRef, PLATFORM_ID, Inject, OnDestroy } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ClienteService } from '../../../core/services/cliente.service';
 import { ImpresoraService } from '../../../core/services/impresora.service';
 import { SucursalService } from '../../../core/services/sucursal.service';
-import { ClienteIndexedDbService } from '../../../core/services/cliente-indexed-db.service';
 import { Cliente } from '../../../models/cliente';
 import { Sucursal } from '../../../models/sucursal';
 import { Impresora } from '../../../models/impresora';
-import { isPlatformBrowser } from '@angular/common'; // Añadir isPlatformBrowser
+import { DetalleImpresoraModalComponent } from '../../../shared/monitoreo/detalle-impresora-modal/detalle-impresora-modal.component';
+import { DetalleImpresoraService } from '../../../shared/services/detalle-impresora.service';
+import { ToastService } from '../../../core/services/toast.service'; 
+import { Subscription, interval } from 'rxjs';
+import { VistaStateService } from '../../../shared/services/vista-state.service';
+import { VistaPersonalizadaService } from '../../../shared/services/vista-personalizada.service';
+import {
+  VistaPersonalizada,
+  ColumnaVistaSistema,
+  ColumnaVistaUI,
+  VistaPersonalizadaListResponse,
+  ColumnasDisponiblesResponse
+} from '../../../models/vista-personalizada';
 
 @Component({
   selector: 'app-cliente-tree',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, DetalleImpresoraModalComponent],
   templateUrl: './cliente-tree.component.html',
   styleUrls: ['./cliente-tree.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ClienteTreeComponent implements OnInit {
+
+export class ClienteTreeComponent implements OnInit, OnDestroy {
+  // ================= VISTAS =================
+
+  vistas: VistaPersonalizada[] = [];
+  vistaActivaId?: number;
+
+  private columnasSistema: ColumnaVistaSistema[] = [];
+  columnasVisibles: ColumnaVistaUI[] = [];
+
+
   busqueda: string = '';
   clientes: Cliente[] = [];
   expandedNodes: { [key: string]: boolean } = {};
-  loadingNodes: { [key: string]: boolean } = {}; // Para rastrear qué nodos están cargando
+  loadingNodes: { [key: string]: boolean } = {}; 
   loading = false;
   currentPage = 1;
   totalPages = 1;
   totalClientes = 0;
   clientesPerPage = 50;
   
-  // Array de columnas vacías (para replicar en filas de cliente y sucursal)
-  emptyColumns = Array(25).fill(null);
+  emptyColumns = Array(27).fill(null);
   
   @ViewChild('scrollContainer', { static: false }) scrollContainer?: ElementRef<HTMLElement>;
   
   private buscarTimeout: any;
   private isLoadingData = false;
   private isSearching = false;
-  private sessionStorageSaveTimeout: any;
-  
-  // Cache LRU - solo últimas 5 páginas para ahorrar memoria
-  private readonly MAX_CACHED_PAGES = 5;
-  private readonly CACHE_EXPIRY_MINUTES = 30;
-  private pageCacheKeys: string[] = [];
-  
-  // SessionStorage para persistencia de estado en la sesión
-  private readonly EXPANDED_NODES_SESSION_KEY = 'clienteTreeExpandedNodes';
-  private readonly CLIENTES_WITH_DATA_SESSION_KEY = 'clienteTreeClientesWithData';
-  private readonly SESSION_SAVE_THROTTLE_MS = 500;
-  private readonly CURRENT_USER_SESSION_KEY = 'currentUserForCache'; // Para validar que no cambió usuario
-  
-  // Prevenir cargas simultáneas de sucursales e impresoras
+
   private loadingSuccursales = new Set<string>();
   private loadingImpresoras = new Set<string>();
   
-  // Modal de detalles de impresora
   impresora_seleccionada: Impresora | null = null;
   mostrar_modal_detalles: boolean = false;
-  
-  // NOTA: NO cachea sucursales/impresoras (solo página de clientes)
-  // Esto reduce localStorage de MEGA BYTES a KILOBYTES
+
+  ultimaActualizacion: Date = new Date();
+  private autoRefreshSub?: Subscription;
 
   constructor(
+    private vistaState: VistaStateService,
+    private vistaService: VistaPersonalizadaService,
+    private detalleService: DetalleImpresoraService,
+    private toastService: ToastService,
     private sucursalService: SucursalService, 
     private clienteService: ClienteService,
     private impresoraService: ImpresoraService,
-    private indexedDbService: ClienteIndexedDbService,
     private cdr: ChangeDetectorRef,
-    private elementRef: ElementRef,
-    @Inject(PLATFORM_ID) private platformId: Object // Inyectar PLATFORM_ID
+    @Inject(PLATFORM_ID) private platformId: Object 
   ) { }
-  
+    
   ngOnInit(): void {
-    // Validar que el usuario no cambió
 
-    if (isPlatformBrowser(this.platformId)) {
-      this.validateSessionUser();
-      
-      // Detectar cambio en clientesPerPage y limpiar caché si es necesario
-      const savedClientesPerPage = localStorage.getItem('lastClientesPerPage');
-      if (savedClientesPerPage && parseInt(savedClientesPerPage) !== this.clientesPerPage) {
-        this.clearCache();
-      }
-      localStorage.setItem('lastClientesPerPage', this.clientesPerPage.toString());
-      
-      // Restaurar estado de expansión desde SessionStorage
-      this.restoreExpandedNodesFromSession();
-      this.loadClientes();
-      
-      // Scroll horizontal con Shift+scroll
-      window.addEventListener('wheel', (event: WheelEvent) => {
-        if (event.shiftKey && this.scrollContainer) {
-          event.preventDefault();
-          this.scrollContainer!.nativeElement.scrollLeft += event.deltaY > 0 ? 200 : -200;
-        }
-      }, { passive: false });
+    this.vistaService.obtenerColumnasDisponibles().subscribe(res => {
+      this.vistaState.establecerColumnasDisponibles(res.columnas);
+    });
+
+    this.recargarVistas();
+
+    this.vistaState.obtenerColumnasVisibles().subscribe(cols => {
+      this.columnasVisibles = cols;
+      this.cdr.markForCheck();
+    });
+
+    this.loadClientes();
+    this.iniciarAutoRefresh();
+  }
+
+  ngOnDestroy(): void {
+    if (this.autoRefreshSub) {
+      this.autoRefreshSub.unsubscribe();
     }
   }
-  
-  loadClientes(): void {
-    // No usar caché cuando estamos buscando
-    if (this.isSearching) {
-      this.loadClientesFromServer();
+
+  obtenerValor(impresora:any,col:any){
+    return impresora[col.identificador] ?? null;
+  }
+
+  cambiarVista(id: any) {
+
+    const idNumber = Number(id);
+
+    const vista = this.vistas.find(v => v.id === idNumber);
+    if (!vista) {
+      console.log('Vista no encontrada para id:', idNumber);
       return;
     }
 
-    // Intentar cargar desde caché primero
-    try {
-      const cacheData = this.getFromCache(this.currentPage);
-      if (cacheData && cacheData.clientes && cacheData.clientes.length > 0) {
-        this.clientes = cacheData.clientes;
-        this.totalClientes = cacheData.totalClientes || 0;
-        this.totalPages = cacheData.totalPages || 1;
-        this.restoreClientesWithDataFromSession();
-        return;
-      }
-    } catch (e) {
-      console.warn('Cache load failed');
-    }
+    this.vistaActivaId = idNumber;
+    localStorage.setItem('vista_activa', String(idNumber));
 
+    this.vistaState.establecerVistaActiva(vista);
+  }
+
+  recargarVistas(seleccionarUltima: boolean = true) {
+
+    this.vistaService.obtenerVistas().subscribe(res => {
+
+      this.vistas = res.data;
+
+      if (!this.vistas.length) return;
+
+      let vistaInicial: VistaPersonalizada | undefined;
+
+      if (seleccionarUltima) {
+
+        const vistaGuardada = localStorage.getItem('vista_activa');
+
+        if (vistaGuardada) {
+          vistaInicial = this.vistas.find(v => v.id === Number(vistaGuardada));
+        }
+
+      }
+
+      if (!vistaInicial) {
+        vistaInicial = this.vistas.find(v => v.es_default) || this.vistas[0];
+      }
+
+      this.vistaActivaId = vistaInicial.id;
+
+      this.vistaState.establecerVistaActiva(vistaInicial);
+
+      this.cdr.markForCheck();
+
+    });
+
+  }
+    
+
+  iniciarAutoRefresh(): void {
+    // Se ejecuta cada 60 segundos (60000 ms)
+    this.autoRefreshSub = interval(600000).subscribe(() => {
+      // Solo recargamos si no hay una búsqueda activa ni está cargando otra cosa
+      if (!this.isSearching && !this.isLoadingData) {
+        this.recargarSilenciosamente();
+      }
+    });
+  }
+
+  async recargarSilenciosamente(): Promise<void> {
+    this.ultimaActualizacion = new Date();
+    this.cdr.markForCheck();
+
+    // Para recargar solo las impresoras que el usuario está viendo actualmente.
+    for (const nodeId of Object.keys(this.expandedNodes)) {
+      if (this.expandedNodes[nodeId] && nodeId.startsWith('sucursal_')) {
+        const parts = nodeId.split('_');
+        const clientCode = parts[1];
+        const sucursalIdStr = parts[parts.length - 1];
+        
+        const cliente = this.clientes.find(c => c.code === clientCode || c.rut === clientCode);
+        if (cliente && cliente.sucursales) {
+          const sucursalIdx = cliente.sucursales.findIndex(s => String(s.id) === sucursalIdStr);
+          if (sucursalIdx !== -1) {
+            await this.cargarImpresiorasDelaSucursal(cliente, sucursalIdx, nodeId);
+          }
+        }
+      }
+    }
+    this.toastService.show('Datos de impresoras actualizados', 'info');
+  }
+  
+  loadClientes(): void {
+    this.currentPage = 1;
     this.loadClientesFromServer();
   }
 
   private loadClientesFromServer(): void {
     if (this.isLoadingData) return;
-    
     this.isLoadingData = true;
     this.loading = true;
     
-    // Cargar con paginación de 50 clientes
-    this.clienteService.getClientes(this.currentPage, this.clientesPerPage).subscribe({
+    const request$ = this.isSearching 
+      ? this.clienteService.searchClientes(this.busqueda.trim(), this.currentPage, this.clientesPerPage)
+      : this.clienteService.getClientes(this.currentPage, this.clientesPerPage);
+
+    request$.subscribe({
       next: (response) => {
-        if (response?.success && response?.data?.length > 0) {
-          this.clientes = response.data;
-          // Leer de pagination si existe
-          this.totalClientes = response.pagination?.total || response.total || response.data.length;
-          this.totalPages = response.pagination?.last_page || response.last_page || 
-            Math.ceil(this.totalClientes / this.clientesPerPage);
-          
-          // Guardar en caché LRU
-          this.saveToCache(this.currentPage, this.clientes, {
-            totalClientes: this.totalClientes,
-            totalPages: this.totalPages
-          });
-          
-          // Guardar en IndexedDB para búsqueda rápida
-          this.indexedDbService.guardarClientes(this.clientes).then(() => {
-            this.restoreClientesWithDataFromSession();
-            this.cdr.detectChanges();
-          });
-        } else {
-          this.clientes = [];
-          this.totalClientes = 0;
-          this.totalPages = 1;
+        const rawData = response?.data || response?.clients || response;
+        if (rawData && Array.isArray(rawData)) {
+          this.clientes = rawData.map((c: any) => ({
+            ...c,
+            printers_count: c.printers_count ?? 0
+          }));
+          console.log(rawData);
+          this.totalClientes = response.pagination?.total || response.total || rawData.length;
+          this.totalPages = response.pagination?.last_page || response.last_page || Math.ceil(this.totalClientes / this.clientesPerPage);
         }
         this.loading = false;
         this.isLoadingData = false;
+        this.cdr.markForCheck();
       },
       error: (error) => {
-        console.error('Load clientes failed:', error);
+        console.error('Error loading clientes:', error);
         this.loading = false;
         this.isLoadingData = false;
+        this.cdr.markForCheck();
       }
     });
-  }
-
-  private saveToCache(page: number, data: Cliente[], pagination: { totalClientes: number; totalPages: number }): void {
-    if (!isPlatformBrowser(this.platformId)) {
-      return; 
-    } // Protección SSR
-    try {
-      const cacheKey = `clientesPage_${page}`;
-      const cacheData = {
-        clientes: data,
-        totalClientes: pagination.totalClientes,
-        totalPages: pagination.totalPages,
-        timestamp: Date.now()
-      };
-      
-      localStorage.setItem(cacheKey, JSON.stringify(cacheData));
-      
-      // Rastrear orden de acceso para LRU
-      if (!this.pageCacheKeys.includes(cacheKey)) {
-        this.pageCacheKeys.push(cacheKey);
-      } else {
-        this.pageCacheKeys = this.pageCacheKeys.filter(k => k !== cacheKey);
-        this.pageCacheKeys.push(cacheKey);
-      }
-      
-      // Si excede máximo, borrar la más antigua
-      if (this.pageCacheKeys.length > this.MAX_CACHED_PAGES) {
-        const oldestKey = this.pageCacheKeys.shift();
-        if (oldestKey) localStorage.removeItem(oldestKey);
-      }
-    } catch (error) {
-      console.warn('Cache save failed');
-    }
-  }
-
-  private getFromCache(page: number): { clientes: Cliente[]; totalClientes: number; totalPages: number } | null {
-    if (!isPlatformBrowser(this.platformId)) {
-      return null; 
-    } // Protección SSR
-    try {
-      // Validar que el usuario no ha cambiado
-      if (!this.isValidSessionUser()) {
-        console.log('Session user changed, invalidating cache');
-        this.clearCache();
-        return null;
-      }
-
-      const cacheKey = `clientesPage_${page}`;
-      const cached = localStorage.getItem(cacheKey);
-      if (!cached) return null;
-
-      const cacheData = JSON.parse(cached);
-      const expiryTime = this.CACHE_EXPIRY_MINUTES * 60 * 1000;
-
-      // Verificar si el caché ha expirado
-      if (Date.now() - cacheData.timestamp > expiryTime) {
-        localStorage.removeItem(cacheKey);
-        this.pageCacheKeys = this.pageCacheKeys.filter(k => k !== cacheKey);
-        return null;
-      }
-
-      // Marcar como recientemente usado (para LRU)
-      if (this.pageCacheKeys.includes(cacheKey)) {
-        this.pageCacheKeys = this.pageCacheKeys.filter(k => k !== cacheKey);
-        this.pageCacheKeys.push(cacheKey);
-      }
-
-      return {
-        clientes: cacheData.clientes || [],
-        totalClientes: cacheData.totalClientes || 0,
-        totalPages: cacheData.totalPages || 1
-      };
-    } catch (error) {
-      console.warn('Cache read failed');
-      return null;
-    }
-  }
-
-  /**
-   * Validar que el usuario actual es el mismo que cuando se cachó
-   */
-  private isValidSessionUser(): boolean {
-    if (!isPlatformBrowser(this.platformId)) return false; // Protección SSR
-    try {
-      const currentUserId = localStorage.getItem('idUser') || localStorage.getItem('id_user');
-      const cachedUserId = localStorage.getItem(this.CURRENT_USER_SESSION_KEY);
-      
-      // Si no hay usuario actual, es inválido
-      if (!currentUserId) {
-        return false;
-      }
-      
-      // Si no hay usuario cacheado, cachearlo ahora
-      if (!cachedUserId) {
-        localStorage.setItem(this.CURRENT_USER_SESSION_KEY, currentUserId);
-        return true;
-      }
-      
-      // Comparar usuarios
-      const isValid = currentUserId === cachedUserId;
-      return isValid;
-    } catch (error) {
-      console.warn('Error validating session user:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Validar la sesión del usuario al iniciar el componente
-   */
-  private validateSessionUser(): void {
-    if (!isPlatformBrowser(this.platformId)) return; // Protección SSR
-    try {
-      const currentUserId = localStorage.getItem('idUser') || localStorage.getItem('id_user');
-      const cachedUserId = localStorage.getItem(this.CURRENT_USER_SESSION_KEY);
-      
-      // Si cambió de usuario, limpiar todo
-      if (cachedUserId && currentUserId && cachedUserId !== currentUserId) {
-        console.log('User changed, clearing all caches');
-        this.clearCache();
-        this.clearExpandedNodesSession();
-        // Limpiar IndexedDB
-        this.indexedDbService.limpiarBaseDatos().catch(err => {
-          console.warn('IndexedDB clear on user change failed:', err);
-        });
-      }
-      
-      // Actualizar usuario actual en caché
-      if (currentUserId) {
-        localStorage.setItem(this.CURRENT_USER_SESSION_KEY, currentUserId);
-        // Actualizar metadatos en IndexedDB también
-        this.indexedDbService.actualizarSessionMetadata(currentUserId).catch(err => {
-          console.warn('Error updating session metadata in IndexedDB:', err);
-        });
-      }
-    } catch (error) {
-      console.warn('Error validating session:', error);
-    }
-  }
-
-  /**
-   * Validar que los datos de IndexedDB sean de la sesión actual
-   */
-  private async validarIndexedDbSession(): Promise<boolean> {
-    try {
-      const currentUserId = localStorage.getItem('idUser') || localStorage.getItem('id_user');
-      if (!currentUserId) {
-        return false;
-      }
-      
-      const isValid = await this.indexedDbService.validarSessionActual(currentUserId);
-      return isValid;
-    } catch (error) {
-      console.warn('Error validating IndexedDB session:', error);
-      return false;
-    }
-  }
-
-  private clearCache(): void {
-      if (!isPlatformBrowser(this.platformId)) return; // Protección SSR
-    
-    try {
-      this.pageCacheKeys.forEach(key => localStorage.removeItem(key));
-      this.pageCacheKeys = [];
-    } catch (error) {
-      console.warn('Cache clear failed');
-    }
-  }
-
-  private getSucursalesEnCache(clienteRut: string): Sucursal[] | null {
-    // No cacheamos sucursales - siempre null
-    return null;
-  }
-
-  private async cargarImpresiorasDelaSucursal(cliente: Cliente, sucursalIndex: number, nodeId: string): Promise<void> {
-    const sucursal = cliente.sucursales![sucursalIndex];
-    // Convertir a número para usar como clave consistente
-    const sucursalId = typeof sucursal.id === 'string' ? parseInt(sucursal.id) : sucursal.id || 0;
-    const loadingKey = `sucursal_${sucursalId}`;
-    
-    // Prevenir cargas simultáneas
-    if (this.loadingImpresoras.has(loadingKey) || !sucursalId) return;
-    
-    this.loadingImpresoras.add(loadingKey);
-    
-    try {
-      // Validar que la sesión en IndexedDB sea la actual
-      const isValidSession = await this.validarIndexedDbSession();
-      
-      // Intentar desde IndexedDB primero (solo si la sesión es válida)
-      if (isValidSession) {
-        const impresiorasIndexedDb = await this.indexedDbService.obtenerImpresiorasDelaSucursal(sucursalId);
-        
-        if (impresiorasIndexedDb?.length > 0) {
-          sucursal.impresoras = impresiorasIndexedDb.map((imp: any) => ({
-            ...imp,
-            sucursal_nombre: sucursal.nombre || `Sucursal ${sucursalId}`
-          })) as Impresora[];
-          this.loadingNodes[nodeId] = false;
-          this.cdr.detectChanges();
-          return;
-        }
-      }
-      
-      // Si no está en IndexedDB o sesión inválida, obtener del servidor
-      const clientCode = cliente.code || cliente.rut;
-      const impresiorasResponse = await this.impresoraService
-        .getImpresoras(clientCode, sucursalId)
-        .toPromise();
-      
-      if (impresiorasResponse?.data?.length > 0) {
-        // Mapear respuesta a impresoras
-        sucursal.impresoras = impresiorasResponse.data.map((imp: any) => ({
-          id: imp.id,
-          nombre: imp.nombre,
-          descripcion: imp.descripcion,
-          ubicacion: imp.ubicacion,
-          modelo: imp.modelo,
-          serie: imp.serie,
-          ip: imp.ip,
-          estado: imp.estado,
-          cod_clie: imp.cod_clie,
-          paginasImpresas: imp.paginasImpresas,
-          paginasBN: imp.paginasBN,
-          paginasColor: imp.paginasColor,
-          tonerBlack: imp.tonerBlack,
-          tonerCyan: imp.tonerCyan,
-          tonerMagenta: imp.tonerMagenta,
-          tonerYellow: imp.tonerYellow,
-          drumBlack: imp.drumBlack,
-          drumCyan: imp.drumCyan,
-          drumMagenta: imp.drumMagenta,
-          drumYellow: imp.drumYellow,
-          reveladorBlack: imp.reveladorBlack,
-          reveladorMagenta: imp.reveladorMagenta,
-          reveladorYellow: imp.reveladorYellow,
-          fusor: imp.fusor,
-          adfRoller: imp.adfRoller,
-          transferRoller: imp.transferRoller,
-          mpRoller: imp.mpRoller,
-          retardPad: imp.retardPad,
-          cajaResiduos: imp.cajaResiduos,
-          sucursal_nombre: sucursal.nombre || `Sucursal ${sucursalId}`
-        } as Impresora));
-        
-        // Guardar en IndexedDB para próximas veces
-        await this.indexedDbService.guardarImpresoras(sucursalId, impresiorasResponse.data);
-        this.saveClientesWithDataToSession();
-        this.loadingNodes[nodeId] = false;
-        this.cdr.detectChanges();
-      }
-    } catch (error) {
-      console.error(`Error loading printers for sucursal ${sucursalId}:`, error);
-      this.loadingNodes[nodeId] = false;
-      this.cdr.detectChanges();
-    } finally {
-      this.loadingImpresoras.delete(loadingKey);
-    }
-  }
-
-  toggleNode(nodeId: string): void {
-    if (!isPlatformBrowser(this.platformId)) return; // Protección SSR
-
-    this.expandedNodes[nodeId] = !this.expandedNodes[nodeId];
-    this.saveExpandedNodesToSession();
-
-    this.cdr.detectChanges();
-    
-    // Si se está colapsando, limpiar estado de carga
-    if (!this.expandedNodes[nodeId]) {
-      if (this.loadingNodes[nodeId]) {
-        delete this.loadingNodes[nodeId];
-      }
-      return;
-    }
-    
-    // Si es un cliente y se abre, cargar sucursales on-demand
-    if (nodeId.startsWith('cliente_')) {
-      const clienteRut = nodeId.replace('cliente_', '');
-      const cliente = this.clientes.find(c => c.rut === clienteRut);
-      if (cliente && this.expandedNodes[nodeId]) {
-        // Si ya tiene datos, solo actualizar UI
-        if (cliente.sucursales && cliente.sucursales.length > 0) {
-          if (this.loadingNodes[nodeId]) {
-            delete this.loadingNodes[nodeId];
-            this.cdr.detectChanges();
-          }
-          return;
-        }
-        // Si no tiene datos, cargar
-        if (!this.loadingNodes[nodeId]) {
-          this.loadingNodes[nodeId] = true;
-          this.cdr.detectChanges();
-          this.cargarSucursalesOnDemand(cliente, nodeId);
-        }
-      }
-    } 
-    // Si es una sucursal y se abre, cargar impresoras on-demand
-    // Formato: sucursal_{clientCode}_{sucursalId}
-    else if (nodeId.startsWith('sucursal_')) {
-      const parts = nodeId.split('_');
-      // parts = ['sucursal', clientCode, sucursalId]
-      if (parts.length >= 3) {
-        const clientCode = parts[1];
-        const sucursalIdStr = parts[parts.length - 1];
-        
-        const cliente = this.clientes.find(c => c.code === clientCode || c.rut === clientCode);
-        if (cliente && cliente.sucursales && this.expandedNodes[nodeId]) {
-          const sucursal = cliente.sucursales.find(s => String(s.id) === sucursalIdStr);
-          if (sucursal) {
-            // Si ya tiene impresoras, solo actualizar UI
-            if (sucursal.impresoras && sucursal.impresoras.length > 0) {
-              if (this.loadingNodes[nodeId]) {
-                delete this.loadingNodes[nodeId];
-                this.cdr.detectChanges();
-              }
-              return;
-            }
-            // Si no tiene impresoras, cargar
-            if (!this.loadingNodes[nodeId]) {
-              const idx = cliente.sucursales.indexOf(sucursal);
-              if (idx >= 0) {
-                this.loadingNodes[nodeId] = true;
-                this.cdr.detectChanges();
-                this.cargarImpresiorasDelaSucursal(cliente, idx, nodeId);
-              }
-            }
-            return;
-          }
-        }
-      }
-    }
   }
 
   private async cargarSucursalesOnDemand(cliente: Cliente, nodeId: string): Promise<void> {
     const loadingKey = `cliente_${cliente.rut}`;
     if (this.loadingSuccursales.has(loadingKey)) return;
-    
     this.loadingSuccursales.add(loadingKey);
     
     try {
-      // Validar que la sesión en IndexedDB sea la actual
-      const isValidSession = await this.validarIndexedDbSession();
-      
-      // Intentar desde IndexedDB primero (solo si la sesión es válida)
-      if (isValidSession) {
-        const sucursalesIndexedDb = await this.indexedDbService.obtenerSucursalesDelCliente(cliente.rut);
-        
-        if (sucursalesIndexedDb?.length > 0) {
-          cliente.sucursales = sucursalesIndexedDb as unknown as Sucursal[];
-          (cliente.sucursales ?? []).forEach(s => { if (!s.impresoras) s.impresoras = undefined; });
-          this.saveClientesWithDataToSession();
-          this.loadingNodes[nodeId] = false;
-          this.cdr.detectChanges();
-          return;
-        }
+      const response: any = await this.sucursalService.getByClientCode(cliente.code).toPromise();
+      const lista = response?.data || response?.sucursales || response;
+
+      if (Array.isArray(lista)) {
+        this.updateClienteInList(cliente.rut, lista);
       }
-      
-      // Si no está en IndexedDB o sesión inválida, obtener del servidor
-      const sucursales = await this.sucursalService.getByClientCode(cliente.code).toPromise();
-      
-      if (sucursales && sucursales.length > 0) {
-        cliente.sucursales = sucursales;
-        (cliente.sucursales ?? []).forEach(s => { if (!s.impresoras) s.impresoras = undefined; });
-        
-        // Guardar en IndexedDB para próximas veces
-        await this.indexedDbService.guardarSucursales(cliente.rut, sucursales as any[]);
-        
-        this.saveClientesWithDataToSession();
-        this.loadingNodes[nodeId] = false;
-        this.cdr.detectChanges();
-      } else {
-        cliente.sucursales = [];
-        this.loadingNodes[nodeId] = false;
-        this.cdr.detectChanges();
-      }
+      this.finalizarCargaNodo(nodeId);
     } catch (error) {
-      console.error(`Error loading sucursales for ${cliente.rut}:`, error);
-      this.loadingNodes[nodeId] = false;
-      this.cdr.detectChanges();
+      console.error(`Error loading sucursales:`, error);
+      this.finalizarCargaNodo(nodeId);
     } finally {
       this.loadingSuccursales.delete(loadingKey);
     }
   }
-  
+
+  private async cargarImpresiorasDelaSucursal(cliente: Cliente, sucursalIndex: number, nodeId: string): Promise<void> {
+    const sucursal = cliente.sucursales![sucursalIndex];
+    const sucursalId = typeof sucursal.id === 'string' ? parseInt(sucursal.id) : sucursal.id || 0;
+    const loadingKey = `suc_${cliente.rut}_${sucursalId}`;
+    
+    if (this.loadingImpresoras.has(loadingKey)) return;
+    this.loadingImpresoras.add(loadingKey);
+    
+    try {
+      const response: any = await this.impresoraService.getImpresoras(cliente.code || cliente.rut, sucursalId).toPromise();
+      const rawData = response?.data || response?.impresoras || response;
+
+      if (Array.isArray(rawData)) {
+        // Filtrar solo impresoras activas
+        const activas = rawData.filter((imp: any) => imp.estado === 1);
+        this.updateSucursalInList(cliente.rut, sucursalId, activas);
+      }
+      this.finalizarCargaNodo(nodeId);
+    } catch (error) {
+      console.error(`Error loading printers:`, error);
+      this.finalizarCargaNodo(nodeId);
+    } finally {
+      this.loadingImpresoras.delete(loadingKey);
+    }
+  }
+
+  private updateClienteInList(rut: string, sucursales: Sucursal[]) {
+    this.clientes = this.clientes.map(c => {
+      if (c.rut === rut) {
+        return { 
+          ...c, 
+          sucursales: sucursales.map(s => ({ ...s, impresoras: undefined })) 
+        };
+      }
+      return c;
+    });
+    this.cdr.markForCheck();
+  }
+
+  private updateSucursalInList(clientRut: string, sucursalId: number, impresoras: any[]) {
+    this.clientes = this.clientes.map(c => {
+      if (c.rut === clientRut && c.sucursales) {
+        return {
+          ...c,
+          sucursales: c.sucursales.map(s => {
+            if (Number(s.id) === sucursalId) {
+              return { ...s, impresoras: [...impresoras] };
+            }
+            return s;
+          })
+        };
+      }
+      return c;
+    });
+    this.cdr.markForCheck();
+  }
+
+  private finalizarCargaNodo(nodeId: string) {
+    this.loadingNodes = { ...this.loadingNodes };
+    delete this.loadingNodes[nodeId];
+    this.cdr.markForCheck();
+  }
+
+  toggleNode(nodeId: string): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+
+    this.expandedNodes = { ...this.expandedNodes, [nodeId]: !this.expandedNodes[nodeId] };
+
+    if (!this.expandedNodes[nodeId]) return;
+    
+    if (nodeId.startsWith('cliente_')) {
+      const rut = nodeId.replace('cliente_', '');
+      const cliente = this.clientes.find(c => c.rut === rut);
+      if (cliente && (!cliente.sucursales || cliente.sucursales.length === 0)) {
+        this.loadingNodes = { ...this.loadingNodes, [nodeId]: true };
+        this.cargarSucursalesOnDemand(cliente, nodeId);
+      }
+    } 
+    else if (nodeId.startsWith('sucursal_')) {
+      const parts = nodeId.split('_');
+      const clientCode = parts[1];
+      const sucursalIdStr = parts[parts.length - 1];
+      
+      const cliente = this.clientes.find(c => c.code === clientCode || c.rut === clientCode);
+      if (cliente?.sucursales) {
+        const sucursalIdx = cliente.sucursales.findIndex(s => String(s.id) === sucursalIdStr);
+        if (sucursalIdx !== -1 && !cliente.sucursales[sucursalIdx].impresoras) {
+          this.loadingNodes = { ...this.loadingNodes, [nodeId]: true };
+          this.cargarImpresiorasDelaSucursal(cliente, sucursalIdx, nodeId);
+        }
+      }
+    }
+    this.cdr.markForCheck();
+  }
+
+  // ============ BÚSQUEDA ============
+
   onBuscarRealtime(): void {
     clearTimeout(this.buscarTimeout);
     this.currentPage = 1;
     this.buscarTimeout = setTimeout(() => {
-      const termino = this.busqueda.trim().toLowerCase();
-      if (!termino) {
-        this.isSearching = false;
-        this.loadClientes();
-        return;
+      if (!this.busqueda.trim()) { 
+        this.isSearching = false; 
+        this.loadClientes(); 
+        return; 
       }
-      
       this.isSearching = true;
-      this.loading = true;
-      
-      // Usar búsqueda unificada
-      const searchTerm = this.busqueda.trim();
-      
-      this.clienteService.searchClientes(searchTerm, this.currentPage, this.clientesPerPage).subscribe({
-        next: (response) => {
-          if (response.data) {
-            this.clientes = response.data;
-            // Leer de pagination si existe
-            this.totalClientes = response.pagination?.total || response.total || response.data.length;
-            this.totalPages = response.pagination?.last_page || response.last_page || 
-              Math.ceil(this.totalClientes / this.clientesPerPage);
-            this.cdr.markForCheck();
-          }
-          this.loading = false;
-        },
-        error: (error) => {
-          console.error('Search error:', error);
-          this.loading = false;
-        }
-      });
+      this.loadClientesFromServer();
     }, 350);
   }
 
-  onLimpiarBusqueda(): void {
-    this.busqueda = '';
-    this.isSearching = false;
-    this.isLoadingData = false;
-    this.currentPage = 1;
-    this.loadClientes();
+  onLimpiarBusqueda(): void { 
+    this.busqueda = ''; 
+    this.isSearching = false; 
+    this.currentPage = 1; 
+    this.loadClientes(); 
   }
+
+  // ============ PAGINACIÓN ============
+
+  previousPage(): void { 
+    if (this.currentPage > 1) { 
+      this.currentPage--; 
+      this.loadClientesFromServer(); 
+    } 
+  }
+  
+  nextPage(): void { 
+    if (this.currentPage < this.totalPages) { 
+      this.currentPage++; 
+      this.loadClientesFromServer(); 
+    } 
+  }
+
+  // ============ RECARGAR ============
 
   forzarRecarga(): void {
-    // Limpiar caché localStorage
-    this.clearCache();
-    // Limpiar estado expandido
-    this.expandedNodes = {};
-    this.clearExpandedNodesSession();
-    // Resetear paginación y búsqueda
-    this.currentPage = 1;
-    this.isSearching = false;
-    this.busqueda = '';
-    
-    // Limpiar IndexedDB en background
-    this.indexedDbService.limpiarBaseDatos().catch(err => {
-      console.warn('IndexedDB clear failed:', err);
-    });
-    
-    this.loading = true;
-    this.cdr.markForCheck();
-    this.loadClientes();
-  }
-
-  // Navegar a página anterior
-  previousPage(): void {
-    if (this.currentPage > 1) {
-      this.currentPage--;
+    if (isPlatformBrowser(this.platformId)) {
+      // Limpiar expansión
       this.expandedNodes = {};
-      this.clearExpandedNodesSession();
-      this.isSearching && this.busqueda ? this.onBuscarRealtime() : this.loadClientes();
+      this.loadingNodes = {};
+      this.currentPage = 1;
+      this.isSearching = false;
+      this.busqueda = '';
+
+      this.ultimaActualizacion = new Date();
+      
+      // Recargar desde servidor
+      this.loadClientes();
     }
   }
 
-  // Navegar a página siguiente
-  nextPage(): void {
-    if (this.currentPage < this.totalPages) {
-      this.currentPage++;
-      this.expandedNodes = {};
-      this.clearExpandedNodesSession();
-      this.isSearching && this.busqueda ? this.onBuscarRealtime() : this.loadClientes();
+  // ============ MODAL DETALLES ============
+
+  abrirDetalles(imp: Impresora, event?: Event): void {
+    let clienteCode = '';
+    let locationId = 0;
+
+    this.toastService.show('Cargando detalles...', 'info');
+
+    if (event) {
+      event.stopPropagation();
     }
-  }
 
-  // Ir a página específica
-  goToPage(page: number): void {
-    if (page >= 1 && page <= this.totalPages) {
-      this.currentPage = page;
-      this.expandedNodes = {};
-      this.clearExpandedNodesSession();
-      this.isSearching && this.busqueda ? this.onBuscarRealtime() : this.loadClientes();
-    }
-  }
-
-  getRandomProgress(): number {
-    return Math.floor(Math.random() * 100);
-  }
-
-  // Abrir modal de especificaciones de impresora
-  openPrinterModal(impresora: any, event: Event): void {
-    event.stopPropagation();
-    alert(`🖨️ PRINTER: ${impresora.nombre || 'N/A'}\n🌐 IP: ${impresora.ip || 'N/A'}`);
-  }
-
-  onTableScroll(event: Event): void {
-    // Scroll handler - browser handles natively
-  }
-
-  onTopScroll(event: Event): void {
-    if (this.scrollContainer) {
-      this.scrollContainer.nativeElement.scrollLeft = (event.target as HTMLElement).scrollLeft;
-    }
-  }
-
-  private saveExpandedNodesToSession(): void {
-    // Throttle para evitar guardados repetidos
-    clearTimeout(this.sessionStorageSaveTimeout);
-    this.sessionStorageSaveTimeout = setTimeout(() => {
-      try {
-        sessionStorage.setItem(this.EXPANDED_NODES_SESSION_KEY, JSON.stringify(this.expandedNodes));
-        this.saveClientesWithDataToSession();
-      } catch (error) {
-        console.warn('SessionStorage save failed:', error);
-      }
-    }, this.SESSION_SAVE_THROTTLE_MS);
-  }
-
-  private saveClientesWithDataToSession(): void {
-    // Guardar clientes que tienen sucursales cargadas
-    try {
-      const clientesConDatos = this.clientes.filter(c => c.sucursales?.length);
-      sessionStorage.setItem(this.CLIENTES_WITH_DATA_SESSION_KEY, JSON.stringify(clientesConDatos));
-    } catch (error) {
-      console.warn('Save clientes to session failed:', error);
-    }
-  }
-
-  private restoreExpandedNodesFromSession(): void {
-    // Restaurar estado de expansión desde sesión anterior
-    try {
-      const savedState = sessionStorage.getItem(this.EXPANDED_NODES_SESSION_KEY);
-      if (savedState) {
-        this.expandedNodes = JSON.parse(savedState);
-      }
-    } catch (error) {
-      console.warn('Restore from session failed:', error);
-      this.expandedNodes = {};
-    }
-  }
-
-  private restoreClientesWithDataFromSession(): void {
-    // Fusionar datos de clientes con sucursales desde sesión anterior
-    try {
-      const savedClientesWithData = sessionStorage.getItem(this.CLIENTES_WITH_DATA_SESSION_KEY);
-      if (savedClientesWithData) {
-        const clientesConDatos: Cliente[] = JSON.parse(savedClientesWithData);
-        clientesConDatos.forEach(clienteConDatos => {
-          const cliente = this.clientes.find(c => c.rut === clienteConDatos.rut);
-          if (cliente && clienteConDatos.sucursales) {
-            cliente.sucursales = clienteConDatos.sucursales;
+    for (const cliente of this.clientes) {
+      if (cliente.sucursales) {
+        for (const sucursal of cliente.sucursales) {
+          if (sucursal.impresoras?.find(i => i.id === imp.id)) {
+            clienteCode = cliente.code || cliente.rut;
+            const sucursalId = typeof sucursal.id === 'string' ? parseInt(sucursal.id) : sucursal.id;
+            locationId = sucursalId || 0;
+            break;
           }
-        });
-        this.cdr.detectChanges();
+        }
+        if (clienteCode) break;
       }
-    } catch (error) {
-      console.warn('Restore clientes from session failed:', error);
     }
-  }
 
-  private clearExpandedNodesSession(): void {
-    sessionStorage.removeItem(this.EXPANDED_NODES_SESSION_KEY);
-  }
+    if (!clienteCode || locationId === 0 || !imp.id) {
+      this.toastService.show('Error: No se pudo identificar los datos', 'error');
+      return;
+    }
 
-  trackByClienteRut(index: number, cliente: Cliente): string | null {
-    return cliente.rut || null;
-  }
-
-  trackBySucursalId(index: number, sucursal: Sucursal): string | number | null {
-    return sucursal.id || null;
-  }
-
-  trackByImpresoraId(index: number, impresora: Impresora): number | string | null {
-    return impresora.id || impresora.serie || null;
-  }
-
-  abrirDetalles(impresora: Impresora): void {
-    this.impresora_seleccionada = impresora;
-    this.mostrar_modal_detalles = true;
-  }
-
-  cerrarDetalles(): void {
+    //this.loading = true;
     this.mostrar_modal_detalles = false;
-    this.impresora_seleccionada = null;
+    this.detalleService.cargarDetallesCompletos(clienteCode, locationId, imp.id).subscribe({
+      next: (response: any) => {
+        const detallesFrescos = response.data || response;
+
+          console.log('Respuesta completa:', response);
+      console.log('Detalles frescos:', detallesFrescos);
+      console.log('Supplies en detallesFrescos:', detallesFrescos.supplies);
+      console.log('Supplies en response.data:', response.data?.supplies);
+
+      
+        this.impresora_seleccionada = {
+          ...imp,
+          ...detallesFrescos,
+          supplies: detallesFrescos.supplies || []
+        } as Impresora;
+
+        this.mostrar_modal_detalles = true; 
+        this.loading = false;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        console.error('Error al cargar detalles:', err);
+        this.toastService.show('Error al cargar detalles', 'error');
+        this.impresora_seleccionada = imp;
+        this.mostrar_modal_detalles = true; 
+        this.loading = false;
+        this.cdr.markForCheck(); 
+      }
+    });
   }
+    
+  cerrarDetalles(): void { 
+    this.mostrar_modal_detalles = false; 
+    this.impresora_seleccionada = null; 
+    this.cdr.markForCheck(); 
+  }
+
+  // ============ TRACK BY ============
+
+  trackByClienteRut(i: number, c: Cliente) { return c.rut; }
+  trackBySucursalId(i: number, s: Sucursal) { return s.id; }
+  trackByImpresoraId(i: number, imp: Impresora) { return imp.id || imp.serie; }
+
+  onTableScroll(e: Event): void {}
+
+    /**
+   * Obtiene un tóner específico del JSON de supplies de la impresora
+   */
+  getTónerByType(impresora: any, tipo: string): any {
+    if (!impresora || !impresora.supplies) {
+      return null;
+    }
+
+    const tipoMap: { [key: string]: string[] } = {
+      'black_toner': ['black_toner_cartridge', 'black_toner', 'black_ink_hp_cn625a'],
+      'cyan_toner': ['cyan_toner', 'cyan_ink_hp_cn626a'],
+      'magenta_toner': ['magenta_toner', 'magenta_ink_hp_cn627a'],
+      'yellow_toner': ['yellow_toner', 'yellow_ink_hp_cn628a']
+    };
+
+    const idsToSearch = tipoMap[tipo] || [];
+    
+    return impresora.supplies.find((supply: any) => 
+      idsToSearch.some(id => 
+        supply.id?.toLowerCase().includes(id.toLowerCase()) ||
+        supply.name?.toLowerCase().includes(id.toLowerCase())
+      )
+    );
+  }
+
+  /**
+   * Obtiene un componente específico del JSON de supplies
+   */
+  getComponenteByType(impresora: any, tipo: string): any {
+    if (!impresora || !impresora.supplies) {
+      return null;
+    }
+
+    const tipoMap: { [key: string]: string[] } = {
+      'black_drum': ['black_drum_cartridge', 'black_imaging_unit', 'drum_cartridge'],
+      'cyan_drum': ['cyan_drum', 'cyan_imaging_unit'],
+      'magenta_drum': ['magenta_drum', 'magenta_imaging_unit'],
+      'yellow_drum': ['yellow_drum', 'yellow_imaging_unit'],
+      'fuser': ['fuser'],
+      'transfer_roller': ['transfer_roller', 'transfer_roll', 'second_bias_transfer_roll'],
+      'adf_roller': ['adf_roller'],
+      'tray_2_roller': ['tray_2_roller', 'tray_1_roller', 'mp_tray_roller'],
+      'adf_retard_pad': ['adf_retard_pad', 'adf_rubber_pad', 'tray_1_retard_roller'],
+      'mp_holder_pad': ['mp_holder_pad'],
+      'waste_toner_container': ['waste_toner_container']
+    };
+
+    const idsToSearch = tipoMap[tipo] || [];
+    
+    return impresora.supplies.find((supply: any) => 
+      idsToSearch.some(id => 
+        supply.id?.toLowerCase().includes(id.toLowerCase()) ||
+        supply.name?.toLowerCase().includes(id.toLowerCase())
+      )
+    );
+  }
+
+  /**
+   * Obtiene el estado de un componente en formato legible
+   */
+  getEstadoComponente(supply: any): string {
+    const estado = supply?.status || 'unknown';
+    const statusMap: { [key: string]: string } = {
+      'good': '✓ Bueno',
+      'ok': '○ Aceptable',
+      'low': '⚠ Bajo',
+      'critical': '✕ Crítico',
+      'warning': '⚠ Advertencia'
+    };
+    
+    return statusMap[estado] || estado;
+  }
+
+  onGuardarCambios(datos: any) {
+    let clienteCode = '';
+    let locationId = 0;
+
+    for (const cliente of this.clientes) {
+      if (cliente.sucursales) {
+        for (const sucursal of cliente.sucursales) {
+          if (sucursal.impresoras?.find(i => i.id === datos.id)) {
+            clienteCode = cliente.code || cliente.rut;
+            const sucursalId = typeof sucursal.id === 'string' ? parseInt(sucursal.id) : sucursal.id;
+            locationId = sucursalId || 0;
+            break;
+          }
+        }
+        if (clienteCode) break;
+      }
+    }
+
+    if (!clienteCode || locationId === 0) {
+      this.toastService.show('Error: No se pudo identificar cliente o sucursal', 'error');
+      return;
+    }
+
+    this.loading = true;
+    this.toastService.show('Guardando cambios...', 'info');
+
+    this.detalleService.actualizarCamposInventario(clienteCode, datos.id, datos).subscribe({
+      next: () => {
+        this.toastService.show('✓ Ficha de inventario actualizada', 'success');
+        this.mostrar_modal_detalles = false; // ← Asigna primero
+        this.loading = false;
+        this.impresora_seleccionada = null;
+        this.cdr.markForCheck(); // ← Luego detecta cambios
+      },
+      error: (err) => {
+        console.error('Error al guardar:', err);
+        this.toastService.show('Error al guardar los cambios', 'error');
+        this.loading = false;
+      }
+    });
+  }
+
+  getClaseColumna(col: ColumnaVistaUI): string {
+
+    if (col.componente !== 'barra') return '';
+
+    const map: { [key: string]: string } = {
+
+      // Toner
+      'imp_toner_black': 'component-bar toner-black',
+      'imp_toner_cyan': 'component-bar toner-cyan',
+      'imp_toner_magenta': 'component-bar toner-magenta',
+      'imp_toner_yellow': 'component-bar toner-yellow',
+
+      // Drum
+      'imp_drum_black': 'component-bar drum-black',
+      'imp_drum_cyan': 'component-bar drum-cyan',
+      'imp_drum_magenta': 'component-bar drum-magenta',
+      'imp_drum_yellow': 'component-bar drum-yellow',
+
+      // Revelador
+      'imp_revelador_black': 'component-bar revelador-black',
+      'imp_revelador_magenta': 'component-bar revelador-magenta',
+      'imp_revelador_yellow': 'component-bar revelador-yellow',
+
+      // Otros
+      'imp_fusor': 'component-bar fusor',
+      'imp_adf_roller': 'component-bar roller',
+      'imp_transfer_roller': 'component-bar roller',
+      'imp_mp_roller': 'component-bar roller',
+      'imp_retard_pad': 'component-bar roller',
+      'imp_caja_residuos': 'component-bar waste'
+    };
+
+    return map[col.identificador] || 'component-bar';
+  }
+
 }

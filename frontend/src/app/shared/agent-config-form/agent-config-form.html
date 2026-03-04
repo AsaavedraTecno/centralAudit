@@ -1,0 +1,225 @@
+<form [formGroup]="form" (ngSubmit)="submit()">
+  
+  <!-- SECCIÓN: CONFIGURACIÓN GENERAL -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-header bg-light py-3">
+      <h6 class="m-0 fw-bold text-primary">
+        <i class="fas fa-cog me-2"></i>Configuración SNMP y Escaneo
+      </h6>
+    </div>
+    <div class="card-body p-4">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label small fw-bold">Comunidad SNMP <span class="text-danger">*</span></label>
+          <input type="text" 
+                 class="form-control" 
+                 formControlName="snmp_community"
+                 [class.is-invalid]="form.get('snmp_community')?.invalid && form.get('snmp_community')?.touched"
+                 placeholder="public">
+          <div class="invalid-feedback" *ngIf="form.get('snmp_community')?.invalid && form.get('snmp_community')?.touched">
+            Community es obligatorio
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label small fw-bold">Frecuencia de Escaneo (minutos) <span class="text-danger">*</span></label>
+          <select class="form-select" 
+                  formControlName="scan_interval"
+                  [class.is-invalid]="form.get('scan_interval')?.invalid && form.get('scan_interval')?.touched">
+            <option [value]="1">Cada 1 minuto</option>
+            <option [value]="5">Cada 5 minutos</option>
+            <option [value]="15">Cada 15 minutos</option>
+            <option [value]="30">Cada 30 minutos</option>
+            <option [value]="60">Cada 1 hora</option>
+            <option [value]="1440">Diario</option>
+          </select>
+          <div class="invalid-feedback" *ngIf="form.get('scan_interval')?.invalid && form.get('scan_interval')?.touched">
+            Requerido
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECCIÓN: RANGOS DE IP -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+      <h6 class="m-0 fw-bold text-primary">
+        <i class="fas fa-network-wired me-2"></i>Rangos de IP para Escaneo
+      </h6>
+      <button type="button" 
+              class="btn btn-sm btn-primary"
+              [disabled]="editingRangeIndex !== null"
+              title="Complete el rango actual antes de agregar uno nuevo"
+              (click)="addRange()">
+        <i class="fas fa-plus me-1"></i> Agregar Rango
+      </button>
+    </div>
+    <div class="card-body p-4">
+
+      <!-- TABLA DE RANGOS -->
+      <div *ngIf="ipRangesArray.length > 0" class="table-responsive mb-4">
+        <table class="table table-sm table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th style="width: 25%">IP Desde</th>
+              <th style="width: 25%">IP Hasta</th>
+              <th style="width: 20%">Máscara</th>
+              <th class="text-center" style="width: 12%">Estado</th>
+              <th class="text-end" style="width: 18%">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let range of ipRangesArray.controls; let i = index"
+                [ngClass]="{'table-light': editingRangeIndex === i}">
+              <td>
+                <code class="bg-light px-2 py-1 rounded small">{{ range.get('ip_from')?.value || '-' }}</code>
+              </td>
+              <td>
+                <code class="bg-light px-2 py-1 rounded small">{{ range.get('ip_to')?.value || '-' }}</code>
+              </td>
+              <td>
+                <code class="bg-light px-2 py-1 rounded small">{{ range.get('subnet_mask')?.value }}</code>
+              </td>
+              <td class="text-center">
+                <span class="badge" [ngClass]="range.get('active')?.value ? 'bg-success' : 'bg-secondary'">
+                  {{ range.get('active')?.value ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+              <td class="text-end">
+                <div class="btn-group btn-group-sm">
+                  <button type="button" 
+                          class="btn btn-outline-info" 
+                          [disabled]="editingRangeIndex !== null && editingRangeIndex !== i"
+                          (click)="editRange(i)" 
+                          title="Editar">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button type="button" 
+                          class="btn btn-outline-danger"
+                          [disabled]="editingRangeIndex !== null && editingRangeIndex !== i"
+                          (click)="deleteRange(i)" 
+                          title="Eliminar">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- RESUMEN -->
+        <div class="alert alert-info d-flex justify-content-between align-items-center mb-0">
+          <div>
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Total de rangos:</strong> {{ ipRangesArray.length }} | 
+            <strong class="ms-3">Total de IPs:</strong> {{ getTotalIPs() }}
+          </div>
+        </div>
+      </div>
+
+      <!-- VALIDACIÓN: Sin rangos -->
+      <div *ngIf="ipRangesArray.length === 0" class="alert alert-warning mb-0">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        <strong>No hay rangos configurados.</strong> Agregue al menos uno para continuar.
+      </div>
+
+      <!-- FORMULARIO: AGREGAR/EDITAR RANGO -->
+      <div *ngIf="showRangeForm" class="card border-primary mt-4">
+        <div class="card-header bg-primary-subtle py-3">
+          <h6 class="m-0 fw-bold">
+            <i class="fas me-2" [ngClass]="editingRangeIndex !== null ? 'fa-edit' : 'fa-plus-circle'"></i>
+            {{ editingRangeIndex !== null ? 'Editar Rango de IP' : 'Nuevo Rango de IP' }}
+          </h6>
+        </div>
+        <div class="card-body p-4" [formGroup]="ipRangesArray.at(editingRangeIndex || 0)!">
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label class="form-label small fw-bold">IP Desde <span class="text-danger">*</span></label>
+              <input type="text" 
+                     class="form-control"
+                     formControlName="ip_from"
+                     placeholder="192.168.1.1"
+                     [class.is-invalid]="ipRangesArray.at(editingRangeIndex || 0)?.get('ip_from')?.invalid && ipRangesArray.at(editingRangeIndex || 0)?.get('ip_from')?.touched">
+              <div class="invalid-feedback" *ngIf="ipRangesArray.at(editingRangeIndex || 0)?.get('ip_from')?.hasError('required')">
+                IP es obligatoria
+              </div>
+              <div class="invalid-feedback" *ngIf="ipRangesArray.at(editingRangeIndex || 0)?.get('ip_from')?.hasError('invalidIp')">
+                IP no válida (Ej: 192.168.1.1)
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label small fw-bold">IP Hasta <span class="text-danger">*</span></label>
+              <input type="text" 
+                     class="form-control"
+                     formControlName="ip_to"
+                     placeholder="192.168.1.254"
+                     [class.is-invalid]="ipRangesArray.at(editingRangeIndex || 0)?.get('ip_to')?.invalid && ipRangesArray.at(editingRangeIndex || 0)?.get('ip_to')?.touched">
+              <div class="invalid-feedback" *ngIf="ipRangesArray.at(editingRangeIndex || 0)?.get('ip_to')?.hasError('required')">
+                IP es obligatoria
+              </div>
+              <div class="invalid-feedback" *ngIf="ipRangesArray.at(editingRangeIndex || 0)?.get('ip_to')?.hasError('invalidIp')">
+                IP no válida (Ej: 192.168.1.254)
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label small fw-bold">Máscara de Subred <span class="text-danger">*</span></label>
+              <input type="text" 
+                     class="form-control"
+                     formControlName="subnet_mask"
+                     placeholder="255.255.255.0"
+                     [class.is-invalid]="ipRangesArray.at(editingRangeIndex || 0)?.get('subnet_mask')?.invalid && ipRangesArray.at(editingRangeIndex || 0)?.get('subnet_mask')?.touched">
+              <div class="invalid-feedback" *ngIf="ipRangesArray.at(editingRangeIndex || 0)?.get('subnet_mask')?.invalid">
+                Máscara es obligatoria
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label small fw-bold">Estado</label>
+              <div class="form-check form-switch pt-2">
+                <input class="form-check-input" 
+                       type="checkbox" 
+                       formControlName="active"
+                       [id]="'rangoActive_' + (editingRangeIndex || 0)">
+                <label class="form-check-label" [for]="'rangoActive_' + (editingRangeIndex || 0)">
+                  Rango Activo
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex gap-2 justify-content-end">
+            <button type="button" class="btn btn-light border" (click)="cancelRange()">
+              <i class="fas fa-times me-1"></i>Cancelar
+            </button>
+            <button type="button" 
+                    class="btn btn-primary" 
+                    [disabled]="ipRangesArray.at(editingRangeIndex || 0)?.invalid"
+                    (click)="editingRangeIndex = null; showRangeForm = false">
+              <i class="fas fa-save me-1"></i>
+              {{ editingRangeIndex !== null ? 'Actualizar' : 'Agregar' }} Rango
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- BOTÓN GUARDAR GENERAL -->
+  <div class="d-flex gap-2 justify-content-end sticky-bottom bg-white p-3 border-top">
+    <button type="submit" 
+            class="btn btn-success w-100 py-2 shadow-sm" 
+            [disabled]="isLoading || form.invalid || ipRangesArray.length === 0 || editingRangeIndex !== null">
+      <i class="fas" [ngClass]="isLoading ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+      <span class="me-2" *ngIf="isLoading"></span>
+      {{ isLoading ? 'Guardando...' : 'Guardar Configuración' }}
+    </button>
+    <span class="text-muted small align-self-center" *ngIf="editingRangeIndex !== null">
+      <i class="fas fa-info-circle me-1"></i>Complete el rango para guardar
+    </span>
+  </div>
+
+</form>

@@ -92,7 +92,13 @@
                     </div>
                     <div class="col-md-12">
                       <label class="form-label small text-muted">Comentarios específicos</label>
-                      <input type="text" class="form-control form-control-sm" [(ngModel)]="contacto.comentarios" placeholder="Ej: Gerente de Finanzas, Soporte Nivel 1...">
+                      <textarea class="form-control form-control-sm" 
+                                [(ngModel)]="contacto.comentarios" 
+                                placeholder="Ej: Gerente de Finanzas, Soporte Nivel 1..." 
+                                rows="1" 
+                                style="resize: none; min-height: 38px;"
+                                (input)="autoResize($event)">
+                      </textarea>
                     </div>
                   </div>
                 </div>

@@ -30,10 +30,11 @@
       <div class="card shadow border-0 overflow-hidden">
         <div class="card-body p-5">
           
-          <div *ngIf="error" class="alert alert-danger border-0 shadow-sm mb-4">
-            <i class="fas fa-exclamation-circle me-2"></i> {{ error }}
+          <div *ngIf="error" class="alert alert-danger border-0 shadow-sm mb-4 animate__animated animate__fadeInDown d-flex justify-content-between align-items-center">
+            <div><i class="fas fa-exclamation-circle me-2"></i> {{ error }}</div>
+            <button type="button" class="btn-close" (click)="error = ''"></button>
           </div>
-          <div *ngIf="success" class="alert alert-success border-0 shadow-sm mb-4">
+          <div *ngIf="success" class="alert alert-success border-0 shadow-sm mb-4 animate__animated animate__fadeIn">
             <i class="fas fa-check-circle me-2"></i> {{ success }}
           </div>
 
@@ -42,47 +43,44 @@
             <div class="row g-3">
               <div class="col-md-4">
                 <label class="form-label small fw-bold">RUT Empresa</label>
-                <input type="text" class="form-control" [(ngModel)]="clienteForm.rut" placeholder="76.xxx.xxx-k">
+                <input type="text" 
+                       class="form-control" 
+                       [class.is-invalid]="!clienteForm.rut && intentoSiguiente" 
+                       (input)="validarEntradaRut($event)" 
+                       [(ngModel)]="clienteForm.rut" 
+                       placeholder="12.345.678-K"
+                       maxlength="12"> 
+                <div class="invalid-feedback">El RUT es obligatorio.</div>
               </div>
               <div class="col-md-8">
                 <label class="form-label small fw-bold">Razón Social</label>
-                <input type="text" class="form-control" [(ngModel)]="clienteForm.nombre" placeholder="Nombre de la empresa">
+                <input type="text" class="form-control" [class.is-invalid]="!clienteForm.nombre && intentoSiguiente" 
+                       [(ngModel)]="clienteForm.nombre" placeholder="Nombre de la empresa">
               </div>
               
               <div class="col-md-6">
                 <label class="form-label small fw-bold text-secondary">Región (Casa Matriz)</label>
-                <ng-select 
-                  [items]="regionesChile" 
-                  bindLabel="NombreRegion" 
-                  bindValue="NombreRegion"
-                  placeholder="Buscar región..."
-                  [(ngModel)]="clienteForm.region" 
-                  (change)="onRegionChange()"
-                  class="custom-select">
+                <ng-select [items]="regionesChile" bindLabel="NombreRegion" bindValue="NombreRegion" placeholder="Buscar región..."
+                           [(ngModel)]="clienteForm.region" (change)="onRegionChange()" [class.is-invalid-custom]="!clienteForm.region && intentoSiguiente">
                 </ng-select>
               </div>
 
               <div class="col-md-6">
                 <label class="form-label small fw-bold text-secondary">Comuna</label>
-                <ng-select 
-                  [items]="comunasDisponibles" 
-                  placeholder="Seleccione comuna..."
-                  [(ngModel)]="clienteForm.comuna" 
-                  [disabled]="!clienteForm.region"
-                  class="custom-select">
+                <ng-select [items]="comunasDisponibles" placeholder="Seleccione comuna..." [(ngModel)]="clienteForm.comuna" 
+                           [disabled]="!clienteForm.region" [class.is-invalid-custom]="!clienteForm.comuna && intentoSiguiente">
                 </ng-select>
               </div>
 
               <div class="col-md-12">
                 <label class="form-label small fw-bold">Dirección Comercial Principal</label>
-                <input type="text" class="form-control" [(ngModel)]="clienteForm.direccion" placeholder="Calle, número, oficina o depto.">
+                <input type="text" class="form-control" [class.is-invalid]="!clienteForm.direccion && intentoSiguiente" 
+                       [(ngModel)]="clienteForm.direccion" placeholder="Calle, número, oficina o depto.">
               </div>
 
               <div class="col-md-12 mt-5">
                 <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
-                  <h5 class="fw-bold text-warning mb-0">
-                    <i class="fas fa-users me-2"></i>Contactos Autorizados
-                  </h5>
+                  <h5 class="fw-bold text-warning mb-0"><i class="fas fa-users me-2"></i>Contactos Autorizados</h5>
                   <button type="button" class="btn btn-sm btn-outline-warning shadow-sm" (click)="agregarContacto()">
                     <i class="fas fa-plus me-1"></i> Agregar Contacto
                   </button>
@@ -100,23 +98,42 @@
                     <div class="row g-3">
                       <div class="col-md-6">
                         <label class="form-label small fw-bold">Nombre Completo</label>
-                        <input type="text" class="form-control form-control-sm" [(ngModel)]="contacto.nombre">
+                        <input type="text" class="form-control form-control-sm" [class.is-invalid]="!contacto.nombre && intentoSiguiente" [(ngModel)]="contacto.nombre">
                       </div>
                       <div class="col-md-6">
                         <label class="form-label small fw-bold">Email</label>
-                        <input type="email" class="form-control form-control-sm" [(ngModel)]="contacto.email">
+                        <input type="email" class="form-control form-control-sm" [class.is-invalid]="(!contacto.email || !esEmailValido(contacto.email)) && intentoSiguiente" [(ngModel)]="contacto.email">
                       </div>
                       <div class="col-md-6">
                         <label class="form-label small fw-bold">Teléfono Principal</label>
-                        <input type="text" class="form-control form-control-sm" [(ngModel)]="contacto.telefono">
+                        <input type="text" 
+                               class="form-control form-control-sm" 
+                               [class.is-invalid]="(!contacto.telefono || contacto.telefono.length < 15) && intentoSiguiente"
+                               (focus)="prepararTelefono('telefono', i)" 
+                               (input)="validarTelefono($event, 'telefono', i)"
+                               [(ngModel)]="contacto.telefono"
+                               placeholder="+56"
+                               maxlength="15">
                       </div>
                       <div class="col-md-6">
                         <label class="form-label small fw-bold">Teléfono Alternativo</label>
-                        <input type="text" class="form-control form-control-sm" [(ngModel)]="contacto.telefono_alternativo">
+                        <input type="text" 
+                               class="form-control form-control-sm" 
+                               [class.is-invalid]="(!contacto.telefono_alternativo || contacto.telefono_alternativo.length < 15) && intentoSiguiente"
+                               (focus)="prepararTelefono('telefono_alternativo', i)"
+                               (input)="validarTelefono($event, 'telefono_alternativo', i)"
+                               [(ngModel)]="contacto.telefono_alternativo"
+                               placeholder="+56"
+                               maxlength="15">
                       </div>
                       <div class="col-md-12">
                         <label class="form-label small text-muted">Comentarios específicos</label>
-                        <input type="text" class="form-control form-control-sm" [(ngModel)]="contacto.comentarios" placeholder="Ej: Gerente de Finanzas, Soporte Nivel 1...">
+                        <textarea class="form-control form-control-sm"
+                            [(ngModel)]="contacto.comentarios" 
+                            placeholder="Ej: Gerente de Finanzas, Soporte Nivel 1..."
+                            rows="5"
+                            style="resize: vertical; min-height: 60px;">
+                        </textarea>
                       </div>
                     </div>
                   </div>
@@ -133,7 +150,6 @@
           </div>
 
           <div *ngIf="pasoActual === 2" class="animate__animated animate__fadeIn">
-            
             <div class="d-flex align-items-center mb-4">
               <div class="bg-primary-subtle p-3 rounded-circle me-3">
                 <i class="fas fa-building text-primary fs-4"></i>
@@ -147,17 +163,13 @@
             <div class="row g-3 mb-4">
               <div class="col-md-12">
                 <div class="form-check form-switch mb-3">
-                  <input class="form-check-input" type="checkbox" id="usarDireccionLegal" 
-                        [(ngModel)]="usarDireccionLegal" (change)="clonarDireccion()">
-                  <label class="form-check-label fw-bold" for="usarDireccionLegal">
-                    ¿La sucursal es la misma Dirección Legal de la empresa?
-                  </label>
+                  <input class="form-check-input" type="checkbox" id="usarDireccionLegal" [(ngModel)]="usarDireccionLegal" (change)="clonarDireccion()">
+                  <label class="form-check-label fw-bold" for="usarDireccionLegal">¿Misma dirección legal?</label>
                 </div>
               </div>
-
               <div class="col-md-8">
                 <label class="form-label small fw-bold">Nombre de la Sucursal</label>
-                <input type="text" class="form-control" [(ngModel)]="clienteForm.sucursal_nombre" placeholder="Ej: Casa Matriz">
+                <input type="text" class="form-control" [class.is-invalid]="!clienteForm.sucursal_nombre && intentoSiguiente" [(ngModel)]="clienteForm.sucursal_nombre" placeholder="Ej: Casa Matriz">
               </div>
               <div class="col-md-4">
                 <label class="form-label small fw-bold">Código Interno</label>
@@ -165,7 +177,7 @@
               </div>
               <div class="col-md-12">
                 <label class="form-label small fw-bold">Dirección Física</label>
-                <input type="text" class="form-control" [(ngModel)]="clienteForm.sucursal_direccion" [disabled]="usarDireccionLegal">
+                <input type="text" class="form-control" [class.is-invalid]="!clienteForm.sucursal_direccion && intentoSiguiente" [(ngModel)]="clienteForm.sucursal_direccion" [disabled]="usarDireccionLegal">
               </div>
             </div>
 
@@ -177,18 +189,15 @@
               </div>
               <div>
                 <h5 class="fw-bold mb-0">Contacto Responsable en Sucursal</h5>
-                <p class="text-muted small mb-0">Persona encargada de recibir soporte técnico en esta ubicación.</p>
+                <p class="text-muted small mb-0">Encargado de soporte técnico en esta ubicación.</p>
               </div>
             </div>
 
             <div class="row g-3 mb-4">
               <div class="col-md-12">
                 <div class="form-check form-switch mb-3">
-                  <input class="form-check-input" type="checkbox" id="usarContactoPrincipal" 
-                        [(ngModel)]="usarContactoPrincipal" (change)="clonarContacto()">
-                  <label class="form-check-label fw-bold" for="usarContactoPrincipal">
-                    ¿El contacto de la sucursal es el mismo Contacto #1 de la empresa?
-                  </label>
+                  <input class="form-check-input" type="checkbox" id="usarContactoPrincipal" [(ngModel)]="usarContactoPrincipal" (change)="clonarContacto()">
+                  <label class="form-check-label fw-bold" for="usarContactoPrincipal">¿Mismo Contacto #1 de la empresa?</label>
                 </div>
               </div>
 
@@ -203,11 +212,20 @@
                 </div>
                 <div class="col-md-4">
                   <label class="form-label small fw-bold">Teléfono Principal</label>
-                  <input type="text" class="form-control" [(ngModel)]="clienteForm.sucursal_telefono_contacto">
+                  <input type="text" 
+                         class="form-control" 
+                         (focus)="prepararTelefono('sucursal_telefono_contacto')"
+                         (input)="validarTelefono($event, 'sucursal_telefono_contacto')"
+                         [(ngModel)]="clienteForm.sucursal_telefono_contacto"
+                         placeholder="+56">
                 </div>
                 <div class="col-md-4">
                   <label class="form-label small fw-bold">Teléfono Alternativo</label>
-                  <input type="text" class="form-control" [(ngModel)]="clienteForm.sucursal_telefono_alternativo">
+                  <input type="text" class="form-control" 
+                         (focus)="prepararTelefono('sucursal_telefono_alternativo')"
+                         (input)="validarTelefono($event, 'sucursal_telefono_alternativo')"
+                         [(ngModel)]="clienteForm.sucursal_telefono_alternativo"
+                         placeholder="+56">
                 </div>
                 <div class="col-md-4">
                   <label class="form-label small fw-bold">Comentarios/Observaciones</label>
@@ -216,21 +234,16 @@
               </div>
             </div>
 
-            <hr class="my-4 opacity-25">
-
-
             <div class="d-flex justify-content-between mt-5">
               <button class="btn btn-outline-secondary px-4" (click)="anteriorPaso()">Regresar</button>
               <button class="btn btn-primary px-5 shadow-sm" (click)="siguientePaso()" [disabled]="guardando">
                 <span *ngIf="guardando" class="spinner-border spinner-border-sm me-2"></span>
-                {{ guardando ? 'Creando Infraestructura...' : 'Finalizar y Activar' }} 
-                <i *ngIf="!guardando" class="fas fa-rocket ms-2"></i>
+                {{ guardando ? 'Creando Infraestructura...' : 'Finalizar y Activar' }} <i class="fas fa-rocket ms-2"></i>
               </button>
             </div>
           </div>
 
           <div *ngIf="pasoActual === 3" class="animate__animated animate__fadeIn">
-            
             <div class="text-center mb-4">
               <div class="bg-success-subtle d-inline-block p-3 rounded-circle mb-2">
                 <i class="fas fa-network-wired text-success fs-3"></i>
@@ -248,7 +261,7 @@
                     <div class="mb-4">
                       <label class="small fw-bold text-secondary d-block mb-1">Dominio del Cliente</label>
                       <div class="p-2 bg-white rounded border d-flex justify-content-between align-items-center">
-                        <span class="font-monospace small">{{ generatedData.domain }}</span>
+                        <span class="font-monospace small text-truncate">{{ generatedData.domain || 'Generando...' }}</span>
                         <button class="btn btn-sm btn-link text-primary p-0" (click)="copiarTexto(generatedData.domain)">
                           <i class="fas fa-copy"></i>
                         </button>
@@ -258,7 +271,7 @@
                     <div class="mb-4">
                       <label class="small fw-bold text-secondary d-block mb-1">Llave de Activación (Key)</label>
                       <div class="p-2 bg-white rounded border d-flex justify-content-between align-items-center">
-                        <span class="font-monospace fw-bold text-dark">{{ generatedData.agent_key }}</span>
+                        <span class="font-monospace fw-bold text-dark">{{ generatedData.agent_key || '---' }}</span>
                         <button class="btn btn-sm btn-link text-primary p-0" (click)="copiarKey()">
                           <i class="fas fa-copy"></i>
                         </button>
@@ -280,54 +293,18 @@
                   <div class="card-body p-4">
                     <h6 class="text-uppercase fw-bold text-warning small mb-3">Parámetros de Escaneo</h6>
                     
-                    <div class="row g-3">
-                      <div class="col-md-12">
-                        <label class="form-label small fw-bold">Comunidad SNMP</label>
-                        <input type="text" class="form-control" [(ngModel)]="configAgente.snmp_community" placeholder="Ej: public">
-                      </div>
-                      
-                      <div class="col-md-6">
-                        <label class="form-label small fw-bold">IP Inicial (Desde)</label>
-                        <input type="text" class="form-control" [(ngModel)]="configAgente.ip_from" placeholder="192.168.1.1">
-                      </div>
-                      
-                      <div class="col-md-6">
-                        <label class="form-label small fw-bold">IP Final (Hasta)</label>
-                        <input type="text" class="form-control" [(ngModel)]="configAgente.ip_to" placeholder="192.168.1.254">
-                      </div>
+                    <app-agent-config-form 
+                      [isLoading]="guardandoConfig"
+                      (onSave)="finalizarOnboarding($event)">
+                    </app-agent-config-form>
 
-                      <div class="col-md-6">
-                        <label class="form-label small fw-bold">Máscara de Subred</label>
-                        <input type="text" class="form-control" [(ngModel)]="configAgente.subnet_mask" placeholder="255.255.255.0">
-                      </div>
-
-                      <div class="col-md-6">
-                        <label class="form-label small fw-bold">Frecuencia de Escaneo</label>
-                        <select class="form-select" [(ngModel)]="configAgente.scan_interval">
-                          <option value="15">Cada 15 minutos</option>
-                          <option value="30">Cada 30 minutos</option>
-                          <option value="60">Cada 1 hora</option>
-                          <option value="1440">Diario</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div class="mt-4">
-                      <button class="btn btn-success w-100 py-2 shadow-sm" (click)="finalizarOnboarding()" [disabled]="guardandoConfig">
-                        <i class="fas fa-save me-2"></i>
-                        {{ guardandoConfig ? 'Guardando...' : 'Guardar Configuración y Finalizar' }}
-                      </button>
-                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-
-        </div>
-      </div>
-    </div>
-  </div>
-
-  
+          </div> 
+        </div> 
+      </div> 
+    </div> 
+  </div> 
 </div>

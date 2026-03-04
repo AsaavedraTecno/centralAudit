@@ -1,0 +1,75 @@
+/* frontend/src/app/shared/monitoreo/vistas-personalizadas/vista-selector/vista-selector.component.scss */
+
+.vista-selector-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  .dropdown {
+    position: relative;
+
+    .dropdown-toggle {
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+
+      &:hover {
+        border-color: #007bff;
+        color: #007bff;
+      }
+
+      &:disabled {
+        opacity: 0.65;
+        cursor: not-allowed;
+      }
+    }
+
+    .dropdown-menu {
+      min-width: 250px;
+      max-height: 400px;
+      overflow-y: auto;
+
+      .dropdown-item {
+        cursor: pointer;
+        padding: 10px 15px;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background-color: #f8f9fa;
+        }
+
+        &.active {
+          background-color: #e7f3ff;
+          color: #007bff;
+          font-weight: 500;
+        }
+
+        &.disabled {
+          cursor: not-allowed;
+          opacity: 0.65;
+        }
+
+        small {
+          margin-top: 3px;
+          line-height: 1.2;
+        }
+
+        i {
+          width: 16px;
+          text-align: center;
+        }
+      }
+
+      .dropdown-divider {
+        margin: 8px 0;
+      }
+    }
+  }
+
+  .alert-sm {
+    margin-bottom: 0;
+    padding: 8px 12px;
+    font-size: 0.875rem;
+  }
+}

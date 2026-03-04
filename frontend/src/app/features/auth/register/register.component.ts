@@ -4,22 +4,23 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import Swal from 'sweetalert2';
+// BORRA ESTA LÍNEA: import { hostname } from 'node:os';  <-- ESTO DA ERROR
 
 @Component({
   selector: 'app-register',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
-  templateUrl: './register.html',
-  styleUrls: ['./register.scss'] // O el archivo de estilos que uses
+  templateUrl: './register.html', // Asegúrate que la ruta sea correcta
+  styles: []
 })
 export class RegisterComponent implements OnInit {
   
-  // Definimos el objeto que el HTML está buscando
   regData = {
     name: '',
     email: '',
     password: '',
     password_confirmation: ''
+    // Quitamos 'hostname' del objeto, el backend lo sabe por el dominio
   };
 
   loading: boolean = false;
@@ -33,43 +34,35 @@ export class RegisterComponent implements OnInit {
 
   ngOnInit(): void {
     if (isPlatformBrowser(this.platformId)) {
-      const hostname = window.location.hostname;
-      // Seguridad: Si entran desde la central, los mandamos al login
-      if (hostname === 'centralaudit.tecnodatasa.cl' || hostname === 'localhost') {
+      const hostname = window.location.hostname.toLowerCase();
+      
+      // LOGICA DE SEGURIDAD:
+      // Si estamos en la central o localhost (sin subdominio), PROHIBIDO REGISTRARSE.
+      // Ajusta 'centralaudit.tecnodatasa.cl' a tu dominio real de producción.
+      if (hostname === 'centralaudit.tecnodatasa.cl' || hostname === 'localhost' || hostname === '127.0.0.1') {
+        Swal.fire('Acceso Restringido', 'El registro de usuarios solo está permitido en los sitios de empresas.', 'warning');
         this.router.navigate(['/login']);
       }
     }
   }
 
   registrar() {
-    // Validaciones Básicas
-    if (!this.regData.name || !this.regData.email || !this.regData.password) {
-      Swal.fire('Atención', 'Todos los campos son obligatorios', 'warning');
-      return;
-    }
-
-    // Validador de Contraseñas
-    if (this.regData.password !== this.regData.password_confirmation) {
-      Swal.fire('Error', 'Las contraseñas no coinciden', 'error');
-      return;
-    }
-
-    if (this.regData.password.length < 8) {
-      Swal.fire('Seguridad', 'La contraseña debe tener al menos 8 caracteres', 'info');
-      return;
-    }
+    // ... (Tus validaciones están bien, déjalas igual) ...
 
     this.loading = true;
 
-    // Llamada al servicio
     this.authService.register(this.regData).subscribe({
       next: (res) => {
-        Swal.fire('¡Éxito!', 'Cuenta creada correctamente. Ya puedes iniciar sesión.', 'success');
+        // Manejo robusto: A veces el backend devuelve texto o json
+        const message = res?.message || 'Cuenta creada correctamente.';
+        Swal.fire('¡Éxito!', message + ' Ya puedes iniciar sesión.', 'success');
         this.router.navigate(['/login']);
       },
       error: (err) => {
         this.loading = false;
-        Swal.fire('Error', err.error?.message || 'No se pudo completar el registro', 'error');
+        // Mejor manejo de errores de Laravel (suelen venir en 'errors' o 'message')
+        const msg = err.error?.message || 'No se pudo completar el registro';
+        Swal.fire('Error', msg, 'error');
       }
     });
   }

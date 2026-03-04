@@ -1,0 +1,71 @@
+/* Estilos específicos para el formulario de configuración del agente */
+
+// Ajuste para que las etiquetas (labels) se vean consistentes con el diseño "small fw-bold" de Bootstrap
+.form-label {
+  color: #495057;
+  margin-bottom: 0.4rem;
+  font-size: 0.85rem; // Tamaño pequeño pero legible
+  letter-spacing: 0.02em;
+}
+
+// Estilo para los inputs y el select
+.form-control, 
+.form-select {
+  border-radius: 6px;
+  border: 1px solid #dee2e6;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.95rem;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+
+  &:focus {
+    border-color: #198754; // Color verde éxito (coherente con el botón guardar)
+    box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.25);
+  }
+
+  // Estilo visual cuando hay error (complementa la clase is-invalid de Bootstrap)
+  &.is-invalid {
+    border-color: #dc3545;
+    background-image: none; // Opcional: quita el icono de exclamación si molesta
+    
+    &:focus {
+      box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25);
+    }
+  }
+}
+
+// Ajustes para el select nativo
+select.form-select {
+  cursor: pointer;
+  background-color: #fff;
+}
+
+// Ajuste del mensaje de error
+.invalid-feedback {
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+// Botón de guardar
+.btn-success {
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+
+  // Efecto hover suave
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(25, 135, 84, 0.2);
+  }
+
+  // Estado deshabilitado (cuando está cargando)
+  &:disabled {
+    opacity: 0.7;
+    transform: none;
+  }
+
+  // Alineación del spinner de carga
+  .spinner-border {
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+}

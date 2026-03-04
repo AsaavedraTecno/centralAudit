@@ -14,60 +14,56 @@ export class SucursalService {
 
   constructor(private http: HttpClient) { }
   
-  /**
-   * Obtener todas las sucursales (Global).
-   * Nota: Como tu API es multi-tenant, este método retorna vacío por defecto
-   * para evitar errores si algún componente antiguo lo llama sin código de cliente.
-   */
   getAll(): Observable<Sucursal[]> {
-    return of([]); // Retorna un array vacío observable
+    return of([]); 
   }
 
   /**
    * LISTAR: Obtiene las sucursales de un cliente específico.
-   * GET /api/{clientCode}/sucursales
+   * Ahora apunta a: GET /api/tenants/{clientCode}/sucursales
    */
   getByClientCode(clientCode: string): Observable<Sucursal[]> {
-    return this.http.get<any>(`${this.baseUrl}/${clientCode}/sucursales`).pipe(
+    // 👇 AQUÍ AGREGAMOS "/tenants/"
+    return this.http.get<any>(`${this.baseUrl}/tenants/${clientCode}/sucursales`).pipe(
       map(response => {
-        // Soporte para estructura Laravel: { sucursales: [...] } o { data: [...] }
         return response.sucursales || response.data || [];
       })
     );
   }
 
   /**
-   * OBTENER UNA: Busca una sucursal específica por ID y Cliente.
-   * GET /api/{clientCode}/sucursales/{id}
+   * OBTENER UNA
+   * GET /api/tenants/{clientCode}/sucursales/{id}
    */
   getById(id: number | string, clientCode: string): Observable<Sucursal> {
-    return this.http.get<any>(`${this.baseUrl}/${clientCode}/sucursales/${id}`).pipe(
+     // 👇 AQUÍ TAMBIÉN
+    return this.http.get<any>(`${this.baseUrl}/tenants/${clientCode}/sucursales/${id}`).pipe(
       map(response => {
-        // Soporte para estructura Laravel: { sucursal: {...} }
         return response.sucursal || response.data;
       })
     );
   }
 
   /**
-   * CREAR: Agrega una nueva sucursal al cliente.
-   * POST /api/{clientCode}/sucursales
+   * CREAR
+   * POST /api/tenants/{clientCode}/sucursales
    */
   create(data: Partial<Sucursal>, clientCode: string): Observable<Sucursal> {
-    return this.http.post<any>(`${this.baseUrl}/${clientCode}/sucursales`, data).pipe(
+     // 👇 AQUÍ TAMBIÉN
+    return this.http.post<any>(`${this.baseUrl}/tenants/${clientCode}/sucursales`, data).pipe(
       map(response => {
-        // Retorna la sucursal creada confirmada por el backend
         return response.sucursal || response.data;
       })
     );
   }
 
   /**
-   * ACTUALIZAR: Modifica una sucursal existente.
-   * PUT /api/{clientCode}/sucursales/{id}
+   * ACTUALIZAR
+   * PUT /api/tenants/{clientCode}/sucursales/{id}
    */
   update(id: number | string, data: Partial<Sucursal>, clientCode: string): Observable<Sucursal> {
-    return this.http.put<any>(`${this.baseUrl}/${clientCode}/sucursales/${id}`, data).pipe(
+     // 👇 AQUÍ TAMBIÉN
+    return this.http.put<any>(`${this.baseUrl}/tenants/${clientCode}/sucursales/${id}`, data).pipe(
       map(response => {
         return response.sucursal || response.data;
       })
@@ -75,10 +71,11 @@ export class SucursalService {
   }
 
   /**
-   * ELIMINAR: Borra (o desactiva) una sucursal.
-   * DELETE /api/{clientCode}/sucursales/{id}
+   * ELIMINAR
+   * DELETE /api/tenants/{clientCode}/sucursales/{id}
    */
   delete(id: number | string, clientCode: string): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/${clientCode}/sucursales/${id}`);
+     // 👇 AQUÍ TAMBIÉN
+    return this.http.delete<void>(`${this.baseUrl}/tenants/${clientCode}/sucursales/${id}`);
   }
 }

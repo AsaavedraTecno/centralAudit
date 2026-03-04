@@ -112,21 +112,12 @@ class DemoSeeder extends Seeder
         // ASIGNAR USUARIOS A TENANTS
         // ============================================
 
-        // Analista ve 2 clientes
         DB::table('user_tenant')->insert([
             ['user_id' => $analista->id, 'tenant_id' => $tenant1->id, 'created_at' => now(), 'updated_at' => now()],
             ['user_id' => $analista->id, 'tenant_id' => $tenant2->id, 'created_at' => now(), 'updated_at' => now()],
-        ]);
-
-        // Técnico ve todos
-        DB::table('user_tenant')->insert([
             ['user_id' => $tecnico->id, 'tenant_id' => $tenant1->id, 'created_at' => now(), 'updated_at' => now()],
             ['user_id' => $tecnico->id, 'tenant_id' => $tenant2->id, 'created_at' => now(), 'updated_at' => now()],
             ['user_id' => $tecnico->id, 'tenant_id' => $tenant3->id, 'created_at' => now(), 'updated_at' => now()],
-        ]);
-
-        // Cliente solo ve su empresa
-        DB::table('user_tenant')->insert([
             ['user_id' => $clienteUser->id, 'tenant_id' => $tenant1->id, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
@@ -146,21 +137,23 @@ class DemoSeeder extends Seeder
         $this->seedTenantData($tenant3, [
             ['name' => 'Edificio Principal', 'code' => 'principal', 'address' => 'Av. Salud 2000, Rancagua'],
             ['name' => 'Urgencias', 'code' => 'urgencias', 'address' => 'Av. Salud 2001, Rancagua'],
-            ['name' => 'Laboratorio', 'code' => 'lab', 'address' => 'Av. Salud 2002, Rancagua'],
         ]);
 
         $this->command->info('✅ Demo data seeded successfully!');
-        $this->command->info('');
-        $this->command->info('Usuarios creados:');
-        $this->command->info('  - admin@tuempresa.cl / password (superadmin)');
-        $this->command->info('  - analista@tuempresa.cl / password (analista)');
-        $this->command->info('  - tecnico@tuempresa.cl / password (soporte)');
-        $this->command->info('  - maria@empresaabc.cl / password (cliente)');
     }
 
     private function seedTenantData(Tenant $tenant, array $locations): void
     {
         app(Tenancy::class)->initialize($tenant);
+
+        // Crear un agente para este tenant
+        $agentId = DB::table('agent_status')->insertGetId([
+            'hostname' => 'AGENT-' . strtoupper($tenant->code),
+            'status' => 'online',
+            'last_sync_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
 
         foreach ($locations as $loc) {
             $locationId = DB::table('locations')->insertGetId([
@@ -173,14 +166,11 @@ class DemoSeeder extends Seeder
                 'updated_at' => now(),
             ]);
 
-            // Crear 2-4 impresoras por sucursal
-            $printers = $this->generatePrinters($locationId);
-            DB::table('printers')->insert($printers);
-
-            // Crear contadores y supplies para cada impresora
-            $printerIds = DB::table('printers')->where('location_id', $locationId)->pluck('id');
+            // Generar impresoras
+            $printers = $this->generatePrinters($locationId, $agentId);
             
-            foreach ($printerIds as $printerId) {
+            foreach ($printers as $printerData) {
+                $printerId = DB::table('printers')->insertGetId($printerData);
                 $this->seedPrinterData($printerId);
             }
         }
@@ -188,262 +178,119 @@ class DemoSeeder extends Seeder
         app(Tenancy::class)->end();
     }
 
-    private function generatePrinters(int $locationId): array
+    private function generatePrinters(int $locationId, int $agentId): array
     {
         $models = [
             ['brand' => 'HP', 'model' => 'LaserJet Pro M404dn', 'is_color' => false, 'type' => 'laser'],
             ['brand' => 'HP', 'model' => 'Color LaserJet Pro MFP M479fdw', 'is_color' => true, 'type' => 'mfp'],
-            ['brand' => 'HP', 'model' => 'LaserJet Enterprise M507dn', 'is_color' => false, 'type' => 'laser'],
             ['brand' => 'Xerox', 'model' => 'VersaLink C405', 'is_color' => true, 'type' => 'mfp'],
-            ['brand' => 'Xerox', 'model' => 'WorkCentre 6515', 'is_color' => true, 'type' => 'mfp'],
-            ['brand' => 'Xerox', 'model' => 'Phaser 6510', 'is_color' => true, 'type' => 'laser'],
             ['brand' => 'Brother', 'model' => 'HL-L8360CDW', 'is_color' => true, 'type' => 'laser'],
-            ['brand' => 'Brother', 'model' => 'MFC-L8900CDW', 'is_color' => true, 'type' => 'mfp'],
-            ['brand' => 'Ricoh', 'model' => 'MP C3004', 'is_color' => true, 'type' => 'mfp'],
             ['brand' => 'Ricoh', 'model' => 'SP 5300DN', 'is_color' => false, 'type' => 'laser'],
-            ['brand' => 'Konica Minolta', 'model' => 'bizhub C258', 'is_color' => true, 'type' => 'mfp'],
-            ['brand' => 'Konica Minolta', 'model' => 'bizhub 458e', 'is_color' => false, 'type' => 'mfp'],
-            ['brand' => 'Kyocera', 'model' => 'ECOSYS M8130cidn', 'is_color' => true, 'type' => 'mfp'],
-            ['brand' => 'Lexmark', 'model' => 'MS826de', 'is_color' => false, 'type' => 'laser'],
         ];
 
-        $count = rand(2, 4);
         $printers = [];
-        $usedModels = [];
+        $count = rand(2, 4);
 
         for ($i = 0; $i < $count; $i++) {
-            do {
-                $model = $models[array_rand($models)];
-            } while (in_array($model['model'], $usedModels));
-            
-            $usedModels[] = $model['model'];
-            $ipSuffix = rand(10, 250);
-            $macBytes = [];
-            for ($j = 0; $j < 6; $j++) {
-                $macBytes[] = sprintf('%02X', rand(0, 255));
-            }
-
+            $m = $models[array_rand($models)];
             $printers[] = [
                 'location_id' => $locationId,
-                'name' => $model['model'],
-                'brand' => $model['brand'],
-                'model' => $model['model'],
-                'serial_number' => strtoupper($model['brand'][0] . $model['brand'][1] . Str::random(8)),
-                'ip_address' => "192.168.1.{$ipSuffix}",
-                'mac_address' => implode(':', $macBytes),
-                'hostname' => strtolower(str_replace(' ', '-', $model['model'])) . '.local',
-                'firmware_version' => rand(1, 5) . '.' . rand(0, 9) . '.' . rand(0, 99),
-                'asset_tag' => 'PRN-' . date('Y') . '-' . str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT),
-                'is_color' => $model['is_color'],
-                'is_duplex' => true,
-                'is_networked' => true,
-                'printer_type' => $model['type'],
+                'agent_id' => $agentId,
+                'name' => $m['model'] . ' - ' . ($i + 1),
+                'brand' => $m['brand'],
+                'model' => $m['model'],
+                'serial_number' => strtoupper(Str::random(10)),
+                'ip_address' => "192.168.1." . rand(10, 250),
                 'status' => 'active',
-                'location' => 'Piso ' . rand(1, 5) . ', Sala ' . rand(1, 10),
-                'last_seen_at' => now()->subMinutes(rand(1, 60)),
-                'last_counter_at' => now()->subMinutes(rand(5, 120)),
-                'notes' => rand(0, 3) === 0 ? 'Impresora de alto volumen' : null,
+                'is_color' => $m['is_color'],
+                'printer_type' => $m['type'],
+                'last_seen_at' => now(),
                 'created_at' => now(),
                 'updated_at' => now(),
             ];
         }
-
         return $printers;
     }
 
     private function seedPrinterData(int $printerId): void
     {
-        // Obtener info de la impresora para saber si es color
         $printer = DB::table('printers')->find($printerId);
-        $isColor = $printer->is_color ?? true;
+        $isColor = (bool)$printer->is_color;
 
-        // Contadores (últimos 30 días)
-        $basePages = rand(5000, 80000);
+        // --- CONTADORES (30 días) ---
+        $pages = rand(5000, 20000);
         for ($i = 30; $i >= 0; $i--) {
             $date = now()->subDays($i);
-            $dailyPrint = rand(100, 500);
-            $totalPages = $basePages + (30 - $i) * $dailyPrint;
-            $colorRatio = $isColor ? rand(20, 40) / 100 : 0;
+            $pages += rand(50, 200);
+            $color = $isColor ? (int)($pages * 0.25) : 0;
             
             DB::table('printer_counters')->insert([
                 'printer_id' => $printerId,
-                'total_pages' => $totalPages,
-                'bw_pages' => (int)($totalPages * (1 - $colorRatio)),
-                'color_pages' => (int)($totalPages * $colorRatio),
+                'total_pages' => $pages,
+                'bw_pages' => $pages - $color,
+                'color_pages' => $color,
                 'collected_at' => $date,
                 'created_at' => $date,
                 'updated_at' => $date,
             ]);
         }
 
-        // Supplies con escenarios variados
-        $this->seedSupplies($printerId, $isColor);
+        // --- SUMINISTROS (Normalizado) ---
+        $supplyTypes = ['toner_black', 'drum_black', 'fusor', 'waste_box'];
+        if ($isColor) {
+            $supplyTypes = array_merge($supplyTypes, ['toner_cyan', 'toner_magenta', 'toner_yellow']);
+        }
 
-        // Alertas basadas en niveles de supplies
+        foreach ($supplyTypes as $type) {
+            $perc = rand(5, 100);
+            $status = $perc < 10 ? 'critical' : ($perc < 25 ? 'low' : 'ok');
+
+            DB::table('printer_supplies')->insert([
+                'printer_id' => $printerId,
+                'supply_type' => $type,
+                'percentage' => $perc,
+                'status' => $status,
+                'read_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            
+            // Historial corto de suministros
+            DB::table('printer_supplies')->insert([
+                'printer_id' => $printerId,
+                'supply_type' => $type,
+                'percentage' => min(100, $perc + 5),
+                'status' => 'ok',
+                'read_at' => now()->subDays(2),
+                'created_at' => now()->subDays(2),
+                'updated_at' => now()->subDays(2),
+            ]);
+        }
+
+        // --- EVENTOS ---
         $this->seedAlerts($printerId);
-    }
-
-    private function seedSupplies(int $printerId, bool $isColor): void
-    {
-        // Escenarios de supplies
-        $scenarios = [
-            'healthy' => [
-                'toner_black' => rand(60, 100),
-                'drum_black' => rand(70, 100),
-                'fusor' => rand(80, 100),
-            ],
-            'low_toner' => [
-                'toner_black' => rand(5, 15),
-                'drum_black' => rand(50, 80),
-                'fusor' => rand(60, 90),
-            ],
-            'critical' => [
-                'toner_black' => rand(1, 5),
-                'drum_black' => rand(10, 30),
-                'fusor' => rand(20, 40),
-            ],
-            'mixed' => [
-                'toner_black' => rand(20, 50),
-                'drum_black' => rand(40, 70),
-                'fusor' => rand(50, 80),
-            ],
-        ];
-
-        $scenario = array_rand($scenarios);
-        $base = $scenarios[$scenario];
-
-        $supplies = [
-            'printer_id' => $printerId,
-            'toner_black' => $base['toner_black'],
-            'toner_cyan' => $isColor ? rand(10, 100) : null,
-            'toner_magenta' => $isColor ? rand(10, 100) : null,
-            'toner_yellow' => $isColor ? rand(10, 100) : null,
-            'drum_black' => $base['drum_black'],
-            'drum_cyan' => $isColor ? rand(30, 100) : null,
-            'drum_magenta' => $isColor ? rand(30, 100) : null,
-            'drum_yellow' => $isColor ? rand(30, 100) : null,
-            'revelador_black' => rand(0, 1) ? rand(40, 100) : null,
-            'revelador_cyan' => ($isColor && rand(0, 1)) ? rand(40, 100) : null,
-            'revelador_magenta' => ($isColor && rand(0, 1)) ? rand(40, 100) : null,
-            'revelador_yellow' => ($isColor && rand(0, 1)) ? rand(40, 100) : null,
-            'fusor' => $base['fusor'],
-            'adf_roller' => rand(0, 1) ? rand(50, 100) : null,
-            'transfer_roller' => rand(60, 100),
-            'mp_roller' => rand(0, 1) ? rand(50, 100) : null,
-            'retard_pad' => rand(0, 1) ? rand(40, 100) : null,
-            'waste_box' => rand(20, 100),
-            'read_at' => now(),
-            'created_at' => now(),
-            'updated_at' => now(),
-        ];
-
-        // Generar escenarios críticos para colores si es color
-        if ($isColor && rand(0, 4) === 0) {
-            // Un toner color crítico
-            $colorCritical = ['toner_cyan', 'toner_magenta', 'toner_yellow'][rand(0, 2)];
-            $supplies[$colorCritical] = rand(1, 10);
-        }
-
-        DB::table('printer_supplies')->insert($supplies);
-
-        // Historial de supplies (últimos 7 días)
-        for ($i = 7; $i >= 1; $i--) {
-            $historicalSupplies = $supplies;
-            $historicalSupplies['read_at'] = now()->subDays($i);
-            $historicalSupplies['created_at'] = now()->subDays($i);
-            $historicalSupplies['updated_at'] = now()->subDays($i);
-            
-            // Los niveles eran más altos antes
-            foreach (['toner_black', 'toner_cyan', 'toner_magenta', 'toner_yellow'] as $toner) {
-                if ($historicalSupplies[$toner] !== null) {
-                    $historicalSupplies[$toner] = min(100, $historicalSupplies[$toner] + ($i * rand(1, 3)));
-                }
-            }
-            
-            DB::table('printer_supplies')->insert($historicalSupplies);
-        }
     }
 
     private function seedAlerts(int $printerId): void
     {
-        $supply = DB::table('printer_supplies')
+        $criticals = DB::table('printer_supplies')
             ->where('printer_id', $printerId)
-            ->orderByDesc('read_at')
-            ->first();
+            ->where('percentage', '<', 20)
+            ->where('read_at', '>', now()->subMinute())
+            ->get();
 
-        if (!$supply) return;
-
-        $alerts = [];
-
-        // Alertas por toner bajo
-        if ($supply->toner_black !== null && $supply->toner_black < 15) {
-            $alerts[] = [
+        foreach ($criticals as $s) {
+            DB::table('printer_events')->insert([
                 'printer_id' => $printerId,
-                'code' => 'LOW_TONER_BLACK',
-                'severity' => $supply->toner_black < 5 ? 'error' : 'warn',
-                'message' => "Tóner negro bajo: {$supply->toner_black}%",
-                'raised_at' => now()->subHours(rand(1, 24)),
+                'event_code' => strtoupper($s->supply_type) . '_LOW',
+                'event_type' => 'supply_low',
+                'severity' => $s->percentage < 7 ? 'critical' : 'warn',
+                'supply_type' => $s->supply_type,
+                'message' => "Atención: Nivel de {$s->supply_type} en {$s->percentage}%",
+                'occurred_at' => now(),
                 'created_at' => now(),
                 'updated_at' => now(),
-            ];
-        }
-
-        foreach (['cyan', 'magenta', 'yellow'] as $color) {
-            $field = "toner_{$color}";
-            if ($supply->$field !== null && $supply->$field < 15) {
-                $alerts[] = [
-                    'printer_id' => $printerId,
-                    'code' => 'LOW_TONER_' . strtoupper($color),
-                    'severity' => $supply->$field < 5 ? 'error' : 'warn',
-                    'message' => "Tóner {$color} bajo: {$supply->$field}%",
-                    'raised_at' => now()->subHours(rand(1, 48)),
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ];
-            }
-        }
-
-        // Alertas por drum bajo
-        if ($supply->drum_black !== null && $supply->drum_black < 20) {
-            $alerts[] = [
-                'printer_id' => $printerId,
-                'code' => 'LOW_DRUM_BLACK',
-                'severity' => 'warn',
-                'message' => "Drum negro bajo: {$supply->drum_black}%",
-                'raised_at' => now()->subHours(rand(1, 72)),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ];
-        }
-
-        // Alerta por fusor bajo
-        if ($supply->fusor !== null && $supply->fusor < 30) {
-            $alerts[] = [
-                'printer_id' => $printerId,
-                'code' => 'LOW_FUSER',
-                'severity' => 'warn',
-                'message' => "Fusor bajo: {$supply->fusor}%",
-                'raised_at' => now()->subHours(rand(12, 96)),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ];
-        }
-
-        // Alerta por waste box lleno
-        if ($supply->waste_box !== null && $supply->waste_box < 25) {
-            $alerts[] = [
-                'printer_id' => $printerId,
-                'code' => 'WASTE_BOX_FULL',
-                'severity' => 'error',
-                'message' => "Contenedor de residuos casi lleno: {$supply->waste_box}% restante",
-                'raised_at' => now()->subHours(rand(1, 12)),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ];
-        }
-
-        if (!empty($alerts)) {
-            DB::table('alerts')->insert($alerts);
+            ]);
         }
     }
 }

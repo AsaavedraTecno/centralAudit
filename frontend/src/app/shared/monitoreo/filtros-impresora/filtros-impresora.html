@@ -1,0 +1,63 @@
+<div class="filtros-container d-flex align-items-center gap-2 mt-3 mb-4">
+  <div class="search-box flex-grow-1 position-relative">
+    <i class="fas fa-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+    <input type="text" class="form-control ps-5 py-2 shadow-sm border-0" 
+           placeholder="Buscar por IP, Serie, Modelo o ID Interno..."
+           [(ngModel)]="filtros.busqueda" 
+           (ngModelChange)="onSearchChange()">
+  </div>
+
+  <button class="btn btn-white shadow-sm border-0 px-4 py-2 text-nowrap position-relative" 
+          type="button" 
+          (click)="abrirMenu()">
+    <i class="fas fa-filter text-primary me-2"></i> Filtros
+    <span class="position-absolute top-0 start-100 translate-middle p-2 bg-danger border border-light rounded-circle" 
+          *ngIf="filtros.marcas.length > 0 || filtros.estado !== 1">
+      <span class="visually-hidden">Filtros activos</span>
+    </span>
+  </button>
+</div>
+
+<div *ngIf="menuAbierto" class="offcanvas-backdrop fade show" (click)="cerrarMenu()"></div>
+
+<div class="offcanvas offcanvas-end" 
+     [class.show]="menuAbierto" 
+     [style.visibility]="menuAbierto ? 'visible' : 'hidden'"
+     tabindex="-1">
+  
+  <div class="offcanvas-header border-bottom bg-light">
+    <h5 class="offcanvas-title fw-bold">
+      <i class="fas fa-sliders-h me-2 text-primary"></i> Filtros Avanzados
+    </h5>
+    <button type="button" class="btn-close" (click)="cerrarMenu()"></button>
+  </div>
+  
+  <div class="offcanvas-body">
+    <div class="mb-4">
+      <label class="fw-bold mb-2 text-muted text-uppercase" style="font-size: 0.75rem;">Estado de Monitoreo</label>
+      <select class="form-select shadow-sm" (change)="onEstadoChange($event)">
+        <option value="1" [selected]="filtros.estado === 1">Solo Monitoreadas</option>
+        <option value="0" [selected]="filtros.estado === 0">No Monitoreadas</option>
+        <option value="todos" [selected]="filtros.estado === 'todos'">Todas</option>
+      </select>
+    </div>
+
+    <div class="mb-4">
+      <label class="fw-bold mb-2 text-muted text-uppercase" style="font-size: 0.75rem;">Marcas en Sucursal</label>
+      <div class="marca-list bg-white border rounded p-3 shadow-sm">
+        <div *ngIf="marcasDisponibles.length === 0" class="text-muted small fst-italic">
+          No se detectaron marcas.
+        </div>
+        <div class="form-check mb-2" *ngFor="let marca of marcasDisponibles">
+          <input class="form-check-input" type="checkbox" 
+                 [value]="marca" [id]="'chk-' + marca" 
+                 (change)="toggleMarca(marca, $event)" 
+                 [checked]="filtros.marcas.includes(marca)">
+          <label class="form-check-label" [for]="'chk-' + marca">
+            {{ marca }}
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

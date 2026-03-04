@@ -16,9 +16,6 @@ class LocationController extends Controller
         $this->tenantContext = $tenantContext;
     }
 
-    /**
-     * Lista sucursales de un cliente
-     */
     public function index(Request $request, string $code): JsonResponse
     {
         $tenant = $this->tenantContext->getTenantWithAccess($code, $request->user());
@@ -27,21 +24,12 @@ class LocationController extends Controller
             return response()->json(['error' => 'Cliente no encontrado o sin acceso'], 403);
         }
 
+        // SOLUCIÓN: Convertimos a array DENTRO del contexto
         $locations = $this->tenantContext->run($tenant, function () {
             return Location::where('activo', true)
                 ->orderBy('nombre')
-                ->get([
-                    'id', 
-                    'nombre', 
-                    'direccion', 
-                    'comuna', 
-                    'region', 
-                    'nombre_contacto', 
-                    'telefono_contacto',
-                    'telefono_alternativo',
-                    'comentarios',
-                    'activo'
-                ]);
+                ->get()
+                ->toArray(); // <--- AQUÍ ESTÁ LA MAGIA
         });
 
         return response()->json([
@@ -49,9 +37,6 @@ class LocationController extends Controller
         ]);
     }
 
-    /**
-     * Detalle de una sucursal
-     */
     public function show(Request $request, string $code, int $id): JsonResponse
     {
         $tenant = $this->tenantContext->getTenantWithAccess($code, $request->user());
@@ -60,24 +45,20 @@ class LocationController extends Controller
             return response()->json(['error' => 'Cliente no encontrado o sin acceso'], 403);
         }
 
-        $location = $this->tenantContext->run($tenant, function () use ($id) {
-            return Location::with(['printers' => function ($query) {
-                $query->select('id', 'location_id', 'model', 'serial_number', 'status');
-            }])->find($id);
+        $locationData = $this->tenantContext->run($tenant, function () use ($id) {
+            $location = Location::with(['printers'])->find($id);
+            return $location ? $location->toArray() : null; // Convertir a array si existe
         });
 
-        if (!$location) {
+        if (!$locationData) {
             return response()->json(['error' => 'Sucursal no encontrada'], 404);
         }
 
         return response()->json([
-            'sucursal' => $location,
+            'sucursal' => $locationData,
         ]);
     }
 
-    /**
-     * Crear sucursal
-     */
     public function store(Request $request, string $code): JsonResponse
     {
         $user = $request->user();
@@ -99,22 +80,21 @@ class LocationController extends Controller
             'comentarios'          => 'nullable|string',
         ]);
 
-        $location = $this->tenantContext->run($tenant, function () use ($validated) {
-            return Location::create([
+        // SOLUCIÓN: Guardamos y convertimos a array antes de salir
+        $locationData = $this->tenantContext->run($tenant, function () use ($validated) {
+            $location = Location::create([
                 ...$validated,
                 'activo' => true,
             ]);
+            return $location->toArray(); // <--- IMPORTANTE
         });
 
         return response()->json([
             'message' => 'Sucursal creada exitosamente',
-            'sucursal' => $location,
+            'sucursal' => $locationData, // Devolvemos el array puro
         ], 201);
     }
 
-    /**
-     * Actualizar sucursal
-     */
     public function update(Request $request, string $code, int $id): JsonResponse
     {
         $user = $request->user();
@@ -137,27 +117,25 @@ class LocationController extends Controller
             'activo'               => 'sometimes|boolean',
         ]);
 
-        $location = $this->tenantContext->run($tenant, function () use ($id, $validated) {
+        $locationData = $this->tenantContext->run($tenant, function () use ($id, $validated) {
             $location = Location::find($id);
             if ($location) {
                 $location->update($validated);
+                return $location->fresh()->toArray(); // <--- Convertir a array actualizado
             }
-            return $location;
+            return null;
         });
 
-        if (!$location) {
+        if (!$locationData) {
             return response()->json(['error' => 'Sucursal no encontrada'], 404);
         }
 
         return response()->json([
             'message' => 'Sucursal actualizada',
-            'sucursal' => $location->fresh(),
+            'sucursal' => $locationData,
         ]);
     }
 
-    /**
-     * Eliminar/desactivar sucursal (Soft Delete manual)
-     */
     public function destroy(Request $request, string $code, int $id): JsonResponse
     {
         $tenant = $this->tenantContext->getTenantWithAccess($code, $request->user());

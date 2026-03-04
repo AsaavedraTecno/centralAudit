@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { map, catchError } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { isPlatformBrowser } from '@angular/common';
 import { Inject, PLATFORM_ID } from '@angular/core';
@@ -12,7 +12,7 @@ import { environment } from '../../../environments/environment';
 })
 export class AuthService {
 
-  private apiUrl = `${environment.apiUrl}`; // Reemplaza con tu URL de autenticación
+  private apiUrl = environment.apiUrl;
   private isLoggedIn = false;
   headers:HttpHeaders;
 
@@ -24,6 +24,42 @@ export class AuthService {
     this.headers=new HttpHeaders({"Content-Type": "application/json", "Accept": "application/json"});
   }
 
+  private getDynamicApiUrl(): string {
+    if (isPlatformBrowser(this.platformId)) {
+      try {
+        const currentHostname = window.location.hostname;
+        
+        // MUNDO CENTRAL (localhost o dominio raíz)
+        if (currentHostname === 'localhost' || currentHostname === '127.0.0.1' || currentHostname === 'centralaudit.tecnodatasa.cl') {
+          return this.apiUrl; // Devuelve ".../api"
+        }
+
+        // MUNDO TENANT (Subdominio detectado)
+        // Aquí cambiamos el host Y el prefijo de la ruta.
+        const apiLocation = new URL(this.apiUrl);
+        
+        // Cambiar Host (ej: de localhost a cliente1.tecnodatasa...)
+        apiLocation.hostname = currentHostname;
+
+        // Cambiar Path (ej: de /api a /tenant)
+        // Esto asume que tu environment.apiUrl termina en "/api"
+        if (apiLocation.pathname.endsWith('/api')) {
+            apiLocation.pathname = apiLocation.pathname.replace('/api', '/tenant');
+        } else {
+            // Fallback por si tu environment no tiene /api
+            apiLocation.pathname = '/tenant';
+        }
+
+        return apiLocation.href.replace(/\/$/, ''); // Quitamos slash final
+
+      } catch (e) {
+        console.error('Error construyendo URL dinámica', e);
+        return this.apiUrl;
+      }
+    }
+    return this.apiUrl;
+  }
+
   login(email: string, password: string): Observable<any> {
     const loginData = {
       email,
@@ -31,13 +67,16 @@ export class AuthService {
       client_id: 'web_dashboard' // Identificador específico para el dashboard web
     };
 
-    return this.http.post<any>(`${this.apiUrl}/login`, loginData, {headers:this.headers}).pipe(
+    const url = `${this.getDynamicApiUrl()}/login`;
+
+    return this.http.post<any>(url, loginData, {headers:this.headers}).pipe(
       map(datos => {
-        // Guardar token si el login es exitoso
-        if (datos.success && datos.token) {
-          this.saveToken(datos.token);
+        const token = datos.access_token || datos.token;
+
+        if ((datos.success || token) && token) {
+          this.saveToken(token);
           this.isLoggedIn = true;
-          
+            
           // Guardar información del cliente si está disponible
           if (datos.client && isPlatformBrowser(this.platformId)) {
             localStorage.setItem('client_info', JSON.stringify(datos.client));
@@ -48,20 +87,45 @@ export class AuthService {
     );
   }
 
+  register(userData: any): Observable<any> {
+    // SIMPLIFICADO: Ya no necesitamos el hack de X-Tenant-Code.
+    // Al usar getDynamicApiUrl(), la petición va a "http://testerempresa.../api/register"
+    // El middleware de Laravel detectará el tenant automáticamente.
+    
+    const url = `${this.getDynamicApiUrl()}/register`;
+
+    // Mantenemos tu lógica de parseo de texto por seguridad (error 500 HTML)
+    return this.http.post(url, userData, { headers: this.headers, responseType: 'text' }).pipe(
+      map((text: string) => {
+        try {
+          return JSON.parse(text);
+        } catch (e) {
+          return { success: false, error: 'Respuesta inesperada del servidor', details: text };
+        }
+      })
+    );
+  }
+
+
+  logout(){
+    const url = `${this.getDynamicApiUrl()}/logout`;
+    return this.http.post(url, {}).pipe(
+      map(response => {
+        this.logout2();
+        return response;
+      }),
+      catchError(err => {
+        // Si falla el logout en servidor, cerramos localmente igual
+        this.logout2();
+        return of(err);
+      })
+    );
+  }
+
   private saveToken(token: string): void {
     if (isPlatformBrowser(this.platformId)) {
       localStorage.setItem('token', token);
     }
-  }
-
-  logout(){
-    // El interceptor automáticamente agregará el Authorization header
-    return this.http.post(`${this.apiUrl}/logout`,{}).pipe(
-      map(response => {
-        this.logout2();
-        return response;
-      })
-    );
   }
 
   logout2(){
@@ -130,10 +194,10 @@ export class AuthService {
   }
 
   me(): Observable<any> {
-    // El interceptor automáticamente agregará el Authorization header
     if (isPlatformBrowser(this.platformId)) {
-    return this.http.get(`${this.apiUrl}/me`);
-  }
+      const url = `${this.getDynamicApiUrl()}/me`; 
+      return this.http.get(url);
+    }
     return of(null);
   }
 
@@ -143,62 +207,4 @@ export class AuthService {
     }
   }
 
-  register(userData: any): Observable<any> {
-    // En el navegador: si la app se carga desde un subdominio de tenant,
-    // enviamos la petición al mismo origen para que el middleware
-    // `ResolveTenantFromDomain` identifique el tenant por host.
-    // Además pedimos la respuesta como texto y la parseamos manualmente,
-    // para detectar casos donde el backend devuelve una página HTML
-    // (error 500/500 HTML) que provoca "Unexpected token '<'" al parsear JSON.
-    const makeRequest = (url: string) =>
-      this.http.post(url, userData, { headers: this.headers, responseType: 'text' }).pipe(
-        map((text: string) => {
-          try {
-            return JSON.parse(text);
-          } catch (e) {
-            // Respuesta no JSON: devolver objeto con información legible
-            return { success: false, error: 'Respuesta inesperada del servidor', details: text };
-          }
-        })
-      );
-
-    if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
-      try {
-        const apiUrlHost = new URL(this.apiUrl).host;
-        const currentHost = window.location.host;
-
-        if (currentHost !== apiUrlHost) {
-          // En desarrollo, el frontend corre en otro puerto. En lugar de
-          // enviar al origin (que sería el servidor de dev de Angular),
-          // hacemos la petición al backend (`apiUrl`) pero añadimos el
-          // header `X-Tenant-Code` para que el middleware en el servidor
-          // identifique el tenant por ese valor.
-          // Derivamos el tenant code del subdominio: "subdominio-centralaudit..." => subdominio
-          const hostname = window.location.hostname || currentHost;
-          const sub = hostname.split('.')[0] || '';
-
-          // El patrón de dominio es: {tenant_code}-centralaudit.tecnodatasa.cl
-          // Quitamos el sufijo "-centralaudit" para obtener el código real del tenant.
-          let tenantCode = sub;
-          if (sub.endsWith('-centralaudit')) {
-            tenantCode = sub.replace(/-centralaudit$/, '');
-          }
-
-          const headersWithTenant = this.headers.set('X-Tenant-Code', tenantCode);
-
-          return this.http.post(`${this.apiUrl}/register`, userData, { headers: headersWithTenant, responseType: 'text' }).pipe(
-            map((text: string) => {
-              try { return JSON.parse(text); } catch (e) { return { success: false, error: 'Respuesta inesperada del servidor', details: text }; }
-            })
-          );
-        }
-      } catch (e) {
-        // Si falla el parseo del URL, continuamos y usamos apiUrl
-      }
-    }
-
-    return makeRequest(`${this.apiUrl}/register`);
-  }
-
 }
-

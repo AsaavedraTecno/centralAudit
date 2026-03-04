@@ -35,9 +35,10 @@ class AuthController extends Controller
         }
 
         // Crear token
-        $token = $user->createToken('auth-token')->plainTextToken;
+        $token = $user->createToken('auth-token')->accessToken;
 
         return response()->json([
+            'success' => true,  
             'token' => $token,
             'user' => [
                 'id' => $user->id,

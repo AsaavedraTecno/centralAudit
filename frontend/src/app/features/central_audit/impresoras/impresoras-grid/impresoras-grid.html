@@ -1,0 +1,116 @@
+<table class="table table-hover">
+
+  <thead>
+    <tr>
+
+      <th class="sortable" (click)="ordenarColumna('nombre')">
+        Nombre
+
+        <i *ngIf="ordenarPor === 'nombre' && direccionOrden === 'asc'"
+          class="fas fa-arrow-up"></i>
+
+        <i *ngIf="ordenarPor === 'nombre' && direccionOrden === 'desc'"
+          class="fas fa-arrow-down"></i>
+
+        <i *ngIf="ordenarPor !== 'nombre'"
+          class="fas fa-sort"></i>
+
+      </th>
+
+      <th class="sortable" (click)="ordenarColumna('serie')">
+
+        Serie
+
+        <i *ngIf="ordenarPor === 'serie' && direccionOrden === 'asc'"
+          class="fas fa-arrow-up"></i>
+
+        <i *ngIf="ordenarPor === 'serie' && direccionOrden === 'desc'"
+          class="fas fa-arrow-down"></i>
+
+        <i *ngIf="ordenarPor !== 'serie'"
+          class="fas fa-sort"></i>
+
+      </th>
+
+      <th class="sortable" (click)="ordenarColumna('estado')">
+
+        Estado
+
+        <i *ngIf="ordenarPor === 'estado' && direccionOrden === 'asc'"
+          class="fas fa-arrow-up"></i>
+
+        <i *ngIf="ordenarPor === 'estado' && direccionOrden === 'desc'"
+          class="fas fa-arrow-down"></i>
+
+        <i *ngIf="ordenarPor !== 'estado'"
+          class="fas fa-sort"></i>
+
+      </th>
+
+      <th>
+        Toner
+      </th>
+
+      <th></th>
+
+    </tr>
+  </thead>
+
+  <tbody>
+
+    <tr *ngFor="let imp of impresoras">
+
+      <td>{{ imp.nombre }}</td>
+
+      <td>
+        <code>{{ imp.serie }}</code>
+      </td>
+
+      <td>
+        <span class="badge"
+          [ngClass]="imp.estado === 1 ? 'bg-success' : 'bg-danger'">
+          {{ imp.estado === 1 ? 'Activa' : 'Inactiva' }}
+        </span>
+      </td>
+
+      <td class="toner-cell">
+
+        <div class="toner-mini">
+
+          <span class="k"
+                [style.width.%]="imp.tonerBlack || 0"
+                [title]="'Black ' + (imp.tonerBlack || 0) + '%'">
+          </span>
+          
+          <span class="c" 
+                [style.width.%]="imp.tonerCyan || 0"
+                [title]="'Cyan ' + (imp.tonerCyan || 0) + '%'">
+          </span>
+
+          <span class="m" 
+                [style.width.%]="imp.tonerMagenta || 0"
+                [title]="'Magenta ' + (imp.tonerMagenta || 0) + '%'">
+          </span>
+          
+          <span class="y" 
+                [style.width.%]="imp.tonerYellow || 0"
+                [title]="'Yellow ' + (imp.tonerYellow || 0) + '%'">
+          </span>
+
+        </div>
+
+      </td>
+      <td>
+
+        <button class="btn btn-sm btn-outline-primary"
+                (click)="verDetalles.emit(imp)">
+          <i class="fas fa-eye"></i>
+        </button>
+
+      </td>
+
+    </tr>
+
+  </tbody>
+
+</table>

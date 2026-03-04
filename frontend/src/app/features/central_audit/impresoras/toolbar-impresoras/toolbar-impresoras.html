@@ -1,0 +1,60 @@
+<div class="toolbar-impresoras">
+
+  <!-- IZQUIERDA -->
+  <div class="toolbar-left">
+
+    <div class="toolbar-search">
+      <ng-content></ng-content>
+    </div>
+
+  </div>
+
+  <!-- DERECHA -->
+  <div class="toolbar-right">
+
+    <!-- cambiar vista -->
+
+    <div class="btn-group vista-switch">
+
+      <button
+        class="btn btn-outline-secondary"
+        [class.active]="modoVista === 'cards'"
+        (click)="cambiarVista.emit('cards')">
+
+        <i class="fas fa-th-large"></i>
+
+      </button>
+
+      <button
+        class="btn btn-outline-secondary"
+        [class.active]="modoVista === 'grid'"
+        (click)="cambiarVista.emit('grid')">
+
+        <i class="fas fa-table"></i>
+
+      </button>
+
+    </div>
+
+    <!-- ordenar -->
+
+    <div class="ordenar-control">
+
+      <span class="small text-muted">Ordenar</span>
+
+      <select
+        class="form-select form-select-sm"
+        (change)="cambiarOrden.emit($any($event.target).value)">
+
+        <option value="estado">Estado</option>
+        <option value="nombre">Nombre</option>
+        <option value="serie">Serie</option>
+        <option value="toner">Toner</option>
+
+      </select>
+
+    </div>
+
+  </div>
+
+</div>

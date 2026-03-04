@@ -1,0 +1,13 @@
+<div *ngIf="toast$ | async as toast" 
+     class="toast-container animate__animated animate__fadeInUp" 
+     [ngClass]="toast.type">
+  <div class="toast-content">
+    <i class="fas me-2" [ngClass]="{
+      'fa-check-circle': toast.type === 'success',
+      'fa-exclamation-circle': toast.type === 'error',
+      'fa-info-circle': toast.type === 'info',
+      'fa-exclamation-triangle': toast.type === 'warning'
+    }"></i>
+    <span>{{ toast.message }}</span>
+  </div>
+</div>

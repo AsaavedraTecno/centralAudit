@@ -1,16 +1,28 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { NgSelectModule } from '@ng-select/ng-select';
+
+// Modelos y Servicios
 import { Cliente } from '../../../../models/cliente';
 import { ClienteService } from '../../../../core/services/cliente.service';
-import { CHILE_DATA, Region } from '../../../../data/chile-data'; 
-import { NgSelectModule } from '@ng-select/ng-select';
+import { AgentService } from '../../../../core/services/agent.service';
+import { CHILE_DATA, Region } from '../../../../data/chile-data';
+import { AgentConfig, CreateClientResponse } from '../../../../models/agent-config';
+
+// Componente Compartido (Asegúrate que la ruta sea correcta según tu estructura)
+import { AgentConfigFormComponent } from '../../../../shared/agent-config-form/agent-config-form.component';
 
 @Component({
   selector: 'app-crear-clientes',
   standalone: true,
-  imports: [CommonModule, FormsModule, NgSelectModule],
+  imports: [
+    CommonModule, 
+    FormsModule, 
+    NgSelectModule, 
+    AgentConfigFormComponent // Importamos el componente hijo
+  ],
   templateUrl: './crear-clientes.html',
   styleUrls: ['./crear-clientes.scss']
 })
@@ -62,17 +74,11 @@ export class CrearClientesComponent implements OnInit {
     client_code: ''
   };
 
-  // --- 3. Formulario Técnico (Paso 3) ---
-  configAgente = {
-    snmp_community: 'public',
-    ip_from: '',
-    ip_to: '',
-    subnet_mask: '255.255.255.0',
-    scan_interval: 60
-  };
+  // NOTA: Se eliminó 'configAgente' porque ahora lo maneja el componente hijo.
 
   constructor(
     private clienteService: ClienteService,
+    private agentService: AgentService,
     private router: Router
   ) {}
 
@@ -99,38 +105,138 @@ export class CrearClientesComponent implements OnInit {
     }
   }
 
+  prepararTelefono(campo: string, index?: number) {
+    const valorActual = index !== undefined 
+      ? this.clienteForm.contactos[index][campo] 
+      : this.clienteForm[campo];
+
+    if (!valorActual || valorActual === '') {
+      const inicio = '+56 ';
+      if (index !== undefined) {
+        this.clienteForm.contactos[index][campo] = inicio;
+      } else {
+        this.clienteForm[campo] = inicio;
+      }
+    }
+  }
+
+  validarEntradaRut(event: any) {
+    const regex = /[^0-9kK]/g;
+    event.target.value = event.target.value.replace(regex, '');
+    this.formatearRut(event);
+  }
+
+  validarTelefono(event: any, campo: string, index?: number) {
+    let value = event.target.value.replace(/\D/g, '');
+
+    if (!value.startsWith('56')) {
+      value = '56' + value;
+    }
+
+    value = value.substring(0, 11);
+
+    let formatted = '';
+    if (value.length > 0) formatted = '+' + value.substring(0, 2); 
+    if (value.length > 2) formatted += ' ' + value.substring(2, 3); 
+    if (value.length > 3) formatted += ' ' + value.substring(3, 7); 
+    if (value.length > 7) formatted += ' ' + value.substring(7, 11); 
+
+    if (index !== undefined) {
+      this.clienteForm.contactos[index][campo] = formatted;
+    } else {
+      this.clienteForm[campo] = formatted;
+    }
+  }
+
+  formatearRut(event: any) {
+    let value = event.target.value.replace(/\./g, '').replace(/-/g, '');
+    if (value.length <= 1) return;
+
+    let cuerpo = value.slice(0, -1);
+    let dv = value.slice(-1).toUpperCase();
+    let cuerpoFormateado = cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    
+    this.clienteForm.rut = cuerpoFormateado + "-" + dv;
+  }
+
   // --- NAVEGACIÓN DEL WIZARD ---
+  intentoSiguiente = false;
+
+  esEmailValido(email: string): boolean {
+    const re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    return re.test(String(email).toLowerCase());
+  }
 
   siguientePaso() {
+    this.intentoSiguiente = true;
     this.error = '';
 
     if (this.pasoActual === 1) {
-      if (!this.clienteForm.nombre || !this.clienteForm.rut) {
-        this.error = "Nombre y RUT son obligatorios.";
+      const empresaValida = this.clienteForm.nombre && this.clienteForm.rut && 
+                            this.clienteForm.region && this.clienteForm.comuna && 
+                            this.clienteForm.direccion;
+
+      const contactosValidos = this.clienteForm.contactos.every((c: any) => 
+        c.nombre && c.email && this.esEmailValido(c.email) && c.telefono
+      );
+
+      if (!empresaValida || !contactosValidos) {
+          this.error = "Complete los datos obligatorios, dirección y asegúrese de que el Email de cada contacto sea válido.";
+        setTimeout(() => { this.error = '';}, 5000);
         return;
       }
       this.pasoActual = 2;
+      this.intentoSiguiente = false;
     } 
     else if (this.pasoActual === 2) {
-      this.enviarInfraestructura();
+      if(!this.clienteForm.sucursal_nombre || !this.clienteForm.sucursal_direccion) {
+        this.error = "Debe indicar el nombre y dirección de la sucursal.";
+        return;
+      }
+
+      const mensaje = `¿Está seguro de los datos ingresados?\n\nAl continuar, se creará la infraestructura en el servidor y no podrá volver atrás para editar estos campos básicos.`;
+      if (confirm(mensaje)) {
+        this.enviarInfraestructura();
+      }  
     }
   }
 
   enviarInfraestructura() {
     this.guardando = true;
+    const payload = { ...this.clienteForm };   
+    
+    if (payload.rut) {
+      payload.rut = payload.rut.replace(/\./g, '');
+    }
+    
+    payload.contactos.forEach((contacto: any) => {
+      if (contacto.telefono) {
+        contacto.telefono = contacto.telefono.replace(/\D/g, ''); 
+      }
+      if (contacto.telefono_alternativo) {
+        contacto.telefono_alternativo = contacto.telefono_alternativo.replace(/\D/g, '');
+      }
+    });
 
-    // Enviamos el objeto clienteForm completo a Laravel
-    this.clienteService.create(this.clienteForm).subscribe({
-      next: (res) => {
+    if (payload.sucursal_telefono_contacto) {
+      payload.sucursal_telefono_contacto = payload.sucursal_telefono_contacto.replace(/\D/g, '');
+    }
+    
+    this.clienteService.create(payload).subscribe({
+      next: (res: any) => {
+          console.log('✅ RESPUESTA SERVIDOR:', res);        
+
         this.generatedData = {
-          agent_key: res.agent_key,
+          agent_key: res.agent_key,          
+          agent_id:  res.agent_id,   // Directo          
           domain: res.domain,
-          agent_id: res.agent_id,
           client_code: res.client_code
         };
+        console.log('✅ DATOS GUARDADOS EN MEMORIA:', this.generatedData);
         this.success = "Infraestructura creada con éxito.";
         this.guardando = false;
         this.pasoActual = 3;
+        this.intentoSiguiente = false;
         setTimeout(() => this.success = '', 3000);
       },
       error: (err) => {
@@ -140,31 +246,47 @@ export class CrearClientesComponent implements OnInit {
     });
   }
 
-  finalizarOnboarding() {
+  /**
+   * ESTE ES EL MÉTODO MODIFICADO (PASO 3)
+   * Recibe los datos validados desde el componente hijo.
+   */
+  finalizarOnboarding(datosFormulario: AgentConfig) {
+    this.intentoSiguiente = true;
+    this.error = '';
+
+    // 1. Confirmación de seguridad
+    const mensajeConfirmacion = `¿Está seguro de finalizar la configuración?\n\nSe establecerá el rango de red: ${datosFormulario.ip_from} hasta ${datosFormulario.ip_to}.\n\nUna vez guardado, el agente comenzará el escaneo con estos parámetros.`;
+
+    if (!confirm(mensajeConfirmacion)) {
+      return; 
+    }
+
+    // 2. Proceso de Guardado
     this.guardandoConfig = true;
 
-    // IMPORTANTE: Aquí usamos configAgente, que es lo que está en el HTML del Paso 3
-    const payloadTecnico = {
-      snmp_community: this.configAgente.snmp_community,
-      ip_from: this.configAgente.ip_from,
-      ip_to: this.configAgente.ip_to,
-      subnet_mask: this.configAgente.subnet_mask,
-      scan_interval: this.configAgente.scan_interval 
+    // 3. Unimos los datos del formulario con el ID generado previamente
+    const payloadTecnico: AgentConfig = {
+      ...datosFormulario,
+      agent_key_id: this.generatedData.agent_id
     };
 
-    this.clienteService.setupAgent(
+    this.agentService.saveConfig(
       this.generatedData.client_code, 
-      this.generatedData.agent_id, 
       payloadTecnico
     ).subscribe({
       next: () => {
         this.success = "Cliente configurado y listo para monitoreo.";
         this.guardandoConfig = false;
+        this.intentoSiguiente = false;
+        
+        // Navegación tras éxito
         setTimeout(() => this.router.navigate(['/gestion-clientes/listar-clientes']), 2500);
       },
       error: (err) => {
-        this.error = "Error al guardar la configuración técnica de red.";
+        this.error = err.error?.message || "Error al guardar la configuración técnica de red.";
         this.guardandoConfig = false;
+        
+        setTimeout(() => { this.error = ''; }, 5000);
       }
     });
   }
@@ -223,6 +345,14 @@ export class CrearClientesComponent implements OnInit {
   cancelarAccion(): void {
     if(confirm('¿Desea cancelar?')) {
       window.location.reload();
+    }
+  }
+
+  @HostListener('window:beforeunload', ['$event'])
+  unloadNotification($event: any) {
+    // Solo activar si el usuario ya empezó a escribir algo
+    if (this.pasoActual > 1 || this.clienteForm.nombre) {
+      $event.returnValue = true;
     }
   }
 }

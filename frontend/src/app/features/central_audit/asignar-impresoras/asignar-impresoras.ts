@@ -15,7 +15,7 @@ interface Serie {
 @Component({
   selector: 'app-asignar-impresoras',
   imports: [CommonModule, FormsModule],
-  templateUrl: '/asignar-impresoras.html',
+  templateUrl: './asignar-impresoras.html',
   styleUrls: ['./asignar-impresoras.scss']
 })
 export class AsignarImpresoras implements OnInit {

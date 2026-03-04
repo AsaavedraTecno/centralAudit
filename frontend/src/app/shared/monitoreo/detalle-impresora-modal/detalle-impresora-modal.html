@@ -1,0 +1,212 @@
+<div class="modal-overlay" *ngIf="mostrar" (click)="cerrar()">
+  <div class="modal-content-detalles" (click)="$event.stopPropagation()">
+    
+    <div class="modal-header-detalles">
+      <div class="d-flex align-items-center gap-3">
+        <h3 class="mb-0">{{ impresora?.nombre || 'Detalles de la Impresora' }}</h3>
+        <button class="btn btn-sm" 
+                [ngClass]="editando ? 'btn-danger' : 'btn-outline-light'" 
+                (click)="toggleEditar()">
+          <i class="fas" [ngClass]="editando ? 'fa-times' : 'fa-pencil-alt'"></i>
+          {{ editando ? ' Cancelar' : ' Editar Inventario' }}
+        </button>
+      </div>
+      <button type="button" class="btn-close" (click)="cerrar()" aria-label="Cerrar">
+      </button>
+    </div>
+
+    <div class="modal-body-detalles">
+      <div class="detalles-grid">
+        
+        <div class="detalles-grupo">
+          <h5 class="detalles-titulo">Información del Sistema (SNMP)</h5>
+          <div class="detalles-fila">
+            <span class="detalles-label">Nombre:</span>
+            <span class="detalles-valor">{{ impresora?.nombre || '-' }}</span>
+          </div>
+          <div class="detalles-fila">
+            <span class="detalles-label">IP:</span>
+            <span class="detalles-valor">{{ impresora?.ip || '-' }}</span>
+          </div>
+          <div class="detalles-fila">
+            <span class="detalles-label">Modelo:</span>
+            <span class="detalles-valor">{{ impresora?.modelo || '-' }}</span>
+          </div>
+          <div class="detalles-fila">
+            <span class="detalles-label">Serie Fábrica:</span>
+            <span class="detalles-valor"><code>{{ impresora?.serie || '-' }}</code></span>
+          </div>
+          <div class="detalles-fila">
+            <span class="detalles-label">Estado:</span>
+            <span class="detalles-valor">
+              <span class="badge" [class.bg-success]="impresora?.estado === 1" [class.bg-secondary]="impresora?.estado !== 1">
+                {{ impresora?.estado === 1 ? 'Activa' : 'Inactiva' }}
+              </span>
+            </span>
+          </div>
+        </div>
+
+        <div class="detalles-grupo admin-box">
+          <h5 class="detalles-titulo">Datos extras</h5>
+          
+          <div class="detalles-fila flex-column align-items-start mb-2">
+            <span class="detalles-label small">ID Interno (Ej: WH-128):</span>
+            <input *ngIf="editando" type="text" [(ngModel)]="impresora.internal_id" class="form-control form-control-sm">
+            <span *ngIf="!editando" class="detalles-valor fw-bold">{{ impresora?.internal_id || 'Sin ID' }}</span>
+          </div>
+
+          <div class="detalles-fila flex-column align-items-start mb-2">
+            <span class="detalles-label small">Serie Secundaria / Etiqueta:</span>
+            <input *ngIf="editando" type="text" [(ngModel)]="impresora.secondary_serial" class="form-control form-control-sm">
+            <span *ngIf="!editando" class="detalles-valor">{{ impresora?.secondary_serial || '-' }}</span>
+          </div>
+
+          <div class="detalles-fila flex-column align-items-start">
+            <span class="detalles-label small">Ubicación Manual (Oficina/Piso):</span>
+            <input *ngIf="editando" type="text" [(ngModel)]="impresora.custom_location" class="form-control form-control-sm">
+            <span *ngIf="!editando" class="detalles-valor">{{ impresora?.custom_location || '-' }}</span>
+          </div>
+        </div>
+
+        <div class="detalles-grupo">
+          <h5 class="detalles-titulo">Ubicación Detectada</h5>
+          <div class="detalles-fila">
+            <span class="detalles-label">Ubicación SNMP:</span>
+            <span class="detalles-valor">{{ impresora?.ubicacion || '-' }}</span>
+          </div>
+          <div class="detalles-fila" *ngIf="impresora?.descripcion">
+            <span class="detalles-label">Descripción:</span>
+            <span class="detalles-valor">{{ impresora?.descripcion }}</span>
+          </div>
+        </div>
+
+        <div class="detalles-grupo full-width bg-white border rounded p-3">
+          <h5 class="detalles-titulo">Personalización y Notas</h5>
+          <div class="row g-3">
+            <div class="col-12">
+              <span class="detalles-label small text-muted">Campo Extra 1:</span>
+              <textarea *ngIf="editando" [(ngModel)]="impresora.custom_field_1" class="form-control mt-1" rows="2" 
+                        (input)="autoResize($event)" style="overflow:hidden; resize:none;"></textarea>
+              <div *ngIf="!editando" class="p-2 bg-light border rounded mt-1 small" style="min-height: 42px; white-space: pre-wrap;">
+                {{ impresora?.custom_field_1 || '-' }}
+              </div>
+            </div>
+
+            <div class="col-12 mt-2">
+              <span class="detalles-label small text-muted">Campo Extra 2:</span>
+              <textarea *ngIf="editando" [(ngModel)]="impresora.custom_field_2" class="form-control mt-1" rows="2" 
+                        (input)="autoResize($event)" style="overflow:hidden; resize:none;"></textarea>
+              <div *ngIf="!editando" class="p-2 bg-light border rounded mt-1 small" style="min-height: 42px; white-space: pre-wrap;">
+                {{ impresora?.custom_field_2 || '-' }}
+              </div>
+            </div>
+
+            <div class="col-12 mt-3">
+              <span class="detalles-label">Comentarios / Glosa:</span>
+              <textarea *ngIf="editando" [(ngModel)]="impresora.comments" class="form-control mt-1" rows="3" 
+                        (input)="autoResize($event)" style="overflow:hidden; resize:none;"
+                        placeholder="Historial, mantenimientos, notas..."></textarea>
+              <div *ngIf="!editando" class="p-2 bg-light border rounded mt-1 small" style="min-height: 60px; white-space: pre-wrap;">
+                {{ impresora?.comments || 'Sin comentarios.' }}
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-4" *ngIf="editando">
+            <button class="btn btn-primary w-100 shadow" (click)="guardar()">
+              <i class="fas fa-save me-2"></i> Guardar Cambios
+            </button>
+          </div>
+        </div>
+
+        <div class="detalles-grupo">
+          <h5 class="detalles-titulo">Contadores de Páginas</h5>
+          <div class="detalles-fila bg-light rounded p-2 mb-2 border">
+            <span class="detalles-label text-primary fw-bold"><i class="fas fa-file-alt me-1"></i> Impreso Hoy:</span>
+            <span class="detalles-valor text-primary fw-bold fs-6">{{ impresora?.impresoHoy || 0 | number }}</span>
+          </div>
+          <div class="detalles-fila bg-light rounded p-2 mb-3 border">
+            <span class="detalles-label text-success fw-bold"><i class="fas fa-calendar-alt me-1"></i> Impreso Mes:</span>
+            <span class="detalles-valor text-success fw-bold fs-6">{{ impresora?.impresoMes || 0 | number }}</span>
+          </div>
+          <div class="detalles-fila">
+            <span class="detalles-label">Total impreso:</span>
+            <span class="detalles-valor">{{ impresora?.paginasImpresas || 0 | number }}</span>
+          </div>
+          <div class="detalles-fila">
+            <span class="detalles-label">Blanco y Negro:</span>
+            <span class="detalles-valor">{{ impresora?.paginasBN || 0 | number }}</span>
+          </div>
+          <div class="detalles-fila">
+            <span class="detalles-label">Color:</span>
+            <span class="detalles-valor">{{ impresora?.paginasColor || 0 | number }}</span>
+          </div>
+        </div>
+
+        <div class="detalles-grupo full-width mt-3">
+          <h5 class="detalles-titulo border-bottom pb-2 mb-3">
+            <i class="fas fa-cubes me-2"></i>Estado de Consumibles y CRUM
+          </h5>
+          
+          <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle" style="font-size: 0.9rem;">
+              <thead class="table-light text-muted">
+                <tr>
+                  <th style="width: 20%">Componente</th>
+                  <th style="width: 25%">Nivel</th>
+                  <th style="width: 12%" class="text-center">Estado</th>
+                  <th style="width: 22%">CRUM</th>
+                  <th style="width: 21%">Serie</th>
+                </tr>
+              </thead>
+              <tbody>
+                
+                <tr *ngFor="let item of suministrosProcesados">
+                  <td class="fw-bold">
+                    <span class="me-2" [ngClass]="item.colorClass">{{ item.icon }}</span> {{ item.label }}
+                  </td>
+                  <td>
+                    <div class="d-flex align-items-center gap-2">
+                      <div class="progress flex-grow-1" style="height: 8px;">
+                        <div class="progress-bar" 
+                             [style.backgroundColor]="item.barColor"
+                             [style.width.%]="item.data.percentage"></div>
+                      </div>
+                      <span class="small fw-bold" style="min-width: 35px;">{{ item.data.percentage | number:'1.0-0' }}%</span>
+                    </div>
+                  </td>
+                  <td class="text-center">
+                    <span class="badge" [ngClass]="getStatusClass(item.data.status)">
+                      {{ translateStatus(item.data.status) }}
+                    </span>
+                  </td>
+                  <td>
+                    <code class="text-dark bg-light px-2 py-1 rounded border small">
+                      {{ extractCRUM(item.data.serial_number, item.data.description) }}
+                    </code>
+                  </td>
+                  <td *ngIf="!sonIgualesCRUMySerie(item.data.serial_number, item.data.description)">
+                    <code class="text-dark bg-light px-2 py-1 rounded border small">
+                      {{ extractSerie(item.data.serial_number, item.data.description) }}
+                    </code>
+                  </td>
+                  <td *ngIf="sonIgualesCRUMySerie(item.data.serial_number, item.data.description)" colspan="1" class="text-muted text-center">
+                    <em>-</em>
+                  </td>
+                </tr>
+
+                <tr *ngIf="suministrosProcesados.length === 0">
+                  <td colspan="5" class="text-center text-muted py-3">
+                    No hay datos de consumibles registrados para esta impresora.
+                  </td>
+                </tr>
+
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>

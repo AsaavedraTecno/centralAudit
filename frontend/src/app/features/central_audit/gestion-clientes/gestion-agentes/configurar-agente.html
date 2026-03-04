@@ -1,0 +1,149 @@
+<div class="container-fluid py-4">
+    
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">Configurar Agente</h1>
+            <p class="text-muted small mb-0">
+                Cliente: <strong>{{ clientCode }}</strong> | Key ID: {{ agentKeyId }}
+            </p>
+        </div>
+        <button class="btn btn-outline-secondary" (click)="volver()">
+            <i class="fas fa-arrow-left"></i> Volver
+        </button>
+    </div>
+
+    <div *ngIf="mensajeExito" class="alert alert-success fade show" role="alert">
+        <i class="fas fa-check-circle me-2"></i> {{ mensajeExito }}
+    </div>
+    <div *ngIf="mensajeError" class="alert alert-danger fade show" role="alert">
+        <i class="fas fa-exclamation-triangle me-2"></i> {{ mensajeError }}
+    </div>
+
+    <div class="row mb-4" *ngIf="datosCargados && !loading">
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-start-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Estado Actual</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                <span class="badge" 
+                                    [ngClass]="datosCargados.status === 'online' ? 'bg-success' : 'bg-secondary'">
+                                    <i class="fas" [ngClass]="datosCargados.status === 'online' ? 'fa-check' : 'fa-power-off'"></i>
+                                    {{ (datosCargados.status || 'OFFLINE') | uppercase }}
+                                </span>
+                            </div>
+                            <div class="mt-2 small text-muted">
+                                <i class="fas fa-code-branch me-1"></i> Versión: 
+                                <strong>{{ datosCargados.agent_version || 'N/A' }}</strong>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-robot fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-start-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Identidad (Hostname)</div>
+                            <div class="mb-1 text-truncate" style="max-width: 150px;" title="{{ datosCargados.hostname }}">
+                                <span class="font-weight-bold text-dark">{{ datosCargados.hostname || 'Desconocido' }}</span>
+                            </div>
+                            <div class="mb-0">
+                                <small class="text-muted d-block">IP Agente:</small>
+                                <code class="text-primary">{{ datosCargados.ip_address || '---' }}</code>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-server fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-start-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Última Conexión</div>
+                            
+                            <div *ngIf="datosCargados.last_seen_at; else noVisto">
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                    {{ datosCargados.last_seen_at | date:'HH:mm' }}
+                                </div>
+                                <div class="small text-muted mt-1">
+                                    {{ datosCargados.last_seen_at | date:'dd MMM yyyy' }}
+                                </div>
+                            </div>
+                            
+                            <ng-template #noVisto>
+                                <div class="h5 mb-0 text-muted small">Nunca</div>
+                                <div class="small text-muted mt-1">Esperando datos...</div>
+                            </ng-template>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-start-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Alcance del Escaneo</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ datosCargados.ips_to_scan || 0 }} IPs
+                            </div>
+                            <div class="small text-muted mt-1">
+                                <i class="fas fa-print me-1"></i> {{ datosCargados.printers_count || 0 }} Impresoras
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-network-wired fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 bg-white">
+            <h6 class="m-0 font-weight-bold text-primary">Parámetros de Red y Monitoreo</h6>
+        </div>
+        <div class="card-body">
+
+            <div *ngIf="loading" class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>    
+                </div>
+                <p class="mt-2 text-muted">Obteniendo configuración actual...</p>
+            </div>
+
+            <app-agent-config-form 
+                *ngIf="!loading && datosCargados"
+                [initialData]="datosCargados" 
+                [isLoading]="guardando" 
+                (onSave)="guardarCambios($event)">
+            </app-agent-config-form>
+
+        </div>
+    </div>
+</div>

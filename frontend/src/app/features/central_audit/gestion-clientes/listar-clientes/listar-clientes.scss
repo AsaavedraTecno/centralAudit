@@ -1,51 +1,122 @@
-/* Estilos específicos para el Listado de Clientes */
-
-.card {
-  border-radius: 12px;
-  overflow: hidden; // Para que el header respete el redondeado
+/* Contenedor Principal */
+.client-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-// Estilo profesional para encabezados de tabla
-.table thead th {
+/* Cabecera de la lista */
+.list-header {
+  padding: 0 1.5rem 0.75rem;
   font-size: 0.75rem;
+  font-weight: 700;
   text-transform: uppercase;
-  color: #6c757d;
-  letter-spacing: 0.5px;
-  border-top: none;
-  background-color: #f8f9fa;
+  color: #8e94a9;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
 }
 
-// Ajuste para las celdas de la tabla
-.table tbody td {
-  padding-top: 1rem;
-  padding-bottom: 1rem;
-  vertical-align: middle;
-}
+/* Tarjeta de Fila */
+.client-row-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  border: 1px solid #edf2f7;
+  transition: all 0.25s ease;
 
-// Estilo para el RUT y textos secundarios
-small.text-primary {
-  font-size: 0.85rem;
-  opacity: 0.9;
-}
-
-// Efecto al pasar el mouse por la fila
-.table-hover tbody tr:hover {
-  background-color: rgba(0, 123, 255, 0.03); 
-  transition: background-color 0.2s ease;
-}
-
-// Botones de acción más elegantes
-.btn-group .btn {
-  padding: 0.4rem 0.6rem;
-  border-radius: 6px !important;
-  margin: 0 2px;
-  
-  i {
-    font-size: 0.9rem;
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
+    border-color: #cbd5e0;
   }
 }
 
-// Estilo para el icono de "No hay datos"
-.opacity-25 {
-  opacity: 0.25;
+/* Columnas (Anchos fijos para Desktop) */
+.col-client { flex: 2; display: flex; align-items: center; gap: 15px; }
+.col-location { flex: 1.5; }
+.col-date { flex: 1; }
+.col-status { flex: 1; }
+.col-actions { flex: 1; display: flex; justify-content: flex-end; }
+
+/* Avatar */
+.avatar-circle {
+  width: 42px;
+  height: 42px;
+  background: #ebf4ff;
+  color: #3182ce;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1.2rem;
+  border: 1px solid #bee3f8;
+}
+
+/* Info Grupos */
+.client-info {
+  display: flex;
+  flex-direction: column;
+  .client-name { font-weight: 700; color: #2d3748; font-size: 1rem; }
+  .client-rut { color: #718096; font-size: 0.85rem; }
+}
+
+.info-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  .main-text { color: #4a5568; font-weight: 600; font-size: 0.9rem; }
+  .sub-text { color: #a0aec0; font-size: 0.75rem; }
+}
+
+/* Status con Dot */
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  
+  &.active { background: #c6f6d5; color: #22543d; .dot { background: #38a169; } }
+  &.suspended { background: #fff5f5; color: #822727; .dot { background: #e53e3e; } }
+  
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+}
+
+/* Botones de Acción Estilo Icon-Only */
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-action {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: white;
+  color: #4a5568;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  cursor: pointer;
+
+  &:hover {
+    color: white;
+    &.edit { background: #3182ce; border-color: #3182ce; }
+    &.branch { background: #38b2ac; border-color: #38b2ac; }
+    &.agent { background: #2d3748; border-color: #2d3748; }
+    &.delete { background: #e53e3e; border-color: #e53e3e; }
+  }
 }

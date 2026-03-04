@@ -1,0 +1,33 @@
+.toolbar-impresoras {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 20px;
+}
+
+.toolbar-left {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.toolbar-search {
+  width: 100%;
+}
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.vista-switch button {
+  padding: 6px 10px;
+}
+
+.ordenar-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

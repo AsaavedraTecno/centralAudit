@@ -20,12 +20,17 @@ return new class extends Migration
             // Tipo de suministro: toner_black, toner_cyan, drum_black, fusor, etc.
             // Normalizado para escalar a cualquier tipo de suministro
             $table->string('supply_type')->index();
+
+            $table->string('name')->nullable();
             
             // Porcentaje o vida útil (0-100%)
             $table->decimal('percentage', 5, 2)->default(0);
             
             // Estado/descripción adicional
             $table->string('status')->default('ok'); // ok|low|critical|empty|error
+
+            $table->string('serial_number')->nullable();  // Aquí se guardará el CRUM
+            $table->text('description')->nullable(); // Descripción completa que manda el agente
             
             // Timestamp de lectura para series temporales
             $table->timestamp('read_at')->index();

@@ -1,289 +1,129 @@
-<div class="impresoras-section">
-  <div class="card">
-    <div class="card-header">
-      <h2 class="mb-0">
-        <i class="fas fa-print me-2"></i>
-        Gestión de Impresoras
-      </h2>
+<div class="split-layout">
+
+  <aside class="tree-sidebar">
+
+    <div class="sidebar-header">
+      <h5><i class="fas fa-sitemap me-2 text-primary"></i> Navegación</h5>
     </div>
-    <div class="card-body">
-      <!-- Loading -->
-      <div *ngIf="cargando" class="text-center p-4">
-        <i class="fas fa-spinner fa-spin me-2"></i>
-        Cargando impresoras...
-      </div>
 
-      <div *ngIf="!cargando && impresoras.length > 0">
-        <!-- Impresoras sin Cliente Asignado (primero) -->
-        <div *ngIf="impressorasDisponibles.length > 0" class="mb-4">
-          <div class="cliente-header cliente-header-collapsible d-flex align-items-center justify-content-between"
-               (click)="toggleSeccion('sin-cliente')">
-            <h5 class="mb-0">
-              <i class="fas fa-check-circle me-2 text-success"></i>
-              <strong>Sin Cliente Asignado</strong>
-            </h5>
-            <i class="fas chevron-icon" [ngClass]="estaExpandida('sin-cliente') ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
-          </div>
+    <div class="loading-bar-container" *ngIf="cargandoArbol">
+      <div class="loading-bar"></div>
+    </div>
 
-          <div class="table-responsive" *ngIf="estaExpandida('sin-cliente')">
-            <table class="table table-sm table-hover mb-0">
-              <thead class="table-light">
-                <tr>
-                  <th style="width: 20%;">Nombre</th>
-                  <th style="width: 12%;">IP</th>
-                  <th style="width: 13%;">Modelo</th>
-                  <th style="width: 13%;">Serie</th>
-                  <th style="width: 15%;">Ubicación</th>
-                  <th style="width: 15%;">Sucursal</th>
-                  <th style="width: 12%;">Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let impresora of impressorasDisponibles">
-                  <td><strong class="nombre-clickeable" (click)="abrirDetalles(impresora)">{{ impresora.nombre || '-' }}</strong></td>
-                  <td>{{ impresora.ip || '-' }}</td>
-                  <td>{{ impresora.modelo || '-' }}</td>
-                  <td><code>{{ impresora.serie || '-' }}</code></td>
-                  <td>{{ impresora.ubicacion || '-' }}</td>
-                  <td><small class="text-muted">-</small></td>
-                  <td>
-                    <span class="badge" [ngClass]="impresora.estado === 1 ? 'bg-success' : 'bg-secondary'">
-                      {{ impresora.estado === 1 ? 'Activa' : 'Inactiva' }}
-                    </span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+    <div class="tree-content">
+
+      <div *ngFor="let cliente of clientes"
+           class="tree-node"
+           [style.opacity]="cargandoArbol ? '0.6' : '1'">
+
+        <div class="tree-client"
+             (click)="toggleCliente(cliente.code || cliente.id)">
+
+          <i class="fas"
+             [ngClass]="seccionesExpandidas.get(cliente.code || cliente.id)
+             ? 'fa-folder-open text-warning'
+             : 'fa-folder text-warning'">
+          </i>
+
+          <span>{{ cliente.razon_social || cliente.nombre }}</span>
+
         </div>
 
-        <!-- Impresoras por Cliente (después) -->
-        <div *ngFor="let clienteRut of getClientesAsignados()" class="mb-4">
-          <ng-container *ngIf="getGrupoCliente(clienteRut) as grupo">
-            <div class="cliente-header cliente-header-collapsible d-flex align-items-center justify-content-between"
-                 (click)="toggleSeccion(clienteRut)">
-              <h5 class="mb-0">
-                <i class="fas fa-building me-2 text-primary"></i>
-                <strong>{{ grupo.cliente_nombre }}</strong>
-                <span class="text-muted small">({{ grupo.cliente_rut }})</span>
-              </h5>
-              <i class="fas chevron-icon" [ngClass]="estaExpandida(clienteRut) ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
-            </div>
+        <div class="tree-branches"
+             *ngIf="seccionesExpandidas.get(cliente.code || cliente.id)">
 
-            <div class="table-responsive" *ngIf="estaExpandida(clienteRut)">
-              <table class="table table-sm table-hover mb-0">
-                <thead class="table-light">
-                  <tr>
-                    <th style="width: 20%;">Nombre</th>
-                    <th style="width: 12%;">IP</th>
-                    <th style="width: 13%;">Modelo</th>
-                    <th style="width: 13%;">Serie</th>
-                    <th style="width: 15%;">Ubicación</th>
-                    <th style="width: 15%;">Sucursal</th>
-                    <th style="width: 12%;">Estado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let impresora of grupo.impresoras">
-                    <td><strong class="nombre-clickeable" (click)="abrirDetalles(impresora)">{{ impresora.nombre || '-' }}</strong></td>
-                    <td>{{ impresora.ip || '-' }}</td>
-                    <td>{{ impresora.modelo || '-' }}</td>
-                    <td><code>{{ impresora.serie || '-' }}</code></td>
-                    <td>{{ impresora.ubicacion || '-' }}</td>
-                    <td><small class="text-muted">{{ impresora.sucursal_nombre || '-' }}</small></td>
-                    <td>
-                      <span class="badge" [ngClass]="impresora.estado === 1 ? 'bg-success' : 'bg-secondary'">
-                        {{ impresora.estado === 1 ? 'Activa' : 'Inactiva' }}
-                      </span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </ng-container>
+          <div *ngFor="let suc of cliente.sucursales"
+               class="tree-sucursal"
+               [ngClass]="{'active': sucursalSeleccionada?.id === suc.id && clienteSeleccionado?.id === cliente.id}"
+               (click)="seleccionarSucursal(cliente, suc)">
+
+            <i class="fas fa-map-marker-alt me-2"></i>
+            {{ suc.nombre }}
+
+          </div>
+
         </div>
+
       </div>
 
-      <!-- Sin impresoras -->
-      <div *ngIf="!cargando && impresoras.length === 0" class="alert alert-warning">
-        <i class="fas fa-exclamation-triangle me-2"></i>
-        No hay impresoras registradas en el sistema
+      <div *ngIf="!cargandoArbol && clientes.length === 0"
+           class="p-3 text-center text-muted small">
+        No se encontraron clientes.
       </div>
+
     </div>
-  </div>
+
+  </aside>
+
+  <main class="main-content">
+
+    <!-- estado vacío -->
+    <div *ngIf="!sucursalSeleccionada" class="empty-state">
+      <i class="fas fa-print fa-4x mb-3 opacity-25"></i>
+      <h4>Selecciona una sucursal para gestionar equipos</h4>
+    </div>
+
+    <div *ngIf="sucursalSeleccionada">
+
+      <header class="content-header d-flex justify-content-between align-items-center">
+
+        <div>
+          <h2 class="mb-0">{{ sucursalSeleccionada.nombre }}</h2>
+          <span class="text-muted">
+            <i class="fas fa-building me-1"></i>
+            {{ clienteSeleccionado.razon_social }}
+          </span>
+        </div>
+
+        <div class="badge bg-primary px-3 py-2">
+          {{ impresorasExhibidas.length }} Impresoras
+        </div>
+
+      </header>
+
+      <app-toolbar-impresoras
+        [modoVista]="modoVista"
+        (cambiarVista)="cambiarVista($event)"
+        (cambiarOrden)="cambiarOrden($event)">
+
+        <app-filtros-impresora 
+          [marcasDisponibles]="marcasDisponibles"
+          (filtrosCambiados)="aplicarFiltros($event)">
+        </app-filtros-impresora>
+
+      </app-toolbar-impresoras>
+
+      <!-- loading -->
+      <div *ngIf="cargando" class="text-center p-5">
+        <i class="fas fa-spinner fa-spin fa-3x text-primary"></i>
+      </div>
+
+      <!-- CARDS -->
+      <app-impresoras-cards
+        *ngIf="!cargando && modoVista === 'cards'"
+        [impresoras]="impresorasExhibidas"
+        (verDetalles)="abrirDetalles($event)">
+      </app-impresoras-cards>
+
+      <!-- GRID -->
+      <app-impresoras-grid
+        *ngIf="!cargando && modoVista === 'grid'"
+        [impresoras]="impresorasExhibidas"
+        [ordenarPor]="ordenarPor"
+        [direccionOrden]="direccionOrden"
+        (verDetalles)="abrirDetalles($event)"
+        (ordenar)="cambiarOrden($event)">
+      </app-impresoras-grid>
+
+    </div>
+
+  </main>
+
 </div>
 
-<!-- Modal de detalles de impresora -->
-<div class="modal-overlay" *ngIf="mostrar_modal_detalles" (click)="cerrarDetalles()">
-  <div class="modal-content-detalles" (click)="$event.stopPropagation()">
-    <div class="modal-header-detalles">
-      <h3 class="mb-0">{{ impresora_seleccionada?.nombre || 'Detalles' }}</h3>
-      <button type="button" class="btn-close" (click)="cerrarDetalles()">
-        <i class="fas fa-times"></i>
-      </button>
-    </div>
-
-    <div class="modal-body-detalles">
-      <div class="detalles-grid">
-        <!-- Información básica -->
-        <div class="detalles-grupo">
-          <h5 class="detalles-titulo">Información Básica</h5>
-          <div class="detalles-fila">
-            <span class="detalles-label">Nombre:</span>
-            <span class="detalles-valor">{{ impresora_seleccionada?.nombre || '-' }}</span>
-          </div>
-          <div class="detalles-fila">
-            <span class="detalles-label">IP:</span>
-            <span class="detalles-valor">{{ impresora_seleccionada?.ip || '-' }}</span>
-          </div>
-          <div class="detalles-fila">
-            <span class="detalles-label">Modelo:</span>
-            <span class="detalles-valor">{{ impresora_seleccionada?.modelo || '-' }}</span>
-          </div>
-          <div class="detalles-fila">
-            <span class="detalles-label">Serie:</span>
-            <span class="detalles-valor"><code>{{ impresora_seleccionada?.serie || '-' }}</code></span>
-          </div>
-          <div class="detalles-fila">
-            <span class="detalles-label">Estado:</span>
-            <span class="detalles-valor">
-              <span class="badge" [ngClass]="impresora_seleccionada?.estado === 1 ? 'bg-success' : 'bg-secondary'">
-                {{ impresora_seleccionada?.estado === 1 ? 'Activa' : 'Inactiva' }}
-              </span>
-            </span>
-          </div>
-        </div>
-
-        <!-- Ubicación e información de cliente -->
-        <div class="detalles-grupo">
-          <h5 class="detalles-titulo">Ubicación</h5>
-          <div class="detalles-fila">
-            <span class="detalles-label">Ubicación:</span>
-            <span class="detalles-valor">{{ impresora_seleccionada?.ubicacion || '-' }}</span>
-          </div>
-          <div class="detalles-fila">
-            <span class="detalles-label">Cliente:</span>
-            <span class="detalles-valor">{{ impresora_seleccionada?.cliente_nombre || 'Sin asignar' }}</span>
-          </div>
-          <div class="detalles-fila">
-            <span class="detalles-label">RUT Cliente:</span>
-            <span class="detalles-valor">{{ impresora_seleccionada?.cliente_rut || '-' }}</span>
-          </div>
-          <div class="detalles-fila">
-            <span class="detalles-label">Sucursal:</span>
-            <span class="detalles-valor">{{ impresora_seleccionada?.sucursal_nombre || '-' }}</span>
-          </div>
-          <div class="detalles-fila" *ngIf="impresora_seleccionada?.descripcion">
-            <span class="detalles-label">Descripción:</span>
-            <span class="detalles-valor">{{ impresora_seleccionada?.descripcion }}</span>
-          </div>
-        </div>
-
-        <!-- Contadores de páginas -->
-        <div class="detalles-grupo">
-          <h5 class="detalles-titulo">Contadores de Páginas</h5>
-          <div class="detalles-fila">
-            <span class="detalles-label">Total impreso:</span>
-            <span class="detalles-valor">{{ impresora_seleccionada?.paginasImpresas || 0 | number }}</span>
-          </div>
-          <div class="detalles-fila">
-            <span class="detalles-label">Blanco y Negro:</span>
-            <span class="detalles-valor">{{ impresora_seleccionada?.paginasBN || 0 | number }}</span>
-          </div>
-          <div class="detalles-fila">
-            <span class="detalles-label">Color:</span>
-            <span class="detalles-valor">{{ impresora_seleccionada?.paginasColor || 0 | number }}</span>
-          </div>
-        </div>
-
-        <!-- Niveles de tóner -->
-        <div class="detalles-grupo">
-          <h5 class="detalles-titulo">Tóner</h5>
-          <div class="detalles-fila">
-            <span class="detalles-label">Negro:</span>
-            <span class="detalles-valor">{{ impresora_seleccionada?.tonerBlack || 0 }}%</span>
-          </div>
-          <div class="detalles-fila">
-            <span class="detalles-label">Cyan:</span>
-            <span class="detalles-valor">{{ impresora_seleccionada?.tonerCyan || 0 }}%</span>
-          </div>
-          <div class="detalles-fila">
-            <span class="detalles-label">Magenta:</span>
-            <span class="detalles-valor">{{ impresora_seleccionada?.tonerMagenta || 0 }}%</span>
-          </div>
-          <div class="detalles-fila">
-            <span class="detalles-label">Amarillo:</span>
-            <span class="detalles-valor">{{ impresora_seleccionada?.tonerYellow || 0 }}%</span>
-          </div>
-        </div>
-
-        <!-- Drum (Cilindro) -->
-        <div class="detalles-grupo">
-          <h5 class="detalles-titulo">Cilindro (Drum)</h5>
-          <div class="detalles-fila">
-            <span class="detalles-label">Negro:</span>
-            <span class="detalles-valor">{{ impresora_seleccionada?.drumBlack || 0 }}%</span>
-          </div>
-          <div class="detalles-fila">
-            <span class="detalles-label">Cyan:</span>
-            <span class="detalles-valor">{{ impresora_seleccionada?.drumCyan || 0 }}%</span>
-          </div>
-          <div class="detalles-fila">
-            <span class="detalles-label">Magenta:</span>
-            <span class="detalles-valor">{{ impresora_seleccionada?.drumMagenta || 0 }}%</span>
-          </div>
-          <div class="detalles-fila">
-            <span class="detalles-label">Amarillo:</span>
-            <span class="detalles-valor">{{ impresora_seleccionada?.drumYellow || 0 }}%</span>
-          </div>
-        </div>
-
-        <!-- Revelador -->
-        <div class="detalles-grupo">
-          <h5 class="detalles-titulo">Revelador</h5>
-          <div class="detalles-fila">
-            <span class="detalles-label">Negro:</span>
-            <span class="detalles-valor">{{ impresora_seleccionada?.reveladorBlack || 0 }}%</span>
-          </div>
-          <div class="detalles-fila">
-            <span class="detalles-label">Magenta:</span>
-            <span class="detalles-valor">{{ impresora_seleccionada?.reveladorMagenta || 0 }}%</span>
-          </div>
-          <div class="detalles-fila">
-            <span class="detalles-label">Amarillo:</span>
-            <span class="detalles-valor">{{ impresora_seleccionada?.reveladorYellow || 0 }}%</span>
-          </div>
-        </div>
-
-        <!-- Otros componentes -->
-        <div class="detalles-grupo">
-          <h5 class="detalles-titulo">Componentes</h5>
-          <div class="detalles-fila" *ngIf="impresora_seleccionada?.fusor">
-            <span class="detalles-label">Fusora:</span>
-            <span class="detalles-valor">{{ impresora_seleccionada?.fusor }}%</span>
-          </div>
-          <div class="detalles-fila" *ngIf="impresora_seleccionada?.adfRoller">
-            <span class="detalles-label">ADF Roller:</span>
-            <span class="detalles-valor">{{ impresora_seleccionada?.adfRoller }}%</span>
-          </div>
-          <div class="detalles-fila" *ngIf="impresora_seleccionada?.transferRoller">
-            <span class="detalles-label">Transfer Roller:</span>
-            <span class="detalles-valor">{{ impresora_seleccionada?.transferRoller }}%</span>
-          </div>
-          <div class="detalles-fila" *ngIf="impresora_seleccionada?.mpRoller">
-            <span class="detalles-label">MP Roller:</span>
-            <span class="detalles-valor">{{ impresora_seleccionada?.mpRoller }}%</span>
-          </div>
-          <div class="detalles-fila" *ngIf="impresora_seleccionada?.retardPad">
-            <span class="detalles-label">Retard Pad:</span>
-            <span class="detalles-valor">{{ impresora_seleccionada?.retardPad }}%</span>
-          </div>
-          <div class="detalles-fila" *ngIf="impresora_seleccionada?.cajaResiduos">
-            <span class="detalles-label">Caja de residuos:</span>
-            <span class="detalles-valor">{{ impresora_seleccionada?.cajaResiduos }}%</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+<app-detalle-impresora-modal 
+  [impresora]="impresora_seleccionada"
+  [mostrar]="mostrar_modal_detalles"
+  (alCerrar)="cerrarDetalles()"
+  (alGuardar)="onGuardarCambios($event)">
+</app-detalle-impresora-modal>

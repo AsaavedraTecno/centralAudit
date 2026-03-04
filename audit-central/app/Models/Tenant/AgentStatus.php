@@ -10,6 +10,7 @@ class AgentStatus extends Model
 
     protected $fillable = [
         'agent_id',
+        'location_id',
         'hostname',
         'ip_address',
         'version',

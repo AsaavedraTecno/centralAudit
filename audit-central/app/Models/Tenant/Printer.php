@@ -12,25 +12,28 @@ class Printer extends Model
     protected $connection = 'tenant';
 
     protected $fillable = [
+        'internal_id',
+        'secondary_serial',
+        'custom_location',
+        'comments',
+        'custom_field_1',
+        'custom_field_2',
         'agent_id',
+        'asset_tag',
         'location_id',
         'name',
-        'ubicacion_fisica',
         'description',
         'model',
         'brand',
         'serial_number',
         'status',
-        'client_code',
         'ip_address',
         'location',
         'mac_address',
         'hostname',
         'firmware_version',
-        'asset_tag',
         'is_color',
         'is_duplex',
-        'is_networked',
         'printer_type',
         'last_seen_at',
         'last_counter_at',
@@ -66,7 +69,8 @@ class Printer extends Model
      */
     public function supplies(): HasMany
     {
-        return $this->hasMany(PrinterSupply::class);
+        //return $this->hasMany(PrinterSupply::class);
+        return $this->hasMany(PrinterSupply::class, 'printer_id', 'id');
     }
 
     /**
@@ -127,5 +131,26 @@ class Printer extends Model
     public function location(): BelongsTo
     {
         return $this->belongsTo(Location::class);
+    }
+
+    public function firstCounterToday()
+    {
+        return $this->hasOne(PrinterCounter::class)
+                    ->where('collected_at', '>=', now()->startOfDay())
+                    ->orderBy('collected_at', 'asc');
+    }
+
+    public function firstCounterThisMonth()
+    {
+        return $this->hasOne(PrinterCounter::class) 
+                    ->where('collected_at', '>=', now()->startOfMonth())
+                    ->orderBy('collected_at', 'asc');
+    }
+
+    public function lastCounterYesterday()
+    {
+        return $this->hasOne(PrinterCounter::class)
+                    ->where('collected_at', '<', now()->startOfDay())
+                    ->orderBy('collected_at', 'desc'); // La última lectura antes de hoy
     }
 }

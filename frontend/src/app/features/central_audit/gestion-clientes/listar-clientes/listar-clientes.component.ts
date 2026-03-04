@@ -3,12 +3,12 @@ import { CommonModule } from '@angular/common';
 import { Cliente } from '../../../../models/cliente';
 import { ClienteService } from '../../../../core/services/cliente.service';
 // 1. IMPORTANTE: Importar el Router
-import { Router } from '@angular/router'; 
+import { Router, RouterModule } from '@angular/router'; 
 
 @Component({
   selector: 'app-listar-clientes',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule],
   templateUrl: './listar-clientes.html',
   styleUrls: ['./listar-clientes.scss']
 })
@@ -56,6 +56,28 @@ export class ListarClientesComponent implements OnInit {
 
   crearSucursal(code: string): void {
     this.router.navigate(['/gestion-clientes', code, 'sucursales']);
+  }
+
+  configurarAgente(cliente: any) {
+    // 1. Intentamos obtener el ID del agente. 
+    // Dependiendo de cómo lo devuelva tu Laravel, podría ser 'agent_id', 'main_agent_id' 
+    // o estar dentro de un array 'agent_keys'.
+    
+    let agentId = cliente.agent_id;
+
+    // Fallback: Si viene como relación (ej: cliente.agent_keys = [{id: 27, ...}])
+    if (!agentId && cliente.agent_keys && cliente.agent_keys.length > 0) {
+      agentId = cliente.agent_keys[0].id;
+    }
+
+    if (agentId) {
+      // Navegamos a la ruta que creamos: /gestion-clientes/:code/agentes/:id/config
+      this.router.navigate(['/gestion-clientes', cliente.code, 'agentes', agentId, 'config']);
+    } else {
+      // Si no hay agente, podrías redirigir a "Crear Llave" o mostrar un error
+      alert('Este cliente no tiene un agente asignado o activo.');
+      // Opcional: this.router.navigate(['/gestion-clientes', cliente.code, 'agent-keys']);
+    }
   }
 
   eliminarCliente(cliente: Cliente): void {

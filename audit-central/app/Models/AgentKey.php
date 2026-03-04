@@ -9,9 +9,12 @@ use Illuminate\Support\Str;
 
 class AgentKey extends Model
 {
+    protected $connection = 'pgsql';
+
     protected $fillable = [
         'tenant_id',
         'name',
+        'location_id',  
         'key_hash',
         'active',
         'last_seen_at',
@@ -21,6 +24,7 @@ class AgentKey extends Model
     protected $casts = [
         'active' => 'boolean',
         'last_seen_at' => 'datetime',
+        'location_id'  => 'integer',
     ];
 
     protected $hidden = [
@@ -39,47 +43,46 @@ class AgentKey extends Model
      * Generar una nueva key para un tenant
      * Retorna la key plana (solo se muestra una vez)
      */
-    public static function generateForTenant(string $tenantId, string $name = 'Agente Principal'): array
-    {
-        // Generar key única: prefijo + uuid
+    public static function generateForTenant(
+        string $tenantId,
+        string $name,
+        ?int   $locationId = null
+    ): array {
         $plainKey = 'ak_' . Str::random(32);
 
         $agentKey = self::create([
-            'tenant_id' => $tenantId,
-            'name' => $name,
-            'key_hash' => Hash::make($plainKey),
-            'active' => true,
+            'tenant_id'   => $tenantId,
+            'name'        => $name,
+            'location_id' => $locationId,
+            'key_hash'    => hash('sha256', $plainKey),
+            'active'      => true,
         ]);
 
         return [
-            'id' => $agentKey->id,
-            'name' => $agentKey->name,
-            'key' => $plainKey, // Solo se retorna una vez
-            'created_at' => $agentKey->created_at,
+            'id'          => $agentKey->id,
+            'name'        => $agentKey->name,
+            'location_id' => $agentKey->location_id,
+            'key'         => $plainKey, // Solo se retorna una vez
+            'created_at'  => $agentKey->created_at,
         ];
     }
 
     /**
      * Verificar una key
      */
-    public static function verify(string $tenantCode, string $plainKey): ?self
+    public static function verify(string $plainKey, ?string $tenantId = null): ?self
     {
-        $tenant = Tenant::where('code', $tenantCode)->first();
-        
-        if (!$tenant) {
-            return null;
+        $query = self::where('active', true);
+
+        if ($tenantId) {
+            $query->where('tenant_id', $tenantId);
         }
 
-        $keys = self::where('tenant_id', $tenant->id)
-            ->where('active', true)
-            ->get();
-
-        foreach ($keys as $key) {
+        foreach ($query->get() as $key) {
             if (Hash::check($plainKey, $key->key_hash)) {
-                // Actualizar último uso
                 $key->update([
                     'last_seen_at' => now(),
-                    'last_ip' => request()->ip(),
+                    'last_ip'      => request()->ip(),
                 ]);
                 return $key;
             }

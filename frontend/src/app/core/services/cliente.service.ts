@@ -5,14 +5,17 @@ import { Cliente, createCliente } from '../../models/cliente';
 import { Sucursal } from '../../models/sucursal';
 import { Impresora } from '../../models/impresora';
 import { environment } from '../../../environments/environment';
+import { CreateClientResponse } from '../../models/agent-config';
 
 // Respuesta específica para el flujo de Onboarding (Paso 2)
 export interface ClienteResponse {
   success: boolean;
-  agent_key: string;
+  agent_key: {      // <--- Defínelo como objeto
+          id: number;
+          key_hash: string;
+      } | string;
   domain: string;
   agent_id: number;
-  client_code: string;
   message?: string;
 }
 
@@ -31,8 +34,8 @@ export class ClienteService {
   /**
    * PASO 2: Crear infraestructura inicial (Tenant, DB, Dominio y Sucursal)
    */
-  create(data: any): Observable<ClienteResponse> {
-    return this.http.post<ClienteResponse>(this.baseUrl, data);
+  create(data: any): Observable<CreateClientResponse> { // <--- Ya no devuelve 'any'
+    return this.http.post<CreateClientResponse>(`${this.baseUrl}`, data);
   }
 
   /**
@@ -119,6 +122,9 @@ export class ClienteService {
     return this.http.delete<void>(`${this.baseUrl}/${code}`);
   }
   
+  verificarDisponibilidad(rut: string) {
+    return this.http.get<any>(`${this.baseUrl}/check-rut/${rut}`);
+  }
 
   
   // ==========================================
@@ -137,11 +143,38 @@ export class ClienteService {
     );
   }
 
-  /**
-   * Vista de árbol (Sucursales > Impresoras)
-   * GET /api/clients/{code}/tree
-   */
+
   getTree(code: string): Observable<any> {
     return this.http.get<any>(`${this.baseUrl}/${code}/tree`);
   }
+
+
+  getLocations(clientCode: string): Observable<any> {
+    return this.http.get(`${this.baseUrl}/${clientCode}/locations`);
+  }
+
+  getAgentKeys(clientCode: string): Observable<any> {
+    return this.http.get(`${this.baseUrl}/${clientCode}/agent-keys`);
+  }
+
+  createAgentKey(clientCode: string, payload: {
+    name: string;
+    location_id?: number | null;
+    sucursal_nombre?: string;
+    sucursal_direccion?: string;
+    sucursal_nombre_contacto?: string;
+    sucursal_email_contacto?: string;
+    sucursal_telefono_contacto?: string;
+    snmp_community: string;
+    ip_from: string;
+    ip_to: string;
+    subnet_mask: string;
+  }): Observable<any> {
+    return this.http.post(`${this.baseUrl}/${clientCode}/agent-keys`, payload);
+  }
+
+  revokeAgentKey(clientCode: string, keyId: number): Observable<any> {
+    return this.http.delete(`${this.baseUrl}/${clientCode}/agent-keys/${keyId}`);
+  }
+
 }
