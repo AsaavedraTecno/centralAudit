@@ -26,7 +26,6 @@ export class VistaStateService {
 
   private transformarIdentificador(identificador: string): string {
 
-
     const overrides: { [key: string]: string } = {
       'imp_paginas_bn': 'paginasBN',
       'imp_serie_secundaria': 'secondary_serial',
@@ -38,6 +37,11 @@ export class VistaStateService {
       'imp_ultima_conexion': 'last_seen_at',
       'imp_mac': 'mac',
       'imp_firmware': 'firmware',
+
+      'imp_impreso_hoy_bn': 'imp_impreso_hoy_bn',
+      'imp_impreso_hoy_color': 'imp_impreso_hoy_color',
+      'imp_impreso_mes_bn': 'imp_impreso_mes_bn',
+      'imp_impreso_mes_color': 'imp_impreso_mes_color',
     };
 
     if (overrides[identificador]) {
@@ -120,7 +124,7 @@ export class VistaStateService {
         return {
           ...colSistema,
           visible: config?.visible ?? false,
-          orden: config?.orden ?? colSistema.orden,
+          orden: colSistema.orden,
           ancho: config?.ancho ?? colSistema.ancho
         };
       });
@@ -136,7 +140,15 @@ export class VistaStateService {
 
   obtenerValorColumna(objeto: any, columna: ColumnaVistaUI): any {
 
-    const propiedad = this.transformarIdentificador(columna.identificador);
+    const identificador = columna.identificador;
+
+    // primero intenta directo
+    if (objeto?.[identificador] !== undefined) {
+      return objeto[identificador];
+    }
+
+    // fallback para compatibilidad antigua
+    const propiedad = this.transformarIdentificador(identificador);
 
     return objeto?.[propiedad] ?? null;
   }

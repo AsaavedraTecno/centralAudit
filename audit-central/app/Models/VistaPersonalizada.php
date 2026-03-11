@@ -11,6 +11,7 @@ class VistaPersonalizada extends Model
     use HasFactory;
 
     protected $table = 'vistas_personalizadas';
+    protected $connection = 'central';
 
     /**
      * Los atributos que pueden ser asignados masivamente
@@ -80,5 +81,15 @@ class VistaPersonalizada extends Model
                     ->update(['es_default' => false]);
             }
         });
+    }
+
+    public function tenants()
+    {
+        return $this->belongsToMany(
+            Tenant::class,
+            'vista_tenants',
+            'vista_id',
+            'tenant_id'
+        );
     }
 }

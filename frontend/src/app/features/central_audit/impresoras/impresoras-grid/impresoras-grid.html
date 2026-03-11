@@ -5,6 +5,7 @@
 
       <th class="sortable" (click)="ordenarColumna('nombre')">
         Nombre
+        
 
         <i *ngIf="ordenarPor === 'nombre' && direccionOrden === 'asc'"
           class="fas fa-arrow-up"></i>
@@ -16,6 +17,16 @@
           class="fas fa-sort"></i>
 
       </th>
+
+      <th>
+        ID Interno
+      </th>
+
+      <th>
+        Modelo
+      </th>    
+
+
 
       <th class="sortable" (click)="ordenarColumna('serie')">
 
@@ -30,6 +41,18 @@
         <i *ngIf="ordenarPor !== 'serie'"
           class="fas fa-sort"></i>
 
+      </th>
+
+      <th>
+        Marca
+      </th>
+      
+      <th>
+        Ip
+      </th>
+
+      <th>
+        Ubicación
       </th>
 
       <th class="sortable" (click)="ordenarColumna('estado')">
@@ -51,6 +74,8 @@
         Toner
       </th>
 
+
+
       <th></th>
 
     </tr>
@@ -61,9 +86,32 @@
     <tr *ngFor="let imp of impresoras">
 
       <td>{{ imp.nombre }}</td>
+      <td>{{ imp.internal_id }} </td>
+      <td>{{ imp.modelo }}</td>
 
       <td>
         <code>{{ imp.serie }}</code>
+      </td>
+
+      <td>{{ imp.brand }}</td>
+
+
+      <td>
+        <code>
+          {{ imp.ip }}
+        </code>
+      </td>
+
+      <td>
+
+        <div>
+          {{ imp.custom_location || imp.ubicacion || '-' }}
+        </div>
+
+        <small class="text-muted" *ngIf="imp.custom_location && imp.ubicacion">
+          {{ imp.ubicacion }}
+        </small>
+
       </td>
 
       <td>

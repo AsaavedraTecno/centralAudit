@@ -1,7 +1,9 @@
 import { Routes } from '@angular/router';
 
+// GUARDS
 import { AuthGuard } from './core/guards/auth.guard';
 import { LoginGuard } from './core/guards/login.guard';
+import { CentralOnlyGuard } from './core/guards/central-only.guard';
 
 // Componentes
 import { LoginComponent } from './features/auth/login/login.component';
@@ -56,7 +58,11 @@ export const routes: Routes = [
 
           {path:'panel', component: PanelComponent},
           {path: 'dashboard', component: DashboardComponent},
-          {path: 'vistas', component: VistaAdminComponent},
+          {
+            path: 'vistas', 
+            component: VistaAdminComponent,
+            canActivate: [CentralOnlyGuard] 
+          },
           {path: '', redirectTo: 'panel', pathMatch: 'full'}
         ]
       },

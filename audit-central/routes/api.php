@@ -45,6 +45,10 @@ Route::domain($centralDomain)->group(function () {
 
     Route::post('/login', [AuthController::class, 'login']);
 
+    Route::get(
+        'vistas-personalizadas/columnas/disponibles',
+        [VistaPersonalizadaController::class, 'columnasDisponibles']
+    );
 
 
     // =============================================
@@ -156,7 +160,6 @@ Route::domain($centralDomain)->group(function () {
         // RUTAS PROTEGIDAS - Con autenticación
         Route::prefix('vistas-personalizadas')->group(function () {
 
-            Route::get('columnas/disponibles', [VistaPersonalizadaController::class, 'columnasDisponibles']);
             Route::get('default', [VistaPersonalizadaController::class, 'default']);
 
             Route::get('/', [VistaPersonalizadaController::class, 'index']);
@@ -165,6 +168,10 @@ Route::domain($centralDomain)->group(function () {
             Route::put('/{vistaPersonalizada}', [VistaPersonalizadaController::class, 'update']);
             Route::delete('/{vistaPersonalizada}', [VistaPersonalizadaController::class, 'destroy']);
             Route::post('/{vistaPersonalizada}/duplicar', [VistaPersonalizadaController::class, 'duplicar']);
+
+            Route::get('/{vistaPersonalizada}/tenants', [VistaPersonalizadaController::class, 'tenants']);
+            Route::post('/{vistaPersonalizada}/tenants', [VistaPersonalizadaController::class, 'guardarTenants']);
+
         });
     });
 

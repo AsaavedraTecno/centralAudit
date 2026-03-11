@@ -22,6 +22,7 @@ use App\Http\Controllers\Tenant\TenantPrinterController;
 
 Route::post('/login', [TenantAuthController::class, 'login']);
 Route::post('/register', [TenantAuthController::class, 'register']);
+    Route::get('/panel/vista', [TenantPrinterController::class, 'vistaPanel']);
 
 // Rutas que requieren que el usuario esté logueado dentro del tenant
 Route::middleware('auth:tenant-api')->group(function () {
@@ -36,4 +37,5 @@ Route::middleware('auth:tenant-api')->group(function () {
     Route::get('tenants/{code}/sucursales/{id}/impresoras', [TenantPrinterController::class, 'index']);
     
 
+    
 });

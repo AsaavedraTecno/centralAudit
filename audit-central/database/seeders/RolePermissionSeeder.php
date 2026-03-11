@@ -65,6 +65,16 @@ class RolePermissionSeeder extends Seeder
             
             // Auditoría
             ['name' => 'ver_audit_logs', 'category' => 'auditoria', 'description' => 'Ver logs de auditoría'],
+
+            // Vistas (motor de planillas)
+            ['name' => 'ver_vistas', 'category' => 'vistas', 'description' => 'Ver vistas disponibles'],
+            ['name' => 'crear_vista', 'category' => 'vistas', 'description' => 'Crear nuevas vistas'],
+            ['name' => 'editar_vista', 'category' => 'vistas', 'description' => 'Editar configuración de vistas'],
+            ['name' => 'eliminar_vista', 'category' => 'vistas', 'description' => 'Eliminar vistas'],
+            ['name' => 'asignar_vista_tenant', 'category' => 'vistas', 'description' => 'Asignar vistas a clientes'],
+            ['name' => 'usar_vistas_personales', 'category' => 'vistas', 'description' => 'Usar vistas personales'],
+            ['name' => 'duplicar_vista', 'category' => 'vistas', 'description' => 'Duplicar vista'],
+
         ];
 
         $permisosPorId = [];

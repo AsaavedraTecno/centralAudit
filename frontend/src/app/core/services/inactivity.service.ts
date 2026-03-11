@@ -12,6 +12,7 @@ export class InactivityService {
   private warningTimer: any;
   private isWarningShown = false;
   private unsubscribe$ = new Subject<void>();
+  private isRunning = false;
 
   // Observable para notificar sobre la advertencia de sesión a punto de cerrar
   sessionWarning$ = new Subject<number>();
@@ -21,10 +22,25 @@ export class InactivityService {
     private ngZone: NgZone,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {
-    // Solo inicializar en el navegador, no en SSR
-    if (isPlatformBrowser(this.platformId)) {
+
+    if (isPlatformBrowser(this.platformId) && this.hasSession()) {
       this.initializeInactivityDetection();
     }
+    
+  }
+
+  start(): void {
+
+    if (this.isRunning) return;
+
+    if (isPlatformBrowser(this.platformId) && this.hasSession()) {
+      this.isRunning = true;
+      this.initializeInactivityDetection();
+    }
+  }
+
+  private hasSession(): boolean {
+    return !!localStorage.getItem('token'); 
   }
 
   /**
@@ -85,7 +101,9 @@ export class InactivityService {
    */
   private closeSession(): void {
     // Limpiar localStorage y sessionStorage
-    localStorage.clear();
+    if (this.router.url === '/login') return;
+
+    localStorage.removeItem('token');
     sessionStorage.clear();
 
     // Navegar a login

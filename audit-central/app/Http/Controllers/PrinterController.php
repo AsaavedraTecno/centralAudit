@@ -157,21 +157,34 @@ class PrinterController extends Controller
     {
         $counter = $printer->latestCounter;
 
-        $impresoHoy = 0;
-        $impresoMes = 0;
+        $impHoyBN = 0;
+        $impHoyColor = 0;
+        $impMesBN = 0;
+        $impMesColor = 0;
 
         if ($counter) {
-            // CÁLCULO DE HOY: Usamos la última lectura de ayer. 
-            // Si ayer no existía la impresora, usamos la primera de hoy como plan B.
-            if ($printer->relationLoaded('lastCounterYesterday') && $printer->lastCounterYesterday) {
-                $impresoHoy = max(0, $counter->total_pages - $printer->lastCounterYesterday->total_pages);
-            } elseif ($printer->relationLoaded('firstCounterToday') && $printer->firstCounterToday) {
-                $impresoHoy = max(0, $counter->total_pages - $printer->firstCounterToday->total_pages);
+
+            // ===== HOY =====
+
+            if ($printer->lastCounterYesterday) {
+
+                $impHoyBN = max(0, $counter->bw_pages - $printer->lastCounterYesterday->bw_pages);
+                $impHoyColor = max(0, $counter->color_pages - $printer->lastCounterYesterday->color_pages);
+
+            } elseif ($printer->firstCounterToday) {
+
+                $impHoyBN = max(0, $counter->bw_pages - $printer->firstCounterToday->bw_pages);
+                $impHoyColor = max(0, $counter->color_pages - $printer->firstCounterToday->color_pages);
+
             }
 
-            // CÁLCULO DEL MES
-            if ($printer->relationLoaded('firstCounterThisMonth') && $printer->firstCounterThisMonth) {
-                $impresoMes = max(0, $counter->total_pages - $printer->firstCounterThisMonth->total_pages);
+            // ===== MES =====
+
+            if ($printer->firstCounterThisMonth) {
+
+                $impMesBN = max(0, $counter->bw_pages - $printer->firstCounterThisMonth->bw_pages);
+                $impMesColor = max(0, $counter->color_pages - $printer->firstCounterThisMonth->color_pages);
+
             }
         }
 
@@ -232,8 +245,14 @@ class PrinterController extends Controller
             'paginasImpresas' => $counter?->total_pages ?? 0,
             'paginasBN' => $counter?->bw_pages ?? 0,
             'paginasColor' => $counter?->color_pages ?? 0,
-            'impresoHoy' => $impresoHoy,
-            'impresoMes' => $impresoMes,
+            'impresoHoy' => $impHoyBN + $impHoyColor,
+            'impresoMes' => $impMesBN + $impMesColor,
+            'imp_impreso_hoy_bn' => $impHoyBN,
+            'imp_impreso_hoy_color' => $impHoyColor,
+
+            'imp_impreso_mes_bn' => $impMesBN,
+            'imp_impreso_mes_color' => $impMesColor,
+            
 
             // Suministros usando el Null Coalescing (??)
             'tonerBlack'   => $findSmart(['black', 'toner']) 

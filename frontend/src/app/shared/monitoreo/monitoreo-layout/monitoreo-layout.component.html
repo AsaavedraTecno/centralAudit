@@ -12,8 +12,9 @@
 
     <a [routerLink]="['vistas']" 
         routerLinkActive="active" 
-        class="subtab-button text-decoration-none">
-        <i class="fas fa-chart-bar me-2"></i> Vistas
+        class="subtab-button text-decoration-none"
+        *ngIf="!isTenant()">
+        <i class="fas fa-cog me-2"></i> Motor de planillas
     </a>
 </div>
 

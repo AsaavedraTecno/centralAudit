@@ -19,12 +19,15 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['*'
+    'allowed_origins' => [],
             /*'https://centralaudit.tecnodatasa.cl',
             'http://localhost:4200',    // Asegúrate de que esta URL sea exacta
             'http://127.0.0.1:4200',    // Opcional, pero útil si usas la IP*/
-        ],
-    'allowed_origins_patterns' => ['*localhost*', '*.centralaudit.tecnodatasa.cl'],
+    'allowed_origins_patterns' => [
+        '#^http://localhost:4200$#',
+        '#^http://127\.0\.0\.1:4200$#',
+        '#^http://([a-z0-9-]+\.)?centralaudit\.tecnodatasa\.cl:4200$#'
+    ],
 
     'allowed_headers' => ['*'],
 
@@ -32,5 +35,5 @@ return [
 
     'max_age' => 0,
 
-    'supports_credentials' => false,
+    'supports_credentials' => true,
 ];

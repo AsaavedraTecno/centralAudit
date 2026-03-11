@@ -21,12 +21,7 @@ export class ImpresoraService {
 
   getImpresoras(clientCode: string, sucursalId: string | number): Observable<any> {
     const url = `${this.baseUrl}/tenants/${clientCode}/sucursales/${sucursalId}/impresoras?all=true`;
-
-    return this.http.get<any>(url).pipe(     
-      map(response => {
-        return { data: response.impresoras || [] };      
-      })
-    );
+    return this.http.get<any>(url);  
   }
 
   getSeriesBySucursal(sucursalId: string | number, clientCode?: string): Observable<any> {

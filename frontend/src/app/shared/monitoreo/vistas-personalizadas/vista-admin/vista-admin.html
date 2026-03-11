@@ -1,10 +1,19 @@
 <div class="vista-admin-container">
   <div class="row h-100 m-0">
-    
+
+    <!-- SIDEBAR -->
     <div class="col-md-4 border-end sidebar-vistas p-3">
+
       <div class="d-flex justify-content-between align-items-center mb-4">
-        <h5 class="mb-0 text-primary"><i class="fas fa-list me-2"></i> Mis Vistas</h5>
-        <button class="btn btn-sm btn-outline-primary" (click)="crearNuevaVista()" [disabled]="vistas.length >= 10">
+        <h5 class="mb-0 text-primary">
+          <i class="fas fa-list me-2"></i> Planillas
+        </h5>
+
+        <button
+          class="btn btn-sm btn-outline-primary"
+          (click)="crearNuevaVista(); modoAsignacion=false"
+          [disabled]="!esAdmin && vistas.length >= 10">
+
           <i class="fas fa-plus"></i> Nueva
         </button>
       </div>
@@ -13,117 +22,389 @@
         <span class="spinner-border spinner-border-sm"></span> Cargando...
       </div>
 
-      <div *ngIf="vistas.length >= 10" class="alert alert-warning py-1 px-2 mb-3" style="font-size: 0.8rem;">
-        <i class="fas fa-info-circle"></i> Has alcanzado el límite (10/10).
+      <div
+        *ngIf="!esAdmin && vistas.length >= 10"
+        class="alert alert-warning py-1 px-2 mb-3"
+        style="font-size:0.8rem">
+
+        <i class="fas fa-info-circle"></i> 10 / 10 vistas usadas.
       </div>
 
       <div class="list-group">
-        <div *ngFor="let vista of vistas" 
-             class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
-             [class.active]="vistaActual.id === vista.id"
-             (click)="editarVista(vista)"
-             style="cursor: pointer;">
-          
+
+        <div
+          *ngFor="let vista of vistas"
+          class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+          [class.active]="
+          (modo !== 'asignar' && vistaActual.id === vista.id) ||
+          (modo === 'asignar' && vistaAsignacionId === vista.id)
+          "
+          (click)="modoAsignacion=false; editarVista(vista)"
+          style="cursor:pointer">
+
           <div class="ms-1 me-auto overflow-hidden">
+
             <div class="fw-bold text-truncate">
-              {{ vista.nombre }} 
-              <span *ngIf="vista.es_default" class="badge bg-warning text-dark ms-1" style="font-size: 0.6rem;">Default</span>
+
+              {{ vista.nombre }}
+
+              <span
+                *ngIf="vista.es_default"
+                class="badge bg-warning text-dark ms-1"
+                style="font-size:0.6rem">
+
+                Default
+              </span>
+
             </div>
-            <small [class.text-white]="vistaActual.id === vista.id" [class.text-muted]="vistaActual.id !== vista.id">
-              {{ contarVisibles(vista) }} / {{ vista.columnas?.length || 0 }} columnas
+
+            <small
+              [class.text-white]="(!modoAsignacion && vistaActual.id === vista.id)"
+              [class.text-muted]="(modoAsignacion || vistaActual.id !== vista.id)">
+
+              {{ contarVisibles(vista) }} /
+              {{ vista.columnas?.length || 0 }} columnas
+
             </small>
+
+            <span class="badge bg-light text-primary border ms-2">
+              <i class="fas fa-users"></i>
+              {{ vista.tenants_count || 0 }}
+            </span>
+
           </div>
 
           <div class="d-flex gap-2">
-            <button class="btn btn-sm" title="Duplicar" 
-                    [class.text-white]="vistaActual.id === vista.id"
-                    [class.text-primary]="vistaActual.id !== vista.id"
-                    (click)="duplicarVista(vista); $event.stopPropagation()">
+
+            <button
+              class="btn btn-sm"
+              title="Duplicar"
+              (click)="duplicarVista(vista); $event.stopPropagation()">
+
               <i class="far fa-copy"></i>
+
             </button>
-            <button class="btn btn-sm text-danger" title="Eliminar"
-                    [disabled]="vista.es_default"
-                    (click)="eliminarVista(vista); $event.stopPropagation()">
+
+            <button
+              class="btn btn-sm text-secondary"
+              title="Asignar clientes"
+              (click)="abrirAsignacionClientes(vista); $event.stopPropagation()">
+
+              <i class="fas fa-users"></i>
+
+            </button>
+
+            <button
+              class="btn btn-sm text-danger"
+              title="Eliminar"
+              [disabled]="vista.es_default"
+              (click)="eliminarVista(vista); $event.stopPropagation()">
+
               <i class="fas fa-trash"></i>
+
             </button>
+
           </div>
+
         </div>
 
-        <div *ngIf="vistas.length === 0 && !loading" class="text-center text-muted my-3">
-          <small>No tienes vistas configuradas.</small>
-        </div>
       </div>
+
     </div>
 
+
+    <!-- PANEL DERECHO -->
     <div class="col-md-8 editor-vista p-4 bg-light">
-      <div class="bg-white p-4 rounded shadow-sm h-100 d-flex flex-column">
-        
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h4 class="mb-0 text-dark">
-            <i class="fas fa-edit me-2 text-primary"></i>
-            {{ modoEdicion ? 'Editar Vista' : 'Crear Nueva Vista' }}
-          </h4>
-          <span class="badge bg-info text-white">{{ totalColumnasVisibles }} columnas visibles</span>
-        </div>
 
-        <div class="row g-3 mb-4 p-3 bg-light rounded border">
-          <div class="col-md-6">
-            <label class="form-label fw-bold">Nombre de la Vista <span class="text-danger">*</span></label>
-            <input type="text" class="form-control form-control-sm" [(ngModel)]="vistaActual.nombre" placeholder="Ej. Panel Técnico Principal">
+      <!-- ======================= -->
+      <!-- EDITOR / CREAR VISTA -->
+      <!-- ======================= -->
+
+      <ng-container *ngIf="modo !== 'asignar'">
+
+        <div class="bg-white p-4 rounded shadow-sm h-100 d-flex flex-column">
+
+          <div class="d-flex justify-content-between align-items-center mb-3">
+
+            <h4 class="mb-0 text-dark">
+              <i class="fas fa-edit me-2 text-primary"></i>
+              {{ modo === 'editar' ? 'Editar Vista' : 'Crear Nueva Vista' }}
+            </h4>
+
+            <span class="badge bg-info text-white">
+              {{ totalColumnasVisibles }} columnas visibles
+            </span>
+
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-bold">Descripción</label>
-            <input type="text" class="form-control form-control-sm" [(ngModel)]="vistaActual.descripcion" placeholder="Opcional">
-          </div>
-          <div class="col-md-12 mt-2">
-            <div class="form-check form-switch">
-              <input class="form-check-input" type="checkbox" id="esDefault" [(ngModel)]="vistaActual.es_default">
-              <label class="form-check-label text-muted" for="esDefault">Aplicar esta vista automáticamente al abrir el panel</label>
+
+
+          <!-- DATOS VISTA -->
+
+          <div class="row g-3 mb-4 p-3 bg-light rounded border">
+
+            <div class="col-md-6">
+
+              <label class="form-label fw-bold">
+                Nombre de la Vista
+                <span class="text-danger">*</span>
+              </label>
+
+              <input
+                type="text"
+                class="form-control form-control-sm"
+                [(ngModel)]="vistaActual.nombre"
+                placeholder="Ej. Panel Técnico Principal">
+
             </div>
-          </div>
-        </div>
 
-        <h6 class="fw-bold mb-3 border-bottom pb-2">Selecciona las columnas a mostrar</h6>
-        
-        <div class="categorias-scroll">
-          <div class="categoria-card mb-4" *ngFor="let categoria of categoriasUI">
-            
-            <div class="d-flex justify-content-between align-items-center mb-2 px-2 border-start border-4 border-primary">
-              <h6 class="mb-0 fw-bold">{{ categoria.nombre }}</h6>
-              <div>
-                <button class="btn btn-link btn-sm text-decoration-none py-0" (click)="marcarTodas(categoria)">Marcar todas</button>
-                <span class="text-muted">|</span>
-                <button class="btn btn-link btn-sm text-decoration-none text-muted py-0" (click)="desmarcarTodas(categoria)">Limpiar</button>
+            <div class="col-md-6">
+
+              <label class="form-label fw-bold">Descripción</label>
+
+              <input
+                type="text"
+                class="form-control form-control-sm"
+                [(ngModel)]="vistaActual.descripcion"
+                placeholder="Opcional">
+
+            </div>
+
+            <div class="col-md-12 mt-2">
+
+              <div class="form-check form-switch">
+
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="esDefault"
+                  [(ngModel)]="vistaActual.es_default">
+
+                <label class="form-check-label text-muted" for="esDefault">
+                  Aplicar esta vista automáticamente al abrir el panel
+                </label>
+
               </div>
+
             </div>
 
-            <div class="row g-2 px-2">
-              <div class="col-md-4 col-sm-6" *ngFor="let col of categoria.columnas">
-                <div class="form-check custom-checkbox-card m-0 h-100 d-flex align-items-center">
-                  <input class="form-check-input mt-0 me-2" type="checkbox" 
-                         [id]="col.identificador" 
-                         [(ngModel)]="col.visible">
-                  <label class="form-check-label w-100" [for]="col.identificador" style="user-select: none;">
-                    {{ col.nombre }}
-                  </label>
+          </div>
+
+
+          <!-- COLUMNAS -->
+
+          <h6 class="fw-bold mb-3 border-bottom pb-2">
+            Selecciona las columnas a mostrar
+          </h6>
+
+          <div class="categorias-scroll">
+
+            <div
+              class="categoria-card mb-4"
+              *ngFor="let categoria of categoriasUI">
+
+              <div class="d-flex justify-content-between align-items-center mb-2 px-2 border-start border-4 border-primary">
+
+                <h6 class="mb-0 fw-bold">
+                  {{ categoria.nombre }}
+                </h6>
+
+                <div>
+
+                  <button
+                    class="btn btn-link btn-sm text-decoration-none py-0"
+                    (click)="marcarTodas(categoria)">
+                    Marcar todas
+                  </button>
+
+                  <span class="text-muted">|</span>
+
+                  <button
+                    class="btn btn-link btn-sm text-decoration-none text-muted py-0"
+                    (click)="desmarcarTodas(categoria)">
+                    Limpiar
+                  </button>
+
                 </div>
+
               </div>
+
+              <div class="row g-2 px-2">
+
+                <div
+                  class="col-md-4 col-sm-6"
+                  *ngFor="let col of categoria.columnas">
+
+                  <div class="form-check custom-checkbox-card m-0 h-100 d-flex align-items-center">
+
+                    <input
+                      class="form-check-input mt-0 me-2"
+                      type="checkbox"
+                      [id]="col.identificador"
+                      [(ngModel)]="col.visible">
+
+                    <label
+                      class="form-check-label w-100"
+                      [for]="col.identificador"
+                      style="user-select:none">
+
+                      {{ col.nombre }}
+
+                    </label>
+
+                  </div>
+
+                </div>
+
+              </div>
+
             </div>
 
           </div>
+
+
+          <!-- BOTONES -->
+
+          <div class="d-flex justify-content-end mt-3 pt-3 border-top gap-2">
+
+            <button
+              class="btn btn-light border"
+              *ngIf="modo === 'editar'"
+              (click)="crearNuevaVista()">
+
+              <i class="fas fa-times me-1"></i>
+              Cancelar
+
+            </button>
+
+            <button
+              class="btn btn-primary px-4"
+              (click)="guardarVista()"
+              [disabled]="guardando">
+
+              <span
+                *ngIf="guardando"
+                class="spinner-border spinner-border-sm me-2">
+              </span>
+
+              <i
+                class="fas fa-save me-2"
+                *ngIf="!guardando">
+              </i>
+
+              Guardar Configuración
+
+            </button>
+
+          </div>
+
         </div>
 
-        <div class="d-flex justify-content-end mt-3 pt-3 border-top gap-2">
-          <button class="btn btn-light border" *ngIf="modoEdicion" (click)="crearNuevaVista()">
-            <i class="fas fa-times me-1"></i> Cancelar
-          </button>
-          <button class="btn btn-primary px-4" (click)="guardarVista()" [disabled]="guardando">
-            <span *ngIf="guardando" class="spinner-border spinner-border-sm me-2"></span>
-            <i class="fas fa-save me-2" *ngIf="!guardando"></i> Guardar Configuración
-          </button>
+      </ng-container>
+
+
+
+      <!-- ======================= -->
+      <!-- ASIGNACIÓN DE CLIENTES -->
+      <!-- ======================= -->
+
+      <ng-container *ngIf="modo === 'asignar'">
+
+        <div class="bg-white p-4 rounded shadow-sm h-100 d-flex flex-column">
+
+          <div class="d-flex justify-content-between align-items-center mb-4">
+
+            <h4>
+              <i class="fas fa-users me-2 text-primary"></i>
+              Asignar clientes
+              <span class="badge bg-primary ms-2">
+                {{ vistaAsignacionNombre }}
+              </span>
+            </h4>
+
+            <span class="badge bg-success">
+              {{ clientesAsignados.length }} asignados
+            </span>
+
+          </div>
+
+          <div class="row flex-grow-1">
+
+            <div class="col-md-5">
+
+              <h6 class="text-muted">Clientes disponibles</h6>
+
+              <div class="cliente-list">
+
+                <div
+                  *ngFor="let cliente of clientesDisponibles"
+                  class="cliente-card"
+                  (click)="asignarCliente(cliente)">
+
+                  <span>{{cliente.nombre}}</span>
+                  <i class="fas fa-arrow-right text-primary"></i>
+
+                </div>
+
+              </div>
+
+            </div>
+
+            <div class="col-md-2 d-flex align-items-center justify-content-center">
+
+              <div class="transfer-icon">
+                <i class="fas fa-exchange-alt"></i>
+              </div>
+
+            </div>
+
+            <div class="col-md-5">
+
+              <h6 class="text-muted">Clientes asignados</h6>
+
+              <div class="cliente-list">
+
+                <div
+                  *ngFor="let cliente of clientesAsignados"
+                  class="cliente-card asignado"
+                  (click)="removerCliente(cliente)">
+
+                  <span>{{cliente.nombre}}</span>
+                  <i class="fas fa-times text-danger"></i>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+          <div class="text-end mt-4">
+
+            <button
+              class="btn btn-light border me-2"
+              (click)="cancelarAsignacion()">
+
+              Cancelar
+
+            </button>
+
+            <button
+              class="btn btn-primary px-4"
+              (click)="guardarAsignacion()">
+
+              <i class="fas fa-save me-2"></i>
+              Guardar asignación
+
+            </button>
+
+          </div>
+
         </div>
 
-      </div>
+      </ng-container>
+
     </div>
+
   </div>
 </div>

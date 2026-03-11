@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('identificador', 100)->unique();
             $table->string('nombre', 150);
             $table->enum('tipo', ['cliente', 'sucursal', 'impresora']);
+            $table->string('categoria', 50)->default('general');
             $table->boolean('visible')->default(true);
             $table->integer('orden');
             $table->integer('ancho');
@@ -24,6 +25,8 @@ return new class extends Migration
             $table->timestamps();
             $table->index('activa');
             $table->index('tipo');
+            $table->index('categoria');         
+            $table->index(['tipo','categoria']);
         });
     }
 

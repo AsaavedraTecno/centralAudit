@@ -6,6 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Tenant\Printer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use App\Models\VistaPersonalizada;
+use Illuminate\Support\Facades\DB;
+
 
 class TenantPrinterController extends Controller
 {
@@ -138,7 +141,28 @@ class TenantPrinterController extends Controller
 
 
 
+    public function vistaPanel()
+    {
+        $tenantId = tenant()->id;
 
+        $vista = VistaPersonalizada::join(
+            'vista_tenants',
+            'vistas_personalizadas.id',
+            '=',
+            'vista_tenants.vista_id'
+        )
+        ->where('vista_tenants.tenant_id', $tenantId)
+        ->select('vistas_personalizadas.*')
+        ->first();
+
+        if(!$vista){
+            $vista = VistaPersonalizada::where('es_default', true)->first();
+        }
+
+        return response()->json([
+            'vista' => $vista
+        ]);
+    }
 
 
 }

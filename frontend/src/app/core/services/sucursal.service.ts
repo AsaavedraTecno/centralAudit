@@ -23,7 +23,6 @@ export class SucursalService {
    * Ahora apunta a: GET /api/tenants/{clientCode}/sucursales
    */
   getByClientCode(clientCode: string): Observable<Sucursal[]> {
-    // 👇 AQUÍ AGREGAMOS "/tenants/"
     return this.http.get<any>(`${this.baseUrl}/tenants/${clientCode}/sucursales`).pipe(
       map(response => {
         return response.sucursales || response.data || [];

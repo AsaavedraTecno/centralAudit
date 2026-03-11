@@ -17,9 +17,10 @@ import {
   VistaPersonalizada,
   ColumnaVistaSistema,
   ColumnaVistaUI,
-  VistaPersonalizadaListResponse,
-  ColumnasDisponiblesResponse
 } from '../../../models/vista-personalizada';
+
+import { TenantPanelService } from '../../../core/services/tenant-panel.service';
+
 
 @Component({
   selector: 'app-cliente-tree',
@@ -35,6 +36,8 @@ export class ClienteTreeComponent implements OnInit, OnDestroy {
 
   vistas: VistaPersonalizada[] = [];
   vistaActivaId?: number;
+  private vistasLoaded = false;
+  private initialized = false;
 
   private columnasSistema: ColumnaVistaSistema[] = [];
   columnasVisibles: ColumnaVistaUI[] = [];
@@ -68,6 +71,7 @@ export class ClienteTreeComponent implements OnInit, OnDestroy {
   private autoRefreshSub?: Subscription;
 
   constructor(
+    private TenantPanelService: TenantPanelService,
     private vistaState: VistaStateService,
     private vistaService: VistaPersonalizadaService,
     private detalleService: DetalleImpresoraService,
@@ -78,21 +82,56 @@ export class ClienteTreeComponent implements OnInit, OnDestroy {
     private cdr: ChangeDetectorRef,
     @Inject(PLATFORM_ID) private platformId: Object 
   ) { }
-    
-  ngOnInit(): void {
 
+  isTenant(): boolean {
+    return this.TenantPanelService.isTenant();
+  }
+
+  cargarVistaCentral(){
     this.vistaService.obtenerColumnasDisponibles().subscribe(res => {
       this.vistaState.establecerColumnasDisponibles(res.columnas);
+      this.cdr.markForCheck();
     });
 
     this.recargarVistas();
+  }
 
+  cargarVistaTenant(){
+    this.vistaService.obtenerColumnasDisponibles().subscribe(res => {
+      this.vistaState.establecerColumnasDisponibles(res.columnas);
+
+      this.TenantPanelService.obtenerVistaPanel().subscribe((res:any)=>{
+        const vista = res.vista;
+        this.vistas = [vista];
+        this.vistaActivaId = vista.id;
+        this.vistaState.establecerVistaActiva(vista);
+        this.cdr.markForCheck();
+      });
+    });
+  }
+        
+  ngOnInit(): void {
+    if (this.initialized) return;
+    this.initialized = true;
+
+    // Cargar vistas (central o tenant)
+    if (this.TenantPanelService.isTenant())  {
+      this.vistas = [];
+      this.cargarVistaTenant();
+    } else {
+      this.cargarVistaCentral();
+    }
+
+    // Suscribirse a cambios de columnas visibles
     this.vistaState.obtenerColumnasVisibles().subscribe(cols => {
       this.columnasVisibles = cols;
       this.cdr.markForCheck();
     });
 
+    // Cargar clientes
     this.loadClientes();
+
+    // Iniciar refresco automático
     this.iniciarAutoRefresh();
   }
 
@@ -107,7 +146,6 @@ export class ClienteTreeComponent implements OnInit, OnDestroy {
   }
 
   cambiarVista(id: any) {
-
     const idNumber = Number(id);
 
     const vista = this.vistas.find(v => v.id === idNumber);
@@ -120,12 +158,14 @@ export class ClienteTreeComponent implements OnInit, OnDestroy {
     localStorage.setItem('vista_activa', String(idNumber));
 
     this.vistaState.establecerVistaActiva(vista);
+    this.cdr.markForCheck();
   }
 
   recargarVistas(seleccionarUltima: boolean = true) {
+    if (this.vistasLoaded) return;
+    this.vistasLoaded = true;
 
     this.vistaService.obtenerVistas().subscribe(res => {
-
       this.vistas = res.data;
 
       if (!this.vistas.length) return;
@@ -133,13 +173,10 @@ export class ClienteTreeComponent implements OnInit, OnDestroy {
       let vistaInicial: VistaPersonalizada | undefined;
 
       if (seleccionarUltima) {
-
         const vistaGuardada = localStorage.getItem('vista_activa');
-
         if (vistaGuardada) {
           vistaInicial = this.vistas.find(v => v.id === Number(vistaGuardada));
         }
-
       }
 
       if (!vistaInicial) {
@@ -147,20 +184,17 @@ export class ClienteTreeComponent implements OnInit, OnDestroy {
       }
 
       this.vistaActivaId = vistaInicial.id;
-
       this.vistaState.establecerVistaActiva(vistaInicial);
 
       this.cdr.markForCheck();
-
     });
-
   }
     
 
   iniciarAutoRefresh(): void {
-    // Se ejecuta cada 60 segundos (60000 ms)
+    if (this.autoRefreshSub) return;
+
     this.autoRefreshSub = interval(600000).subscribe(() => {
-      // Solo recargamos si no hay una búsqueda activa ni está cargando otra cosa
       if (!this.isSearching && !this.isLoadingData) {
         this.recargarSilenciosamente();
       }
@@ -182,7 +216,7 @@ export class ClienteTreeComponent implements OnInit, OnDestroy {
         if (cliente && cliente.sucursales) {
           const sucursalIdx = cliente.sucursales.findIndex(s => String(s.id) === sucursalIdStr);
           if (sucursalIdx !== -1) {
-            await this.cargarImpresiorasDelaSucursal(cliente, sucursalIdx, nodeId);
+            await this.cargarImpresorasDelaSucursal(cliente, sucursalIdx, nodeId);
           }
         }
       }
@@ -199,6 +233,7 @@ export class ClienteTreeComponent implements OnInit, OnDestroy {
     if (this.isLoadingData) return;
     this.isLoadingData = true;
     this.loading = true;
+    this.cdr.markForCheck();
     
     const request$ = this.isSearching 
       ? this.clienteService.searchClientes(this.busqueda.trim(), this.currentPage, this.clientesPerPage)
@@ -210,9 +245,10 @@ export class ClienteTreeComponent implements OnInit, OnDestroy {
         if (rawData && Array.isArray(rawData)) {
           this.clientes = rawData.map((c: any) => ({
             ...c,
-            printers_count: c.printers_count ?? 0
+            printers_count: c.printers_count ?? 0,
+            sucursales: undefined
           }));
-          console.log(rawData);
+          console.log('Clientes cargados:', rawData);
           this.totalClientes = response.pagination?.total || response.total || rawData.length;
           this.totalPages = response.pagination?.last_page || response.last_page || Math.ceil(this.totalClientes / this.clientesPerPage);
         }
@@ -239,7 +275,8 @@ export class ClienteTreeComponent implements OnInit, OnDestroy {
       const lista = response?.data || response?.sucursales || response;
 
       if (Array.isArray(lista)) {
-        this.updateClienteInList(cliente.rut, lista);
+        this.updateClienteInList(cliente.code, lista);
+        this.cdr.markForCheck();
       }
       this.finalizarCargaNodo(nodeId);
     } catch (error) {
@@ -250,35 +287,57 @@ export class ClienteTreeComponent implements OnInit, OnDestroy {
     }
   }
 
-  private async cargarImpresiorasDelaSucursal(cliente: Cliente, sucursalIndex: number, nodeId: string): Promise<void> {
+  private async cargarImpresorasDelaSucursal(cliente: Cliente, sucursalIndex: number, nodeId: string): Promise<void> {
     const sucursal = cliente.sucursales![sucursalIndex];
     const sucursalId = typeof sucursal.id === 'string' ? parseInt(sucursal.id) : sucursal.id || 0;
-    const loadingKey = `suc_${cliente.rut}_${sucursalId}`;
+    const loadingKey = `suc_${cliente.code}_${sucursalId}`;
     
     if (this.loadingImpresoras.has(loadingKey)) return;
     this.loadingImpresoras.add(loadingKey);
     
     try {
       const response: any = await this.impresoraService.getImpresoras(cliente.code || cliente.rut, sucursalId).toPromise();
-      const rawData = response?.data || response?.impresoras || response;
+      let rawData: any[] = [];
+
+      if (Array.isArray(response?.data)) {
+        rawData = response.data;
+      } 
+      else if (Array.isArray(response?.impresoras)) {
+        rawData = response.impresoras;
+      }
+      else if (Array.isArray(response)) {
+        rawData = response;
+      }
 
       if (Array.isArray(rawData)) {
         // Filtrar solo impresoras activas
-        const activas = rawData.filter((imp: any) => imp.estado === 1);
-        this.updateSucursalInList(cliente.rut, sucursalId, activas);
+          console.log('RAW impresoras desde API:', rawData);
+          console.log('Primer objeto impresora:', rawData[0]);
+        const activas = rawData
+          .filter((imp: any) => imp.estado === 1)
+          .filter((imp: any, index: number, self: any[]) =>
+            index === self.findIndex((i) => i.id === imp.id)
+        );
+        
+        this.updateSucursalInList(cliente.code, sucursalId, activas);
+        this.cdr.markForCheck(); 
+        console.log('Impresoras cargadas:', activas);
+        console.log('Clientes actualizado:', this.clientes);
       }
-      this.finalizarCargaNodo(nodeId);
+
     } catch (error) {
       console.error(`Error loading printers:`, error);
-      this.finalizarCargaNodo(nodeId);
     } finally {
+      this.finalizarCargaNodo(nodeId);
       this.loadingImpresoras.delete(loadingKey);
+      
     }
+    
   }
 
-  private updateClienteInList(rut: string, sucursales: Sucursal[]) {
+  private updateClienteInList(code: string, sucursales: Sucursal[]) {
     this.clientes = this.clientes.map(c => {
-      if (c.rut === rut) {
+      if (c.code === code) {
         return { 
           ...c, 
           sucursales: sucursales.map(s => ({ ...s, impresoras: undefined })) 
@@ -289,21 +348,28 @@ export class ClienteTreeComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
-  private updateSucursalInList(clientRut: string, sucursalId: number, impresoras: any[]) {
-    this.clientes = this.clientes.map(c => {
-      if (c.rut === clientRut && c.sucursales) {
-        return {
-          ...c,
-          sucursales: c.sucursales.map(s => {
-            if (Number(s.id) === sucursalId) {
-              return { ...s, impresoras: [...impresoras] };
-            }
-            return s;
-          })
-        };
+  private updateSucursalInList(clientCode: string, sucursalId: number, impresoras: any[]) {
+    this.clientes = this.clientes.map(cliente => {
+      if (cliente.code !== clientCode) {
+        return cliente;
       }
-      return c;
+
+      return {
+        ...cliente,
+        sucursales: (cliente.sucursales || []).map(sucursal => {
+          if (Number(sucursal.id) !== sucursalId) {
+            return sucursal;
+          }
+
+          return {
+            ...sucursal,
+            impresoras: [...impresoras] // importante clonar
+          };
+        })
+      };
     });
+
+    // ✅ CAMBIO CRÍTICO: markForCheck() en lugar de detectChanges()
     this.cdr.markForCheck();
   }
 
@@ -321,8 +387,8 @@ export class ClienteTreeComponent implements OnInit, OnDestroy {
     if (!this.expandedNodes[nodeId]) return;
     
     if (nodeId.startsWith('cliente_')) {
-      const rut = nodeId.replace('cliente_', '');
-      const cliente = this.clientes.find(c => c.rut === rut);
+      const id = nodeId.replace('cliente_', '');
+      const cliente = this.clientes.find(c => c.id === id);
       if (cliente && (!cliente.sucursales || cliente.sucursales.length === 0)) {
         this.loadingNodes = { ...this.loadingNodes, [nodeId]: true };
         this.cargarSucursalesOnDemand(cliente, nodeId);
@@ -330,15 +396,15 @@ export class ClienteTreeComponent implements OnInit, OnDestroy {
     } 
     else if (nodeId.startsWith('sucursal_')) {
       const parts = nodeId.split('_');
-      const clientCode = parts[1];
+      const clientId = parts[1];
       const sucursalIdStr = parts[parts.length - 1];
       
-      const cliente = this.clientes.find(c => c.code === clientCode || c.rut === clientCode);
+      const cliente = this.clientes.find(c => c.id === clientId);
       if (cliente?.sucursales) {
         const sucursalIdx = cliente.sucursales.findIndex(s => String(s.id) === sucursalIdStr);
-        if (sucursalIdx !== -1 && !cliente.sucursales[sucursalIdx].impresoras) {
+        if (sucursalIdx !== -1 && (!cliente.sucursales[sucursalIdx].impresoras || cliente.sucursales[sucursalIdx].impresoras.length === 0) ){
           this.loadingNodes = { ...this.loadingNodes, [nodeId]: true };
-          this.cargarImpresiorasDelaSucursal(cliente, sucursalIdx, nodeId);
+          this.cargarImpresorasDelaSucursal(cliente, sucursalIdx, nodeId);
         }
       }
     }
@@ -396,6 +462,7 @@ export class ClienteTreeComponent implements OnInit, OnDestroy {
       this.busqueda = '';
 
       this.ultimaActualizacion = new Date();
+      this.cdr.markForCheck();
       
       // Recargar desde servidor
       this.loadClientes();
@@ -433,18 +500,16 @@ export class ClienteTreeComponent implements OnInit, OnDestroy {
       return;
     }
 
-    //this.loading = true;
     this.mostrar_modal_detalles = false;
     this.detalleService.cargarDetallesCompletos(clienteCode, locationId, imp.id).subscribe({
       next: (response: any) => {
         const detallesFrescos = response.data || response;
 
-          console.log('Respuesta completa:', response);
-      console.log('Detalles frescos:', detallesFrescos);
-      console.log('Supplies en detallesFrescos:', detallesFrescos.supplies);
-      console.log('Supplies en response.data:', response.data?.supplies);
+        console.log('Respuesta completa:', response);
+        console.log('Detalles frescos:', detallesFrescos);
+        console.log('Supplies en detallesFrescos:', detallesFrescos.supplies);
+        console.log('Supplies en response.data:', response.data?.supplies);
 
-      
         this.impresora_seleccionada = {
           ...imp,
           ...detallesFrescos,
@@ -474,15 +539,12 @@ export class ClienteTreeComponent implements OnInit, OnDestroy {
 
   // ============ TRACK BY ============
 
-  trackByClienteRut(i: number, c: Cliente) { return c.rut; }
+  trackByClienteRut(i: number, c: Cliente) { return c.code; }
   trackBySucursalId(i: number, s: Sucursal) { return s.id; }
-  trackByImpresoraId(i: number, imp: Impresora) { return imp.id || imp.serie; }
+  trackByImpresoraId(i: number, imp: Impresora) { return imp.id }
 
   onTableScroll(e: Event): void {}
 
-    /**
-   * Obtiene un tóner específico del JSON de supplies de la impresora
-   */
   getTónerByType(impresora: any, tipo: string): any {
     if (!impresora || !impresora.supplies) {
       return null;
@@ -505,9 +567,6 @@ export class ClienteTreeComponent implements OnInit, OnDestroy {
     );
   }
 
-  /**
-   * Obtiene un componente específico del JSON de supplies
-   */
   getComponenteByType(impresora: any, tipo: string): any {
     if (!impresora || !impresora.supplies) {
       return null;
@@ -537,9 +596,6 @@ export class ClienteTreeComponent implements OnInit, OnDestroy {
     );
   }
 
-  /**
-   * Obtiene el estado de un componente en formato legible
-   */
   getEstadoComponente(supply: any): string {
     const estado = supply?.status || 'unknown';
     const statusMap: { [key: string]: string } = {
@@ -577,30 +633,30 @@ export class ClienteTreeComponent implements OnInit, OnDestroy {
     }
 
     this.loading = true;
+    this.cdr.markForCheck();
     this.toastService.show('Guardando cambios...', 'info');
 
     this.detalleService.actualizarCamposInventario(clienteCode, datos.id, datos).subscribe({
       next: () => {
         this.toastService.show('✓ Ficha de inventario actualizada', 'success');
-        this.mostrar_modal_detalles = false; // ← Asigna primero
+        this.mostrar_modal_detalles = false;
         this.loading = false;
         this.impresora_seleccionada = null;
-        this.cdr.markForCheck(); // ← Luego detecta cambios
+        this.cdr.markForCheck();
       },
       error: (err) => {
         console.error('Error al guardar:', err);
         this.toastService.show('Error al guardar los cambios', 'error');
         this.loading = false;
+        this.cdr.markForCheck();
       }
     });
   }
 
   getClaseColumna(col: ColumnaVistaUI): string {
-
     if (col.componente !== 'barra') return '';
 
     const map: { [key: string]: string } = {
-
       // Toner
       'imp_toner_black': 'component-bar toner-black',
       'imp_toner_cyan': 'component-bar toner-cyan',
@@ -629,5 +685,4 @@ export class ClienteTreeComponent implements OnInit, OnDestroy {
 
     return map[col.identificador] || 'component-bar';
   }
-
 }

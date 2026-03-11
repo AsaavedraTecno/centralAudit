@@ -7,6 +7,7 @@ use App\Models\ColumnasDisponibles;
 
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\Paginator;
+use App\Models\User;
 
 class VistaPersonalizadaService
 {
@@ -16,6 +17,7 @@ class VistaPersonalizadaService
     public function obtenerVistasUsuario(int $usuarioId): Collection
     {
         $vistas = VistaPersonalizada::delUsuario($usuarioId)
+        ->withCount('tenants')
         ->ordenadas()
         ->get();
 
@@ -103,7 +105,15 @@ class VistaPersonalizadaService
      */
     public function validarLimiteSistema(int $usuarioId, int $limite = 10): bool
     {
+        $user = User::find($usuarioId);
+
+        // Si es admin → sin límite
+        if ($user && $user->isAdmin()) {
+            return true;
+        }
+
         $countVistas = VistaPersonalizada::where('user_id', $usuarioId)->count();
+
         return $countVistas < $limite;
     }
 
@@ -119,25 +129,31 @@ class VistaPersonalizadaService
 
     private function prepararVista(VistaPersonalizada $vista): VistaPersonalizada
     {
-        // 🔹 1. Sincronizar columnas nuevas
+        // 🔹 1. Columnas del sistema
         $columnasSistema = $this->obtenerColumnasDefault();
 
-        $columnasVista = collect($vista->columnas);
+        // 🔹 2. Convertir columnas de la vista a colección manipulable
+        $columnasVista = collect($vista->columnas ?? []);
+
         $identificadoresVista = $columnasVista->pluck('identificador')->toArray();
 
+        // 🔹 3. Agregar columnas nuevas que no existan
         foreach ($columnasSistema as $colSistema) {
+
             if (!in_array($colSistema['identificador'], $identificadoresVista)) {
-                $vista->columnas[] = [
+
+                $columnasVista->push([
                     'identificador' => $colSistema['identificador'],
                     'visible' => false,
                     'orden' => $colSistema['orden'],
                     'ancho' => $colSistema['ancho'],
-                ];
+                ]);
+
             }
         }
 
-        // 🔹 2. Ordenar columnas por orden
-        $vista->columnas = collect($vista->columnas)
+        // 🔹 4. Ordenar columnas
+        $vista->columnas = $columnasVista
             ->sortBy('orden')
             ->values()
             ->toArray();

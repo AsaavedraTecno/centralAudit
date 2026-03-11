@@ -24,7 +24,7 @@ class TenantClientController extends Controller
             'id'      => $t->id,
             'code'    => $t->id, // O $t->code si usas ese campo
             'nombre'  => $t->nombre ?? $t->id,
-            'rut'     => $t->id, // El ID suele ser el slug o RUT en tu sistema
+            'rut'     => $t->rut, // El ID suele ser el slug o RUT en tu sistema
             'status'  => true,
             'region'  => $t->region ?? null,
             'comuna'  => $t->comuna ?? null,

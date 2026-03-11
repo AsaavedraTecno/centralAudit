@@ -7,6 +7,8 @@ use App\Http\Requests\UpdateVistaPersonalizadaRequest;
 use App\Models\VistaPersonalizada;
 use App\Services\VistaPersonalizadaService;
 use Illuminate\Http\JsonResponse;
+use App\Models\Tenant;
+use Illuminate\Http\Request;
 
 
 class VistaPersonalizadaController extends Controller
@@ -164,4 +166,39 @@ class VistaPersonalizadaController extends Controller
         $columnas = $this->service->obtenerColumnasDefault();
         return response()->json(['columnas' => $columnas]);
     }
+
+
+    public function tenants(VistaPersonalizada $vistaPersonalizada): JsonResponse
+    {
+        $asignadosIds = $vistaPersonalizada->tenants()->pluck('tenants.id');
+
+        $asignados = Tenant::whereIn('id', $asignadosIds)
+            ->select('id', 'nombre')
+            ->get();
+
+        $disponibles = Tenant::whereNotIn('id', $asignadosIds)
+            ->select('id', 'nombre')
+            ->get();
+
+        return response()->json([
+            'asignados' => $asignados,
+            'disponibles' => $disponibles
+        ]);
+    }
+
+    public function guardarTenants( VistaPersonalizada $vistaPersonalizada, Request $request ): JsonResponse 
+    {
+
+        $request->validate([
+            'tenants' => 'array',
+            'tenants.*' => 'exists:tenants,id'
+        ]);
+
+        $vistaPersonalizada->tenants()->sync($request->tenants);
+
+        return response()->json([
+            'mensaje' => 'Asignación actualizada'
+        ]);
+    }
+    
 }

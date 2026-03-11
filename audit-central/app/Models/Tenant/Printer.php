@@ -153,4 +153,18 @@ class Printer extends Model
                     ->where('collected_at', '<', now()->startOfDay())
                     ->orderBy('collected_at', 'desc'); // La última lectura antes de hoy
     }
+
+
+    public function dailyAggregateToday(): HasOne
+    {
+        return $this->hasOne(DailyAggregate::class)
+            ->whereDate('date', now()->toDateString());
+    }
+
+    public function monthlyAggregateCurrent(): HasOne
+    {
+        return $this->hasOne(MonthlyAggregate::class)
+            ->whereDate('month', now()->startOfMonth());
+    }
+    
 }

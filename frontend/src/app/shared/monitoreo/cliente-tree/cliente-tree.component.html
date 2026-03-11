@@ -15,7 +15,8 @@
         <select class="form-select form-select-sm"
                 style="width: 200px;"
                 [(ngModel)]="vistaActivaId"
-                (ngModelChange)="cambiarVista($event)">
+                (ngModelChange)="cambiarVista($event)"
+                *ngIf="!isTenant()">
 
           <option *ngFor="let vista of vistas"
                   [ngValue]="vista.id">
@@ -61,7 +62,7 @@
             <thead class="table-dark sticky-thead">
               <tr>
                 <th style="width: 280px; min-width: 280px; text-align: center;">
-                  Nombre
+                  Nombre | Rut | Impresoras
                 </th>
 
                 <th *ngFor="let col of columnasVisibles"
@@ -78,12 +79,12 @@
               <ng-container *ngFor="let cliente of clientes; trackBy: trackByClienteRut">
 
                 <tr class="cliente-row level-0"
-                    (click)="toggleNode('cliente_' + cliente.rut)"
+                    (click)="toggleNode('cliente_' + cliente.id)"
                     style="cursor:pointer;">
 
                   <td style="width: 280px; min-width: 280px;" class="fw-bold client-name">
                     <span class="expand-icon">
-                      {{ expandedNodes['cliente_' + cliente.rut] ? '−' : '+' }}
+                      {{ expandedNodes['cliente_' + cliente.id] ? '−' : '+' }}
                     </span>
                     <span class="cliente-info">
 
@@ -96,7 +97,7 @@
                       </span>
 
                       <span class="printer-count">
-                        🖨 {{ cliente.printers_count ?? 0 }}
+                        {{ cliente.printers_count ?? 0 }}
                       </span>
                     </span>
                   </td>
@@ -112,17 +113,17 @@
 
 
                 <!-- SUCURSALES -->
-                <ng-container *ngIf="expandedNodes['cliente_' + cliente.rut] && cliente.sucursales">
+                <ng-container *ngIf="expandedNodes['cliente_' + cliente.id] && cliente.sucursales">
 
                   <ng-container *ngFor="let sucursal of cliente.sucursales; trackBy: trackBySucursalId">
 
                     <tr class="sucursal-row level-1"
-                        (click)="toggleNode('sucursal_' + cliente.code + '_' + sucursal.id)"
+                        (click)="toggleNode('sucursal_' + cliente.id + '_' + sucursal.id)"
                         style="cursor:pointer;">
 
                       <td style="width: 280px; min-width: 280px;">
                         <span class="expand-icon">
-                          {{ expandedNodes['sucursal_' + cliente.code + '_' + sucursal.id] ? '−' : '+' }}
+                          {{ expandedNodes['sucursal_' + cliente.id + '_' + sucursal.id] ? '−' : '+' }}
                         </span>
 
                         <span class="truncate">
@@ -141,7 +142,7 @@
 
 
                     <!-- IMPRESORAS -->
-                    <ng-container *ngIf="expandedNodes['sucursal_' + cliente.code + '_' + sucursal.id] && sucursal.impresoras">
+                    <ng-container *ngIf="expandedNodes['sucursal_' + cliente.id + '_' + sucursal.id]">
 
                       <tr *ngFor="let impresora of sucursal.impresoras; trackBy: trackByImpresoraId"
                           class="impresora-row level-2">

@@ -4,6 +4,7 @@ export interface ColumnaVistaSistema {
   identificador: string;
   nombre: string;
   tipo: 'cliente' | 'sucursal' | 'impresora';
+  categoria: string; 
   orden: number;
   ancho: number;
   componente?: 'texto' | 'numero' | 'badge' | 'barra';

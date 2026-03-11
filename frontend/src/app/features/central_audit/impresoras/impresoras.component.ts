@@ -19,6 +19,7 @@ interface ImpresoraVista {
   sucursal_nombre: string; sucursal_id: number | string;
   tonerBlack?: number; tonerCyan?: number; tonerMagenta?: number; tonerYellow?: number;
   ubicacion?: string;
+  custom_location?: string;
   impresoHoy?: number;
   impresoMes?: number;
 }
@@ -183,7 +184,11 @@ export class ImpresoresComponent implements OnInit {
 
     this.impresoraService.getImpresoras(clientCode, sucursal.id).subscribe({
       next: (resp: any) => {
-        this.impresorasMaestra = (resp.data || []).map((imp: any) => ({
+        
+        const impresoras = resp?.data || resp?.impresoras || resp || [];
+        
+        
+        this.impresorasMaestra = impresoras.map((imp: any) => ({
           ...imp,
           cliente_rut: clientCode,
           cliente_nombre: cliente.razon_social || cliente.nombre,
@@ -191,8 +196,13 @@ export class ImpresoresComponent implements OnInit {
           sucursal_id: sucursal.id
         }));
 
-        const marcasCrudas = this.impresorasMaestra.map(i => i.brand).filter(b => !!b) as string[];
+
+        const marcasCrudas = this.impresorasMaestra
+          .map(i => i.brand || i.modelo)  
+          .filter(b => !!b) as string[];
+        
         this.marcasDisponibles = [...new Set(marcasCrudas)];
+        
 
         this.aplicarFiltros(this.filtrosActuales);
         

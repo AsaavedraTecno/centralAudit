@@ -130,4 +130,19 @@ export class VistaPersonalizadaService {
   limpiarCacheColumnas(): void {
     this.columnasCache$ = undefined;
   }
+
+  obtenerTenantsVista(id:number){
+    return this.http.get<any>(
+      `${this.apiUrl}/${id}/tenants`
+    );
+  }
+
+  guardarTenantsVista(id:number, tenants:string[]){
+    return this.http.post(
+      `${this.apiUrl}/${id}/tenants`,
+      { tenants }
+    );
+  }
+
+
 }

@@ -9,6 +9,7 @@ import {
   ColumnaVistaUI,
   ColumnaVistaConfig
 } from '../../../../models/vista-personalizada';
+import { forkJoin } from 'rxjs';
 
 interface CategoriaUI {
   nombre: string;
@@ -29,7 +30,13 @@ export class VistaAdminComponent implements OnInit {
 
   loading = false;
   guardando = false;
-  modoEdicion = false;
+
+  modo: 'crear' | 'editar' | 'asignar' = 'crear';
+  vistaAsignacionId?: number;
+  clientesDisponibles: any[] = [];
+  clientesAsignados: any[] = [];
+  vistaAsignacionNombre = '';
+
 
   vistaActual: {
     id?: number;
@@ -52,34 +59,37 @@ export class VistaAdminComponent implements OnInit {
     this.cargarDatosIniciales();
   }
 
-  cargarDatosIniciales(): void {
+  cargarDatosIniciales(): void 
+  {
     this.loading = true;
 
-    this.vistaService.obtenerColumnasDisponibles().subscribe({
-      next: (res) => {
-        this.columnasMaestras = res.columnas || [];
+    forkJoin({
+      columnas: this.vistaService.obtenerColumnasDisponibles(),
+      vistas: this.vistaService.obtenerVistas()
+    })
+    .subscribe({
+      next: (res: any) => {
 
-        this.vistaService.obtenerVistas().subscribe({
-          next: (response: any) => {
-            this.vistas = response.data || response || [];
-            this.crearNuevaVista();
-            this.loading = false;
-          },
-          error: (err) => {
-            this.toastService.show('Error al cargar vistas', 'error');
-            this.loading = false;
-          }
-        });
+        this.columnasMaestras = res.columnas.columnas || [];
+        this.vistas = res.vistas.data || res.vistas || [];
+
+        this.crearNuevaVista();
+        this.loading = false;
+
       },
       error: () => {
-        this.toastService.show('Error al cargar columnas', 'error');
+
+        this.toastService.show('Error al cargar datos', 'error');
         this.loading = false;
+
       }
     });
+
   }
 
   crearNuevaVista(): void {
-    this.modoEdicion = false;
+    this.modo = 'crear';
+
 
     const columnasNuevas: ColumnaVistaUI[] = this.columnasMaestras.map(col => ({
       ...col,
@@ -96,21 +106,26 @@ export class VistaAdminComponent implements OnInit {
     this.construirCategoriasUI(this.vistaActual.columnas);
   }
 
-  editarVista(vista: VistaPersonalizada): void {
-    this.modoEdicion = true;
+  editarVista(vista: VistaPersonalizada): void 
+  {
+    this.modo = 'editar';
+    const columnasGuardadas = new Map(
+      vista.columnas.map(c => [c.identificador, c])
+    );
 
-    const columnasFusionadas: ColumnaVistaUI[] = this.columnasMaestras.map(colMaestra => {
-      const guardada = vista.columnas.find(
-        c => c.identificador === colMaestra.identificador
-      );
+    const columnasFusionadas: ColumnaVistaUI[] =
+      this.columnasMaestras.map(colMaestra => {
 
-      return {
-        ...colMaestra,
-        visible: guardada ? guardada.visible : false,
-        orden: guardada?.orden ?? colMaestra.orden,
-        ancho: guardada?.ancho ?? colMaestra.ancho
-      };
-    });
+        const guardada = columnasGuardadas.get(colMaestra.identificador);
+
+        return {
+          ...colMaestra,
+          visible: guardada?.visible ?? false,
+          orden: guardada?.orden ?? colMaestra.orden,
+          ancho: guardada?.ancho ?? colMaestra.ancho
+        };
+
+      });
 
     this.vistaActual = {
       id: vista.id,
@@ -121,78 +136,41 @@ export class VistaAdminComponent implements OnInit {
     };
 
     this.construirCategoriasUI(this.vistaActual.columnas);
+
   }
 
   construirCategoriasUI(columnas: ColumnaVistaUI[]): void {
-    this.categoriasUI = [
-      {
-        nombre: 'Identificación y General',
-        columnas: columnas.filter(c =>
-          ['cliente', 'sucursal'].includes(c.tipo) ||
-          [
-            'imp_modelo',
-            'imp_serie',
-            'imp_serie_secundaria',
-            'imp_id_interno',
-            'imp_ip',
-            'imp_campo_extra_1',
-            'imp_campo_extra_2',
-            'imp_ubicacion',
-            'imp_ubicacion_manual',
-            'imp_descripcion',
-            'imp_comentarios',
-            'imp_estado',
-            'imp_minutos_sin_conexion',
-            'imp_firmware',
-            'imp_mac',
-            'imp_online',
-          ].includes(c.identificador)
-        )
-      },
-      {
-        nombre: 'Métricas de Impresión',
-        columnas: columnas.filter(c =>
-          [
-            'imp_paginas_impresas',
-            'imp_impreso_hoy',
-            'imp_impreso_mes',
-            'imp_paginas_bn',
-            'imp_paginas_color'
-          ].includes(c.identificador)
-        )
-      },
-      {
-        nombre: 'Tóners',
-        columnas: columnas.filter(c =>
-          c.identificador.includes('toner')
-        )
-      },
-      {
-        nombre: 'Drums',
-        columnas: columnas.filter(c =>
-          c.identificador.includes('drum')
-        )
-      },
-      {
-        nombre: 'Reveladores',
-        columnas: columnas.filter(c =>
-          c.identificador.includes('revelador')
-        )
-      },
-      {
-        nombre: 'Otros Componentes',
-        columnas: columnas.filter(c =>
-          [
-            'imp_fusor',
-            'imp_adf_roller',
-            'imp_transfer_roller',
-            'imp_mp_roller',
-            'imp_retard_pad',
-            'imp_caja_residuos'
-          ].includes(c.identificador)
-        )
+
+    const nombresCategoria: Record<string, string> = {
+      cliente: 'Cliente',
+      general: 'Identificación y General',
+      metricas: 'Métricas de Impresión',
+      toner: 'Tóners',
+      drum: 'Drums',
+      revelador: 'Reveladores',
+      componentes: 'Otros Componentes'
+    };
+
+    const categorias: Record<string, ColumnaVistaUI[]> = {};
+
+    columnas.forEach(col => {
+
+      const categoria = col.categoria || 'general';
+
+      if (!categorias[categoria]) {
+        categorias[categoria] = [];
       }
-    ];
+
+      categorias[categoria].push(col);
+
+    });
+
+    this.categoriasUI = Object.entries(categorias)
+      .map(([categoria, columnas]) => ({
+        nombre: nombresCategoria[categoria] || categoria,
+        columnas
+      }))
+      .filter(cat => cat.columnas.length > 0);
   }
 
   contarVisibles(vista: VistaPersonalizada): number {
@@ -239,7 +217,7 @@ export class VistaAdminComponent implements OnInit {
       columnas: columnasParaGuardar
     };
 
-    const peticion$ = this.modoEdicion
+    const peticion$ = this.modo === 'editar'
       ? this.vistaService.actualizarVista(this.vistaActual.id!, payload)
       : this.vistaService.crearVista(payload);
 
@@ -286,5 +264,65 @@ export class VistaAdminComponent implements OnInit {
         this.toastService.show('Error al duplicar', 'error');
       }
     });
+  }
+
+  abrirAsignacionClientes(vista: VistaPersonalizada) {
+
+    this.modo = 'asignar';
+    this.vistaAsignacionId = vista.id;
+    this.vistaAsignacionNombre = vista.nombre;
+
+    this.vistaService.obtenerTenantsVista(vista.id)
+      .subscribe((res:any)=>{
+
+        this.clientesDisponibles = res.disponibles;
+        this.clientesAsignados = res.asignados;
+
+      });
+  }
+
+  asignarCliente(cliente:any)
+  {
+
+    this.clientesDisponibles =
+      this.clientesDisponibles.filter(c=>c.id !== cliente.id);
+
+    this.clientesAsignados.push(cliente);
+
+  }
+
+  removerCliente(cliente:any)
+  {
+
+    this.clientesAsignados =
+      this.clientesAsignados.filter(c=>c.id !== cliente.id);
+
+    this.clientesDisponibles.push(cliente);
+
+  }
+
+  guardarAsignacion()
+  {
+
+    if(!this.vistaAsignacionId){
+      return;
+    }
+
+    const tenants = this.clientesAsignados.map(c=>c.id);
+
+    this.vistaService.guardarTenantsVista(
+      this.vistaAsignacionId,
+      tenants
+    ).subscribe(()=>{
+
+      this.toastService.show('Asignación guardada','success');
+      this.modo = 'editar';
+
+    });
+
+  }
+
+  cancelarAsignacion(){
+    this.modo = 'editar';
   }
 }
