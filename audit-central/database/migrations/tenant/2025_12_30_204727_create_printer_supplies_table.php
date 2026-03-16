@@ -18,7 +18,6 @@ return new class extends Migration
                 ->onDelete('cascade');
 
             // Tipo de suministro: toner_black, toner_cyan, drum_black, fusor, etc.
-            // Normalizado para escalar a cualquier tipo de suministro
             $table->string('supply_type')->index();
 
             $table->string('name')->nullable();

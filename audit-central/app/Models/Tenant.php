@@ -90,7 +90,7 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         }
         
         // Last resort: vacio
-        return '';
+        return $this->db_name;
     }
 
     /**

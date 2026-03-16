@@ -1,0 +1,39 @@
+<div class="panel">
+
+  <h4>Impresoras urgentes</h4>
+
+  <div class="printer-grid">
+
+    <div class="printer-card"
+         *ngFor="let printer of printers">
+
+      <div class="printer-header">
+
+        <span class="printer-name">
+          {{ printer.printer_name }}
+        </span>
+
+        <span class="risk-badge"
+              [ngClass]="getRiskClass(printer.risk_score)">
+          {{ printer.risk_score }}
+        </span>
+
+      </div>
+
+      <div class="printer-body">
+
+        <div class="supply">
+          {{ printer.most_critical_supply }}
+        </div>
+
+        <div class="days">
+          {{ printer.days_remaining }} días restantes
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>

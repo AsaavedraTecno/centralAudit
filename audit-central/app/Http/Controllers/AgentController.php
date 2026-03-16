@@ -79,7 +79,7 @@ class AgentController extends Controller
 
         // Registrar check-in
         $agentKey->update([
-            'last_seen_at' => now(),
+            'last_seen_at' => now()->utc(),  
             'last_ip' => $request->ip(),
         ]);
 
@@ -208,8 +208,8 @@ class AgentController extends Controller
                     'hostname'     => $agentSource['hostname'] ?? 'Unknown',
                     'version'      => $agentSource['version'] ?? '1.0.0',
                     'ip_address'   => $request->ip(),
-                    'last_seen_at' => now(),
-                    'updated_at' => now(),
+                    'last_seen_at' => now()->utc(),
+                    'updated_at' => now()->utc(),
                     // Si es insert, created_at debería manejarse, si no, puedes añadirlo:
                     // 'created_at' => now() // (opcional si la BD lo pone auto)
                 ]
@@ -241,7 +241,8 @@ class AgentController extends Controller
             }
 
             $agentKey->update([
-                'last_seen_at' => now(),
+                'last_seen_at' => now()->utc(),  
+
                 //'last_ip' => $request->ip(),
             ]);
             DB::connection('tenant')->commit();
@@ -281,8 +282,8 @@ class AgentController extends Controller
         
         // Parsear fecha
         $collectedAt = isset($event['collected_at']) 
-            ? \Carbon\Carbon::parse($event['collected_at']) 
-            : now();
+            ? Carbon::parse($event['collected_at'], 'UTC')
+            : now()->utc();
 
         // 2. ID Único del Agente (Crucial para Xerox)
         // El agente envía un 'id' que es la MAC, el Serial o la IP.
@@ -643,7 +644,7 @@ class AgentController extends Controller
 
             // Actualizar timestamp del agente
             $agentKey->update([
-                'last_seen_at' => now(),
+                'last_seen_at' => now()->utc(),
                 'last_ip' => $request->ip(),
             ]);
 

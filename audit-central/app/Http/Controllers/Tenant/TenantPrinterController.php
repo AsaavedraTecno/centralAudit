@@ -18,7 +18,9 @@ class TenantPrinterController extends Controller
         $printers = Printer::where('location_id', $id)
             ->with([
                 'latestCounter', 
-                // Traemos los suministros ordenados por fecha descendente
+                'firstCounterToday',
+                'firstCounterThisMonth',
+                'lastCounterYesterday',
                 'supplies' => fn($q) => $q->orderBy('read_at', 'desc'),
                 'activeAlerts'
             ])
@@ -36,6 +38,37 @@ class TenantPrinterController extends Controller
     private function formatPrinterResponse(Printer $printer): array
     {
         $counter = $printer->latestCounter;
+
+        $impHoyBN = 0;
+        $impHoyColor = 0;
+        $impMesBN = 0;
+        $impMesColor = 0;
+
+        if ($counter) {
+
+            // ===== HOY =====
+
+            if ($printer->lastCounterYesterday) {
+
+                $impHoyBN = max(0, $counter->bw_pages - $printer->lastCounterYesterday->bw_pages);
+                $impHoyColor = max(0, $counter->color_pages - $printer->lastCounterYesterday->color_pages);
+
+            } elseif ($printer->firstCounterToday) {
+
+                $impHoyBN = max(0, $counter->bw_pages - $printer->firstCounterToday->bw_pages);
+                $impHoyColor = max(0, $counter->color_pages - $printer->firstCounterToday->color_pages);
+
+            }
+
+            // ===== MES =====
+
+            if ($printer->firstCounterThisMonth) {
+
+                $impMesBN = max(0, $counter->bw_pages - $printer->firstCounterThisMonth->bw_pages);
+                $impMesColor = max(0, $counter->color_pages - $printer->firstCounterThisMonth->color_pages);
+
+            }
+        }
 
         $suppliesMap = $printer->supplies
             ->sortByDesc('read_at')
@@ -87,6 +120,13 @@ class TenantPrinterController extends Controller
             'paginasImpresas' => $counter?->total_pages ?? 0,
             'paginasBN' => $counter?->bw_pages ?? 0,
             'paginasColor' => $counter?->color_pages ?? 0,
+            'impresoHoy' => $impHoyBN + $impHoyColor,
+            'impresoMes' => $impMesBN + $impMesColor,
+            'imp_impreso_hoy_bn' => $impHoyBN,
+            'imp_impreso_hoy_color' => $impHoyColor,
+
+            'imp_impreso_mes_bn' => $impMesBN,
+            'imp_impreso_mes_color' => $impMesColor,
 
             // "black_toner_cartridge" -> Busca 'black' y 'toner'
             // "black_ink_hp_cn625a" -> Busca 'black' y 'ink'

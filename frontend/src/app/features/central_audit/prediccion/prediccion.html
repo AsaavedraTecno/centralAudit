@@ -1,0 +1,88 @@
+<div class="split-layout">
+
+  <aside class="tree-sidebar">
+
+    <div class="sidebar-header">
+      <h5><i class="fas fa-sitemap me-2 text-primary"></i> Navegación</h5>
+    </div>
+
+    <div class="loading-bar-container" *ngIf="cargandoArbol">
+      <div class="loading-bar"></div>
+    </div>
+
+    <div class="tree-content">
+
+      <div *ngFor="let cliente of clientes"
+           class="tree-node"
+           [style.opacity]="cargandoArbol ? '0.6' : '1'">
+
+        <div class="tree-client"
+             (click)="toggleCliente(cliente.code || cliente.id)">
+
+          <i class="fas"
+             [ngClass]="seccionesExpandidas.get(cliente.code || cliente.id)
+             ? 'fa-folder-open text-warning'
+             : 'fa-folder text-warning'">
+          </i>
+
+          <span>{{ cliente.razon_social || cliente.nombre }}</span>
+
+        </div>
+
+        <div class="tree-branches"
+             *ngIf="seccionesExpandidas.get(cliente.code || cliente.id)">
+
+          <div *ngFor="let suc of cliente.sucursales"
+               class="tree-sucursal"
+               [ngClass]="{'active': sucursalSeleccionada?.id === suc.id && clienteSeleccionado?.id === cliente.id}"
+               (click)="seleccionarSucursal(cliente, suc)">
+
+            <i class="fas fa-map-marker-alt me-2"></i>
+            {{ suc.nombre }}
+          </div>
+
+        </div>
+
+      </div>
+
+      <div *ngIf="!cargandoArbol && clientes.length === 0"
+           class="p-3 text-center text-muted small">
+        No se encontraron clientes.
+      </div>
+
+    </div>
+
+  </aside>
+
+  <main class="main-content">
+    <app-resumen-global></app-resumen-global>
+
+    <div *ngIf="sucursalSeleccionada">
+
+      <header class="content-header d-flex justify-content-between align-items-center">
+
+        <div>
+          <h2 class="mb-0">{{ sucursalSeleccionada.nombre }}</h2>
+          <span class="text-muted">
+            <i class="fas fa-building me-1"></i>
+            {{ clienteSeleccionado.razon_social }}
+          </span>
+        </div>
+
+        <div class="badge bg-primary px-3 py-2">
+          {{ impresorasExhibidas.length }} Impresoras
+        </div>
+
+      </header>
+
+      <!-- loading -->
+      <div *ngIf="cargando" class="text-center p-5">
+        <i class="fas fa-spinner fa-spin fa-3x text-primary"></i>
+      </div>
+
+
+    </div>
+
+  </main>
+
+</div>

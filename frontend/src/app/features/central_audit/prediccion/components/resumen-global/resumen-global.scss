@@ -1,0 +1,26 @@
+.resumen-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.resumen-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.resumen-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.panel {
+  background: white;
+  border-radius: 10px;
+  padding: 18px;
+  border: 1px solid #e5e7eb;
+
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}

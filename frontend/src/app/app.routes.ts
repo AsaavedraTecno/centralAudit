@@ -16,11 +16,13 @@ import { AdminUsuariosComponent } from './features/central_audit/admin/admin-usu
 import { AdminRolesComponent } from './features/central_audit/admin/admin-roles/admin-roles';
 import { AdminLayoutComponent } from './features/central_audit/admin/admin-layout/admin-layout.component';
 
+
 // Componentes de Monitoreo
 import { PanelComponent } from './shared/monitoreo/panel/panel.component';
 import { DashboardComponent } from './shared/monitoreo/dashboard/dashboard.component';
 import { VistaAdminComponent } from './shared/monitoreo/vistas-personalizadas/vista-admin/vista-admin.component';
 import { MonitoreoLayoutComponent } from './shared/monitoreo/monitoreo-layout/monitoreo-layout.component';
+import { PrediccionComponent } from './features/central_audit/prediccion/prediccion.component';
 
 // Componentes de Clientes
 import { layoutComponent } from './layouts/layout/layout.component';
@@ -63,6 +65,7 @@ export const routes: Routes = [
             component: VistaAdminComponent,
             canActivate: [CentralOnlyGuard] 
           },
+          {path:'prediccion', component: PrediccionComponent},
           {path: '', redirectTo: 'panel', pathMatch: 'full'}
         ]
       },

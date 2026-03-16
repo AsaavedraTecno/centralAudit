@@ -15,19 +15,17 @@ use App\Http\Controllers\{
     UserTenantAssignmentController,
     AuditLogController,
     VistaPersonalizadaController,
+    PredictionController,
 };
 
 /*
-|--------------------------------------------------------------------------
 | API Routes - Sistema Multi-Tenant Monitoreo
-|--------------------------------------------------------------------------
 */
 
 $centralDomain = config('tenancy.central_domains')[0] ?? 'centralaudit.tecnodatasa.cl';
 
-    // =============================================
     // 2. AGENT ENDPOINTS (Auth por Header X-Agent-Key)
-    // =============================================
+
     Route::prefix('agent')->group(function () {
         Route::post('/activate', [AgentController::class, 'activate']);
         Route::post('/checkin', [AgentController::class, 'checkin']);
@@ -126,7 +124,6 @@ Route::domain($centralDomain)->group(function () {
             Route::post('/agent-config', [AgentConfigurationController::class, 'store']); // <--- ESTA ES LA CRÍTICA PARA EL WIZARD
 
             // Sucursales (Locations)
-            // URL: /api/tenants/{code}/sucursales
             Route::prefix('sucursales')->group(function () {
                 Route::get('/', [LocationController::class, 'index']);
                 Route::post('/', [LocationController::class, 'store']);
@@ -136,7 +133,6 @@ Route::domain($centralDomain)->group(function () {
             });
 
             // Impresoras vinculadas a la sucursal
-            // URL: /api/tenants/{code}/sucursales/{id}/impresoras
             Route::prefix('sucursales/{id}/impresoras')->group(function () {
                 Route::get('/', [PrinterController::class, 'index']);
                 Route::get('/{printerId}', [PrinterController::class, 'show']);
@@ -146,8 +142,27 @@ Route::domain($centralDomain)->group(function () {
 
 
 
+
         });
 
+            //  PREDICCIONES
+            Route::prefix('predictions')->group(function () {
+                // Resumen global
+                Route::get('/summary', [PredictionController::class, 'globalSummary']);
+                Route::get('/summary/detailed', [PredictionController::class, 'globalSummaryDetailed']);
+                
+                // Resúmenes agrupados
+                Route::get('/summary/by-tenant', [PredictionController::class, 'byTenant']);
+                Route::get('/summary/by-location', [PredictionController::class, 'byLocation']);
+                
+                // Listas críticas
+                Route::get('/critical-top', [PredictionController::class, 'topCritical']);
+                Route::get('/urgent', [PredictionController::class, 'urgent']);
+                
+                // Datos para gráficos
+                Route::get('/trend', [PredictionController::class, 'trend']);
+                Route::get('/last-update', [PredictionController::class, 'lastUpdate']);
+            });
 
             /*
             |--------------------------------------------------------------------------

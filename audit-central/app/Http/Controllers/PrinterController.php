@@ -157,6 +157,29 @@ class PrinterController extends Controller
     {
         $counter = $printer->latestCounter;
 
+        // ESTADO DE CONEXIÓN
+        $lastSeen = $printer->last_seen_at
+            ? $printer->last_seen_at->copy()->utc()
+            : null;
+
+        $now = now()->utc();
+
+        $minutesOffline = $lastSeen
+            ? abs($now->diffInMinutes($lastSeen))
+            : null;
+
+        $connectionColor = 'green';
+
+        if ($minutesOffline !== null) {
+
+            if ($minutesOffline > 30) {
+                $connectionColor = 'red';
+            } elseif ($minutesOffline > 10) {
+                $connectionColor = 'yellow';
+            }
+
+        }
+
         $impHoyBN = 0;
         $impHoyColor = 0;
         $impMesBN = 0;
@@ -239,7 +262,13 @@ class PrinterController extends Controller
             'custom_field_2'   => $printer->custom_field_2,
             'mac'              => $printer->mac_address,
             'firmware'         => $printer->firmware_version,
-            'last_seen_at'     => $printer->last_seen_at?->toIso8601String(),
+
+            'last_seen_at' => $lastSeen?->Timezone('America/Santiago')->toIso8601String(),
+            'last_seen_formatted' => $lastSeen?->format('d/m/Y H:i'),
+            'last_seen_relative' => $lastSeen?->diffForHumans(),
+            'connection_color' => $connectionColor,
+            'minutes_offline' => $minutesOffline,
+            'last_seen_relative' => $lastSeen?->diffForHumans(),
 
             // Contadores
             'paginasImpresas' => $counter?->total_pages ?? 0,

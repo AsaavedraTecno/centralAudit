@@ -37,6 +37,7 @@
     "@fortawesome/fontawesome-free": "^7.0.1",
     "@ng-select/ng-select": "^21.1.4",
     "bootstrap": "^5.3.8",
+    "chart.js": "^4.5.1",
     "dexie": "^4.2.1",
     "express": "^5.1.0",
     "ngx-color-picker": "^20.1.1",

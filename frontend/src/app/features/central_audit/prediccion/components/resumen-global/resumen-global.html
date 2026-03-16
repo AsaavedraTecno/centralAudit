@@ -1,0 +1,35 @@
+<div class="resumen-container" *ngIf="!loading && summary">
+
+  <div class="resumen-header">
+    <h3>Resumen Predictivo Global</h3>
+
+    <small *ngIf="lastUpdate" class="text-muted">
+      Actualizado: {{ lastUpdate | date:'short' }}
+    </small>
+  </div>
+
+  <!-- CARDS -->
+  <app-summary-cards
+    [summary]="summary">
+  </app-summary-cards>
+
+  <div class="resumen-grid">
+
+    <!-- TREND -->
+    <app-trend-chart
+      [trend]="trend">
+    </app-trend-chart>
+
+    <!-- URGENT -->
+    <app-urgent-printers
+      [printers]="urgentPrinters">
+    </app-urgent-printers>
+
+  </div>
+
+  <!-- LOCATIONS -->
+  <app-risk-locations
+    [locations]="locations">
+  </app-risk-locations>
+
+</div>

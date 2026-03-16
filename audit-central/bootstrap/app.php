@@ -3,6 +3,7 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Console\Scheduling\Schedule;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -11,18 +12,29 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+
+    ->withCommands([
+        App\Console\Commands\GeneratePredictionSnapshotsCommand::class,
+    ])
+
+    ->withSchedule(function (Schedule $schedule) {
+
+        $schedule->command('predictions:snapshot')
+            ->everyFiveMinutes()
+            ->withoutOverlapping();
+
+    })
+
     ->withMiddleware(function (Middleware $middleware) {
         
-        // Habilitar CORS para que Angular (dominio distinto) pueda conectar
         $middleware->prepend(\Illuminate\Http\Middleware\HandleCors::class);
 
         $middleware->web(append: [
-            \App\Http\Middleware\HandleInertiaRequests::class,
+            //\App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ]);
 
         $middleware->api(append: [
-            // Por ahora lo dejamos limpio ya que usas Passport Stateless.
         ]);
 
         $middleware->alias([

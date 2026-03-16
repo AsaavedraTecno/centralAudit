@@ -1,0 +1,46 @@
+<div class="panel">
+
+<h4>Sucursales con mayor riesgo</h4>
+
+<div class="location-list">
+
+<div class="location-card"
+     *ngFor="let loc of locations">
+
+<div class="location-name">
+
+Sucursal {{ loc.location_id }}
+
+</div>
+
+<div class="risk-bars">
+
+<div class="bar critical"
+     [style.width.%]="loc.critical * 20">
+
+</div>
+
+<div class="bar warning"
+     [style.width.%]="loc.warning * 20">
+
+</div>
+
+</div>
+
+<div class="stats">
+
+<span class="critical">
+{{ loc.critical }} críticas
+</span>
+
+<span class="warning">
+{{ loc.warning }} riesgo
+</span>
+
+</div>
+
+</div>
+
+</div>
+
+</div>

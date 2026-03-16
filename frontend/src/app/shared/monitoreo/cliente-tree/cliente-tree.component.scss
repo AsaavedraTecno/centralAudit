@@ -252,6 +252,18 @@ $indent-level-2: 40px;
   }
 }
 
+.cliente-row td:first-child {
+  background: $color-primary !important;
+}
+
+.sucursal-row td:first-child {
+  background: $color-sucursal !important;
+}
+
+.impresora-row td:first-child {
+  background: white !important;
+}
+
 /* ========== INDENTACIÓN POR NIVEL ========== */
 .level-0 { td:first-child { padding-left: $indent-level-0; } }
 .level-1 { td:first-child { padding-left: $indent-level-1; } }
@@ -331,6 +343,37 @@ td:nth-child(2) {
   &:hover td { background-color: #fff3e0 !important; }
 }
 
+/* ===== IMPRESIONES (COLUMNAS) ===== */
+
+/* B/N */
+.impresora-row td.col-bn {
+  background-color: #f1f3f5 !important; // gris claro
+  color: #495057;
+  font-weight: 600;
+}
+
+/* COLOR */
+.impresora-row td.col-color {
+  background-color: #e7f1ff !important; // azul claro
+  color: #0d6efd;
+  font-weight: 600;
+}
+
+/* TOTAL */
+.impresora-row td.col-total {
+  background-color: #efe9ff !important; // violeta muy suave
+  color: #5a3ec8;
+  font-weight: 700;
+}
+
+
+.impresora-row td.col-total,
+.impresora-row td.col-bn,
+.impresora-row td.col-color {
+  font-family: $font-family-mono;
+  letter-spacing: 0.4px;
+}
+
 td.client-name {
   color: $color-text-dark !important;
   text-align: left;
@@ -352,7 +395,7 @@ td.client-name {
   align-items: center;
   justify-content: center;
   font-weight: bold;
-  margin-right: 4px;
+  margin-right:6px;
   color: white;
   font-size: 15px;
   user-select: none;
@@ -390,6 +433,8 @@ td.client-name {
 }
 
 /* ========== COMPONENT BARS - Tóners, Drums, etc ========== */
+
+
 .component-bar {
   padding: $spacing-xs 2px !important;
   vertical-align: middle;
@@ -519,6 +564,7 @@ td.client-name {
   transition: all 0.3s ease;
   text-decoration: none;
   font-weight: 600;
+  white-space: nowrap;
 
   &:hover {
     color: #764ba2;
@@ -760,25 +806,82 @@ td.client-name {
 
 /* ========== ESTILOS PARA CONTADORES (HOY / MES) ========== */
 /* ========== CONTADORES CON ALTO CONTRASTE ========== */
+/* ========== ESTILOS PARA CONTADORES (HOY / MES) ========== */
+
 .contador-pill {
   display: inline-block;
   padding: 2px 8px;
-  border-radius: 4px; // Más cuadrado para seguir tu estilo de botones
+  border-radius: 4px;
   font-family: $font-family-mono;
-  font-size: 12px; // Un punto más grande
-  font-weight: 700; // Negrita máxima
+  font-size: 12px;
+  font-weight: 700;
   min-width: 50px;
   text-align: center;
+}
 
-  &.hoy {
-    background-color: #d1ecf1; // Azul pastel sólido
-    color: #084298;           // Azul marino profundo (contraste alto)
-    border: 1px solid #b6effb;
-  }
 
-  &.mes {
-    background-color: #e2e3e5; // Gris sólido claro
-    color: #212529;           // Casi negro
-    border: 1px solid #d3d6d8;
-  }
+
+/* ESTADO IMPRESORAS */
+
+.printer-status-dot{
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  display:inline-block;
+  margin-right:6px;
+  vertical-align:middle;
+}
+
+.green{ background:#22c55e }
+.yellow{ background:#eab308 }
+.red{ background:#ef4444 }
+
+.printer-summary{
+  display:flex;
+  gap:16px;
+  font-size:20px;
+  margin-top:4px;
+}
+
+.summary-item{
+  font-weight:600;
+}
+
+.summary-item.online{
+  color:#1cb855;
+}
+
+.summary-item.warning{
+  color:#c9a61d;
+}
+
+.summary-item.offline{
+  color:#ca2c2c;
+}
+
+.text-muted.small {
+  display: block;
+  font-size: 11px;
+}
+
+// sucursal
+.sucursal-cell{
+  display:flex;
+  align-items:flex-start;
+  gap:8px;
+}
+
+.sucursal-nombre{
+  display:flex;
+  flex-direction:column;
+  line-height:1.2;
+}
+
+.sucursal-nombre b{
+  font-size:12px;
+  color:#333;
+}
+
+.sucursal-nombre span{
+  font-size:13px;
 }

@@ -1,5 +1,5 @@
-import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, ViewChild, ElementRef, PLATFORM_ID, Inject, OnDestroy } from '@angular/core';
-import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, ViewChild, ElementRef, PLATFORM_ID, Inject, OnDestroy, NgModule } from '@angular/core';
+import { CommonModule, isPlatformBrowser  } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ClienteService } from '../../../core/services/cliente.service';
 import { ImpresoraService } from '../../../core/services/impresora.service';
@@ -15,17 +15,17 @@ import { VistaStateService } from '../../../shared/services/vista-state.service'
 import { VistaPersonalizadaService } from '../../../shared/services/vista-personalizada.service';
 import {
   VistaPersonalizada,
-  ColumnaVistaSistema,
   ColumnaVistaUI,
 } from '../../../models/vista-personalizada';
-
 import { TenantPanelService } from '../../../core/services/tenant-panel.service';
+import { FormatDateTimePipe } from '../../../shared/pipes/format-date-time-pipe';
+
 
 
 @Component({
   selector: 'app-cliente-tree',
   standalone: true,
-  imports: [CommonModule, FormsModule, DetalleImpresoraModalComponent],
+  imports: [CommonModule, FormsModule, DetalleImpresoraModalComponent, FormatDateTimePipe],
   templateUrl: './cliente-tree.component.html',
   styleUrls: ['./cliente-tree.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -39,8 +39,11 @@ export class ClienteTreeComponent implements OnInit, OnDestroy {
   private vistasLoaded = false;
   private initialized = false;
 
-  private columnasSistema: ColumnaVistaSistema[] = [];
   columnasVisibles: ColumnaVistaUI[] = [];
+
+  totalOnline = 0;
+  totalWarning = 0;
+  totalOffline = 0;
 
 
   busqueda: string = '';
@@ -311,13 +314,36 @@ export class ClienteTreeComponent implements OnInit, OnDestroy {
 
       if (Array.isArray(rawData)) {
         // Filtrar solo impresoras activas
-          console.log('RAW impresoras desde API:', rawData);
-          console.log('Primer objeto impresora:', rawData[0]);
-        const activas = rawData
-          .filter((imp: any) => imp.estado === 1)
-          .filter((imp: any, index: number, self: any[]) =>
-            index === self.findIndex((i) => i.id === imp.id)
-        );
+          const activas = rawData
+            .filter((imp: any) => imp.estado === 1)
+            .filter((imp: any, index: number, self: any[]) =>
+              index === self.findIndex((i) => i.id === imp.id)
+          )
+          .map((imp: any) => {
+
+            const lastSeen = new Date(imp.last_seen_at).getTime();
+            const now = Date.now();
+
+            let minutesOffline = Math.floor((now - lastSeen) / 60000);
+
+            // evitar negativos por desfase de reloj
+            if (minutesOffline < 0) {
+              minutesOffline = 0;
+            }
+
+            return {
+              ...imp,
+              estadoConexion: imp.connection_color === 'green'
+                ? 'online'
+                : imp.connection_color === 'yellow'
+                ? 'warning'
+                : 'offline',
+
+              estadoColor: imp.connection_color,
+              minutosSinConexion: minutesOffline
+            };
+
+          });
         
         this.updateSucursalInList(cliente.code, sucursalId, activas);
         this.cdr.markForCheck(); 
@@ -363,14 +389,14 @@ export class ClienteTreeComponent implements OnInit, OnDestroy {
 
           return {
             ...sucursal,
-            impresoras: [...impresoras] // importante clonar
+            impresoras: [...impresoras]
           };
         })
       };
     });
 
-    // ✅ CAMBIO CRÍTICO: markForCheck() en lugar de detectChanges()
     this.cdr.markForCheck();
+    this.calcularResumenEstados();
   }
 
   private finalizarCargaNodo(nodeId: string) {
@@ -654,35 +680,195 @@ export class ClienteTreeComponent implements OnInit, OnDestroy {
   }
 
   getClaseColumna(col: ColumnaVistaUI): string {
-    if (col.componente !== 'barra') return '';
+    const clases: string[] = [];
+    // ===== BARRAS DE COMPONENTES =====
+    if (col.componente === 'barra') {
+      const map: { [key: string]: string } = {
+        // Toner
+        'imp_toner_black': 'component-bar toner-black',
+        'imp_toner_cyan': 'component-bar toner-cyan',
+        'imp_toner_magenta': 'component-bar toner-magenta',
+        'imp_toner_yellow': 'component-bar toner-yellow',
 
-    const map: { [key: string]: string } = {
-      // Toner
-      'imp_toner_black': 'component-bar toner-black',
-      'imp_toner_cyan': 'component-bar toner-cyan',
-      'imp_toner_magenta': 'component-bar toner-magenta',
-      'imp_toner_yellow': 'component-bar toner-yellow',
+        // Drum
+        'imp_drum_black': 'component-bar drum-black',
+        'imp_drum_cyan': 'component-bar drum-cyan',
+        'imp_drum_magenta': 'component-bar drum-magenta',
+        'imp_drum_yellow': 'component-bar drum-yellow',
 
-      // Drum
-      'imp_drum_black': 'component-bar drum-black',
-      'imp_drum_cyan': 'component-bar drum-cyan',
-      'imp_drum_magenta': 'component-bar drum-magenta',
-      'imp_drum_yellow': 'component-bar drum-yellow',
+        // Revelador
+        'imp_revelador_black': 'component-bar revelador-black',
+        'imp_revelador_magenta': 'component-bar revelador-magenta',
+        'imp_revelador_yellow': 'component-bar revelador-yellow',
 
-      // Revelador
-      'imp_revelador_black': 'component-bar revelador-black',
-      'imp_revelador_magenta': 'component-bar revelador-magenta',
-      'imp_revelador_yellow': 'component-bar revelador-yellow',
+        // Otros
+        'imp_fusor': 'component-bar fusor',
+        'imp_adf_roller': 'component-bar roller',
+        'imp_transfer_roller': 'component-bar roller',
+        'imp_mp_roller': 'component-bar roller',
+        'imp_retard_pad': 'component-bar roller',
+        'imp_caja_residuos': 'component-bar waste'
+      };
 
-      // Otros
-      'imp_fusor': 'component-bar fusor',
-      'imp_adf_roller': 'component-bar roller',
-      'imp_transfer_roller': 'component-bar roller',
-      'imp_mp_roller': 'component-bar roller',
-      'imp_retard_pad': 'component-bar roller',
-      'imp_caja_residuos': 'component-bar waste'
-    };
+      clases.push(map[col.identificador] || 'component-bar');
+    }
 
-    return map[col.identificador] || 'component-bar';
+    // ===== COLUMNAS DE IMPRESIONES =====
+    
+
+    const id = col.identificador?.toLowerCase() || '';
+
+    if (id.includes('total')) {
+      clases.push('col-total');
+    }
+
+    if (id.includes('bn') || id.includes('black')) {
+      clases.push('col-bn');
+    }
+
+    if (id.includes('color')) {
+      clases.push('col-color');
+    }
+
+    if (id.includes('hoy')) {
+      clases.push('col-hoy');
+    }
+
+    if (id.includes('mes')) {
+      clases.push('col-mes');
+    }
+
+    return clases.join(' ');
+  }
+
+
+
+  // STATUS IMPRESORAS
+
+  getEstadoSucursal(sucursal: any) {
+
+    if (!sucursal.impresoras?.length) {
+      return { color: 'green' };
+    }
+
+    let hasWarning = false;
+
+    for (const imp of sucursal.impresoras) {
+
+      if (imp.estadoColor === 'red') {
+        return { color: 'red' };
+      }
+
+      if (imp.estadoColor === 'yellow') {
+        hasWarning = true;
+      }
+    }
+
+    if (hasWarning) {
+      return { color: 'yellow' };
+    }
+
+    return { color: 'green' };
+  }
+
+  getEstadoCliente(cliente: any) {
+
+    if (!cliente.sucursales?.length) {
+      return { color: 'green' };
+    }
+
+    let hasWarning = false;
+
+    for (const sucursal of cliente.sucursales) {
+
+      const estado = this.getEstadoSucursal(sucursal);
+
+      if (estado.color === 'red') {
+        return { color: 'red' };
+      }
+
+      if (estado.color === 'yellow') {
+        hasWarning = true;
+      }
+    }
+
+    if (hasWarning) {
+      return { color: 'yellow' };
+    }
+
+    return { color: 'green' };
+  }
+
+  calcularResumenEstados() {
+
+    let online = 0;
+    let warning = 0;
+    let offline = 0;
+
+    for (const cliente of this.clientes) {
+
+      if (!cliente.sucursales) continue;
+
+      for (const sucursal of cliente.sucursales) {
+
+        if (!sucursal.impresoras) continue;
+
+        for (const imp of sucursal.impresoras) {
+
+
+          if (imp.estadoColor === 'green') online++;
+          else if (imp.estadoColor === 'yellow') warning++;
+          else if (imp.estadoColor === 'red') offline++;
+
+        }
+      }
+    }
+
+    this.totalOnline = online;
+    this.totalWarning = warning;
+    this.totalOffline = offline;
+  }
+
+  obtenerValorColumnaFormateado(impresora: any, col: ColumnaVistaUI): any {
+
+    const valor = this.vistaState.obtenerValorColumna(impresora, col);
+
+    if (!valor) return '-';
+
+    if (
+      col.identificador?.includes('ultima') ||
+      col.identificador?.includes('last')
+    ) {
+
+      const date = new Date(valor);
+
+      if (isNaN(date.getTime())) return valor;
+
+      return date.toLocaleString('es-CL', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+    }
+
+    return valor;
+  }
+
+  getTiempoRelativo(min: number): string {
+
+    if (min < 1) return 'ahora';
+
+    if (min < 60) return `hace ${min} min`;
+
+    const h = Math.floor(min / 60);
+
+    if (h < 24) return `hace ${h} h`;
+
+    const d = Math.floor(h / 24);
+
+    return `hace ${d} d`;
   }
 }

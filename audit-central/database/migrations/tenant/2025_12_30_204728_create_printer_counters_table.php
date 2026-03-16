@@ -27,7 +27,7 @@ return new class extends Migration
             $table->timestamp('collected_at')->index();
             $table->timestamps();
 
-
+            $table->index(['printer_id', 'collected_at']);
         });
     }
 

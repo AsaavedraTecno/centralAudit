@@ -6,9 +6,30 @@
         <small class="text-success fw-bold d-flex align-items-center mt-1">
           <i class="far fa-clock me-1"></i> Última actualización: {{ ultimaActualizacion | date:'HH:mm:ss' }}
         </small>
+
+
         <span class="text-muted">
           Página {{ currentPage }} de {{ totalPages }} | Total: {{ totalClientes }} clientes
         </span>
+      </div>
+
+      <div class="printer-summary">
+        <div>
+          <i >Estado de conexiones: </i>
+        </div>
+
+        <span class="summary-item online">
+          ● {{ totalOnline }} activas
+        </span>
+
+        <span class="summary-item warning">
+          ● {{ totalWarning }} retrasadas
+        </span>
+
+        <span class="summary-item offline">
+          ● {{ totalOffline }} desconectadas
+        </span>
+
       </div>
 
       <div class="d-flex align-items-center gap-2">
@@ -88,6 +109,11 @@
                     </span>
                     <span class="cliente-info">
 
+                      <span
+                        class="printer-status-dot"
+                        [ngClass]="getEstadoCliente(cliente).color">
+                      </span>
+
                       <span class="cliente-nombre">
                         {{ cliente.nombre }}
                       </span>
@@ -122,13 +148,24 @@
                         style="cursor:pointer;">
 
                       <td style="width: 280px; min-width: 280px;">
+
                         <span class="expand-icon">
                           {{ expandedNodes['sucursal_' + cliente.id + '_' + sucursal.id] ? '−' : '+' }}
                         </span>
 
-                        <span class="truncate">
-                          <b>Sucursal:</b> {{ sucursal.nombre || '-' }}
-                        </span>
+                        <div class="sucursal-cell">
+
+                          <span
+                            class="printer-status-dot"
+                            [ngClass]="getEstadoSucursal(sucursal).color">
+                          </span>
+
+                          <div class="sucursal-nombre">
+                            <span>{{ sucursal.nombre || '-' }}</span>
+                          </div>
+
+                        </div>
+
                       </td>
 
                       <!-- Columnas vacías -->
@@ -149,21 +186,44 @@
 
                         <!-- Columna nombre fija -->
                         <td style="width: 280px; min-width: 280px;">
+                          <span
+                            class="printer-status-dot"
+                            [ngClass]="impresora.estadoColor"
+                            [title]="'Hace ' + impresora.minutosSinConexion + ' min'">
+                          </span>
+
                           🖨️
+
                           <b class="nombre-clickeable"
                             (click)="abrirDetalles(impresora, $event)">
                             {{ impresora.nombre || impresora.modelo || 'Impresora' }}
                           </b>
+
                         </td>
 
                         <td *ngFor="let col of columnasVisibles"
-                          [style.width.px]="col.ancho"
                           [style.minWidth.px]="col.ancho"
+                          [title]="vistaState.obtenerValorColumna(impresora, col)"
                           [ngClass]="getClaseColumna(col)">
-
+                        
                           <!-- TEXTO -->
+
                           <ng-container *ngIf="col.componente === 'texto'">
-                            {{ vistaState.obtenerValorColumna(impresora, col) ?? '-' }}
+
+                            <ng-container *ngIf="col.identificador === 'last_seen_at' || col.identificador === 'imp_ultima_conexion'; else textoComun">
+
+                              {{ obtenerValorColumnaFormateado(impresora, col) }}
+
+                              <div class="text-muted small">
+                                {{ getTiempoRelativo(impresora.minutosSinConexion) }}
+                              </div>
+
+                            </ng-container>
+
+                            <ng-template #textoComun>
+                              {{ vistaState.obtenerValorColumna(impresora, col) ?? '-' }}
+                            </ng-template>
+
                           </ng-container>
 
                           <!-- NUMERO -->
@@ -186,13 +246,15 @@
 
                           <!-- BARRA -->
                           <ng-container *ngIf="col.componente === 'barra'">
-                            <div class="bar-container"
+                            <div class="component-bar">
+                              <div class="bar-container"
                                 [style.--fill]="(vistaState.obtenerValorColumna(impresora, col) || 0) + '%'">
-                            </div>
+                              </div>
 
-                            <span class="bar-percentage">
-                              {{ vistaState.obtenerValorColumna(impresora, col) || 0 }}%
-                            </span>
+                              <span class="bar-percentage">
+                                {{ vistaState.obtenerValorColumna(impresora, col) || 0 }}%
+                              </span>
+                            </div>
                           </ng-container>
 
                         </td>

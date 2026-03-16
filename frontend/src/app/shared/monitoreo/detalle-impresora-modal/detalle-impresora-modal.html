@@ -119,27 +119,71 @@
           </div>
         </div>
 
-        <div class="detalles-grupo">
+        <div class="detalles-grupo full-width">
           <h5 class="detalles-titulo">Contadores de Páginas</h5>
-          <div class="detalles-fila bg-light rounded p-2 mb-2 border">
-            <span class="detalles-label text-primary fw-bold"><i class="fas fa-file-alt me-1"></i> Impreso Hoy:</span>
-            <span class="detalles-valor text-primary fw-bold fs-6">{{ impresora?.impresoHoy || 0 | number }}</span>
-          </div>
-          <div class="detalles-fila bg-light rounded p-2 mb-3 border">
-            <span class="detalles-label text-success fw-bold"><i class="fas fa-calendar-alt me-1"></i> Impreso Mes:</span>
-            <span class="detalles-valor text-success fw-bold fs-6">{{ impresora?.impresoMes || 0 | number }}</span>
-          </div>
-          <div class="detalles-fila">
-            <span class="detalles-label">Total impreso:</span>
-            <span class="detalles-valor">{{ impresora?.paginasImpresas || 0 | number }}</span>
-          </div>
-          <div class="detalles-fila">
-            <span class="detalles-label">Blanco y Negro:</span>
-            <span class="detalles-valor">{{ impresora?.paginasBN || 0 | number }}</span>
-          </div>
-          <div class="detalles-fila">
-            <span class="detalles-label">Color:</span>
-            <span class="detalles-valor">{{ impresora?.paginasColor || 0 | number }}</span>
+
+          <div class="contadores-grid">
+
+            <!-- TOTAL -->
+            <div class="contador-card">
+              <div class="contador-titulo">TOTAL</div>
+
+              <div class="detalles-fila">
+                <span>Págs. Impresas</span>
+                <span class="fw-bold">{{ impresora?.paginasImpresas || 0 | number }}</span>
+              </div>
+
+              <div class="detalles-fila">
+                <span class="text-secondary">B/N</span>
+                <span class="fw-bold text-secondary">{{ impresora?.paginasBN || 0 | number }}</span>
+              </div>
+
+              <div class="detalles-fila">
+                <span class="text-primary">Color</span>
+                <span class="fw-bold text-primary">{{ impresora?.paginasColor || 0 | number }}</span>
+              </div>
+            </div>
+
+            <!-- HOY -->
+            <div class="contador-card">
+              <div class="contador-titulo">HOY</div>
+
+              <div class="detalles-fila">
+                <span>Total</span>
+                <span class="fw-bold">{{ impresora?.impresoHoy || 0 | number }}</span>
+              </div>
+
+              <div class="detalles-fila">
+                <span class="text-secondary">B/N</span>
+                <span class="fw-bold text-secondary">{{ impresora?.imp_impreso_hoy_bn || 0 | number }}</span>
+              </div>
+
+              <div class="detalles-fila">
+                <span class="text-primary">Color</span>
+                <span class="fw-bold text-primary">{{ impresora?.imp_impreso_hoy_color || 0 | number }}</span>
+              </div>
+            </div>
+
+            <!-- MES -->
+            <div class="contador-card">
+              <div class="contador-titulo">MES</div>
+
+              <div class="detalles-fila">
+                <span>Total</span>
+                <span class="fw-bold">{{ impresora?.impresoMes || 0 | number }}</span>
+              </div>
+
+              <div class="detalles-fila">
+                <span class="text-secondary">B/N</span>
+                <span class="fw-bold text-secondary">{{ impresora?.imp_impreso_mes_bn || 0 | number }}</span>
+              </div>
+
+              <div class="detalles-fila">
+                <span class="text-primary">Color</span>
+                <span class="fw-bold text-primary">{{ impresora?.imp_impreso_mes_color || 0 | number }}</span>
+              </div>
+            </div>
+
           </div>
         </div>
 

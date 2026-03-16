@@ -13,9 +13,27 @@ export interface Impresora {
   serie?: string;
   
   // Contadores de páginas
-  paginasImpresas?: number; // Total de páginas impresas
-  paginasBN?: number;       // Páginas en blanco y negro
-  paginasColor?: number;    // Páginas a color
+  paginasImpresas?: number;
+  paginasBN?: number;
+  paginasColor?: number;
+
+  // Contadores por periodo
+  impresoHoy?: number;
+  impresoHoyBN?: number;
+  impresoHoyColor?: number;
+
+  impresoMes?: number;
+  impresoMesBN?: number;
+  impresoMesColor?: number;
+
+  // Informacion de estados
+  last_seen_at?: string;
+  last_counter_at?: string;
+
+  estadoConexion?: 'online' | 'warning' | 'offline';
+  estadoColor?: 'green' | 'yellow' | 'red';
+  minutosSinConexion?: number;
+  
   
   // Niveles de tóner (0-100 o 0.00-100.00)
   tonerBlack?: number;

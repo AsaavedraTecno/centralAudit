@@ -16,6 +16,12 @@
         *ngIf="!isTenant()">
         <i class="fas fa-cog me-2"></i> Motor de planillas
     </a>
+
+    <a [routerLink]="['prediccion']" 
+        routerLinkActive="active" 
+        class="subtab-button text-decoration-none">
+        <i class="fas fa-arrow-trend-up me-2" ></i> Prediccion
+    </a>
 </div>
 
 <div class="sub-content">
