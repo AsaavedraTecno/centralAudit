@@ -18,14 +18,13 @@ import {
   ColumnaVistaUI,
 } from '../../../models/vista-personalizada';
 import { TenantPanelService } from '../../../core/services/tenant-panel.service';
-import { FormatDateTimePipe } from '../../../shared/pipes/format-date-time-pipe';
 
 
 
 @Component({
   selector: 'app-cliente-tree',
   standalone: true,
-  imports: [CommonModule, FormsModule, DetalleImpresoraModalComponent, FormatDateTimePipe],
+  imports: [CommonModule, FormsModule, DetalleImpresoraModalComponent ],
   templateUrl: './cliente-tree.component.html',
   styleUrls: ['./cliente-tree.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -75,7 +74,7 @@ export class ClienteTreeComponent implements OnInit, OnDestroy {
 
   constructor(
     private TenantPanelService: TenantPanelService,
-    private vistaState: VistaStateService,
+    public vistaState: VistaStateService,
     private vistaService: VistaPersonalizadaService,
     private detalleService: DetalleImpresoraService,
     private toastService: ToastService,
@@ -117,6 +116,8 @@ export class ClienteTreeComponent implements OnInit, OnDestroy {
     if (this.initialized) return;
     this.initialized = true;
 
+    this.cargarResumenGlobal();
+
     // Cargar vistas (central o tenant)
     if (this.TenantPanelService.isTenant())  {
       this.vistas = [];
@@ -137,6 +138,23 @@ export class ClienteTreeComponent implements OnInit, OnDestroy {
     // Iniciar refresco automático
     this.iniciarAutoRefresh();
   }
+
+  cargarResumenGlobal() {
+    // Llamamos al nuevo endpoint que cuenta TODO en el servidor
+    this.impresoraService.obtenerResumenGlobalConexiones().subscribe({
+      next: (res) => {
+        // Asignamos los valores globales directamente
+        this.totalOnline = res.active;
+        this.totalWarning = res.warning;
+        this.totalOffline = res.offline;
+        
+        // Como usas ChangeDetectionStrategy.OnPush, hay que avisar a Angular
+        this.cdr.markForCheck(); 
+      },
+      error: (err) => console.error('Error al cargar resumen global', err)
+    });
+  }
+
 
   ngOnDestroy(): void {
     if (this.autoRefreshSub) {
@@ -206,6 +224,7 @@ export class ClienteTreeComponent implements OnInit, OnDestroy {
 
   async recargarSilenciosamente(): Promise<void> {
     this.ultimaActualizacion = new Date();
+    this.cargarResumenGlobal();
     this.cdr.markForCheck();
 
     // Para recargar solo las impresoras que el usuario está viendo actualmente.
@@ -800,33 +819,7 @@ export class ClienteTreeComponent implements OnInit, OnDestroy {
   }
 
   calcularResumenEstados() {
-
-    let online = 0;
-    let warning = 0;
-    let offline = 0;
-
-    for (const cliente of this.clientes) {
-
-      if (!cliente.sucursales) continue;
-
-      for (const sucursal of cliente.sucursales) {
-
-        if (!sucursal.impresoras) continue;
-
-        for (const imp of sucursal.impresoras) {
-
-
-          if (imp.estadoColor === 'green') online++;
-          else if (imp.estadoColor === 'yellow') warning++;
-          else if (imp.estadoColor === 'red') offline++;
-
-        }
-      }
-    }
-
-    this.totalOnline = online;
-    this.totalWarning = warning;
-    this.totalOffline = offline;
+    this.cargarResumenGlobal();
   }
 
   obtenerValorColumnaFormateado(impresora: any, col: ColumnaVistaUI): any {

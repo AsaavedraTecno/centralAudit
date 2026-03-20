@@ -11,7 +11,7 @@
 
         <button
           class="btn btn-sm btn-outline-primary"
-          (click)="crearNuevaVista(); modoAsignacion=false"
+          (click)="crearNuevaVista()"
           [disabled]="!esAdmin && vistas.length >= 10">
 
           <i class="fas fa-plus"></i> Nueva
@@ -39,7 +39,7 @@
           (modo !== 'asignar' && vistaActual.id === vista.id) ||
           (modo === 'asignar' && vistaAsignacionId === vista.id)
           "
-          (click)="modoAsignacion=false; editarVista(vista)"
+          (click)="editarVista(vista)"
           style="cursor:pointer">
 
           <div class="ms-1 me-auto overflow-hidden">
@@ -59,12 +59,9 @@
             </div>
 
             <small
-              [class.text-white]="(!modoAsignacion && vistaActual.id === vista.id)"
-              [class.text-muted]="(modoAsignacion || vistaActual.id !== vista.id)">
-
-              {{ contarVisibles(vista) }} /
-              {{ vista.columnas?.length || 0 }} columnas
-
+              [class.text-white]="(modo !== 'asignar' && vistaActual.id === vista.id)"
+              [class.text-muted]="(modo === 'asignar' || vistaActual.id !== vista.id)">
+              {{ contarVisibles(vista) }} / {{ vista.columnas.length || 0 }} columnas
             </small>
 
             <span class="badge bg-light text-primary border ms-2">

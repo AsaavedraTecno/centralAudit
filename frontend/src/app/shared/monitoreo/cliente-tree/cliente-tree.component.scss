@@ -465,7 +465,7 @@ td.client-name {
       border-radius: $border-radius-sm;
       z-index: 1;
     }
-  }
+  }z
   
   .bar-percentage {
     display: block;
@@ -473,7 +473,9 @@ td.client-name {
     font-weight: 600;
     color: #333;
     text-align: center;
-    width: 100%;
+    width: 120px;
+    border-radius: 20px;
+    border: 2;
   }
   
   // Tóner colores

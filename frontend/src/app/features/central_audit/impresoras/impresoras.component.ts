@@ -117,7 +117,7 @@ export class ImpresoresComponent implements OnInit {
     this.impresorasExhibidas = lista;
   }
 
-  cambiarOrden(campo: 'estado' | 'nombre' | 'serie' | 'toner'): void {
+  cambiarOrden(campo: any): void {
 
     if (this.ordenarPor === campo) {
       this.direccionOrden = this.direccionOrden === 'asc' ? 'desc' : 'asc';

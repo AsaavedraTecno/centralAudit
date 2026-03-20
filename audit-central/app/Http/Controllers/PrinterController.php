@@ -91,7 +91,7 @@ class PrinterController extends Controller
                     'firstCounterThisMonth',
                     'supplies' => fn($q) => $q->limit(50)->orderBy('read_at', 'desc'),
                     'activeAlerts', 
-                    'locationRelation'
+                    'location'
                 ])
                 ->first();
 
@@ -318,7 +318,6 @@ class PrinterController extends Controller
         ];
 
         if ($includeDetails) {
-            // ← IMPORTANTE: Incluir el array completo de supplies con CRUM
             $suppliesArray = $printer->supplies
                 ->sortByDesc('read_at')
                 ->unique('supply_type')
@@ -328,7 +327,7 @@ class PrinterController extends Controller
                     'type' => $supply->type,
                     'percentage' => (float)$supply->percentage,
                     'status' => $supply->status,
-                    'serial_number' => $supply->serial_number, // ← AQUÍ ESTÁ EL CRUM
+                    'serial_number' => $supply->serial_number, // CRUM
                     'description' => $supply->description
                 ])
                 ->values()
@@ -351,7 +350,7 @@ class PrinterController extends Controller
                 'last_seen_at' => $printer->last_seen_at?->toIso8601String(),
                 'last_counter_at' => $printer->last_counter_at?->toIso8601String(),
                 'notes' => $printer->notes,
-                'sucursal' => $printer->locationRelation?->name,
+                'sucursal' => $printer->location?->name,
                 'alertas_detalle' => $printer->activeAlerts->map(fn($a) => [
                     'code' => $a->code,
                     'severity' => $a->severity,
@@ -359,7 +358,7 @@ class PrinterController extends Controller
                     'raised_at' => $a->raised_at?->toIso8601String(),
                 ]),
                 
-                // ← NUEVO: Array completo de supplies para el modal
+                // Array completo de supplies para el modal
                 'supplies' => $suppliesArray,
             ]);
         }
@@ -421,5 +420,51 @@ class PrinterController extends Controller
             // Terminar tenancy para volver a la BD central
             Tenancy::end();
         }
+    }
+
+
+
+    public function globalConnectionStatus(): JsonResponse
+    {
+        $summary = [
+            'active' => 0,
+            'warning' => 0,
+            'offline' => 0,
+            'total' => 0
+        ];
+
+        // Obtenemos todos los clientes (Tenants)
+        $tenants = \App\Models\Tenant::all();
+
+        foreach ($tenants as $tenant) {
+            // Entramos a la base de datos de cada cliente
+            $this->tenantContext->run($tenant, function () use (&$summary) {
+                $now = now()->utc();
+                
+                // Traemos solo los campos necesarios para no saturar la memoria
+                $printers = \App\Models\Tenant\Printer::select('id', 'last_seen_at', 'status')->get();
+
+                foreach ($printers as $printer) {
+                    $summary['total']++;
+                    
+                    if (!$printer->last_seen_at) {
+                        $summary['offline']++;
+                        continue;
+                    }
+
+                    $minutes = abs($now->diffInMinutes($printer->last_seen_at->utc()));
+
+                    if ($minutes > 30 || $printer->status !== 'active') {
+                        $summary['offline']++;
+                    } elseif ($minutes > 10) {
+                        $summary['warning']++;
+                    } else {
+                        $summary['active']++;
+                    }
+                }
+            });
+        }
+
+        return response()->json($summary);
     }
 }

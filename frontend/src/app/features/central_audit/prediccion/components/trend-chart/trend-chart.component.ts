@@ -1,7 +1,6 @@
-import { Component, Input, OnChanges, SimpleChanges, ElementRef, ViewChild } from '@angular/core';
+import { Component, Input, OnChanges, SimpleChanges, ElementRef, ViewChild, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { TrendData } from '../../../../../../app/core/services/predictions/prediction.service';
-
+import { TrendData } from '../../../../../../app/models/prediction';
 
 import { Chart, registerables } from 'chart.js';
 Chart.register(...registerables);
@@ -13,7 +12,7 @@ Chart.register(...registerables);
   templateUrl: './trend-chart.html',
   styleUrl: './trend-chart.scss'
 })
-export class TrendChartComponent implements OnChanges {
+export class TrendChartComponent implements OnChanges, AfterViewInit {
 
   @Input() trend: TrendData[] = [];
 
@@ -21,41 +20,41 @@ export class TrendChartComponent implements OnChanges {
 
   chart: Chart | null = null;
 
-  ngOnChanges(changes: SimpleChanges): void {
+  ngAfterViewInit(): void {
+    this.createChart();
+  }
 
-    if (changes['trend'] && this.trend?.length) {
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['trend'] && !changes['trend'].isFirstChange()) {
       setTimeout(() => {
         this.createChart();
-      });
+      }, 50);
     }
-
   }
 
   createChart() {
-
     if (!this.canvas) return;
 
     if (this.chart) {
       this.chart.destroy();
     }
 
-    const labels = this.trend.map(t => {
+    const dataSegura = this.trend || [];
+
+    const labels = dataSegura.map(t => {
       const date = new Date(t.date);
       return date.toLocaleDateString();
     });
 
-    const critical = this.trend.map(t => t.critical);
-    const warning = this.trend.map(t => t.warning);
-    const ok = this.trend.map(t => t.ok);
+    const critical = dataSegura.map(t => t.critical);
+    const warning = dataSegura.map(t => t.warning);
+    const ok = dataSegura.map(t => t.ok);
 
     this.chart = new Chart(this.canvas.nativeElement, {
       type: 'line',
-
       data: {
         labels,
-
         datasets: [
-
           {
             label: 'Críticas',
             data: critical,
@@ -63,7 +62,6 @@ export class TrendChartComponent implements OnChanges {
             backgroundColor: 'rgba(239,68,68,0.2)',
             tension: 0.4
           },
-
           {
             label: 'Riesgo',
             data: warning,
@@ -71,7 +69,6 @@ export class TrendChartComponent implements OnChanges {
             backgroundColor: 'rgba(245,158,11,0.2)',
             tension: 0.4
           },
-
           {
             label: 'OK',
             data: ok,
@@ -79,32 +76,22 @@ export class TrendChartComponent implements OnChanges {
             backgroundColor: 'rgba(16,185,129,0.2)',
             tension: 0.4
           }
-
         ]
       },
-
       options: {
-
         responsive: true,
-
+        maintainAspectRatio: false, 
         plugins: {
           legend: {
             position: 'bottom'
           }
         },
-
         scales: {
-
           y: {
             beginAtZero: true
           }
-
         }
-
       }
-
     });
-
   }
-
 }

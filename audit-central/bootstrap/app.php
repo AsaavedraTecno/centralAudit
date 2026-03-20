@@ -13,18 +13,18 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
 
-    ->withCommands([
-        App\Console\Commands\GeneratePredictionSnapshotsCommand::class,
-    ])
-
     ->withSchedule(function (Schedule $schedule) {
 
-        $schedule->command('predictions:snapshot')
-            ->everyFiveMinutes()
-            ->withoutOverlapping();
+        $schedule->call(function () {
+
+            echo "EJECUTANDO SNAPSHOT\n";
+
+            app(\App\Services\Predictions\SnapshotService::class)->generate();
+
+        })->everyMinute();
 
     })
-
+    
     ->withMiddleware(function (Middleware $middleware) {
         
         $middleware->prepend(\Illuminate\Http\Middleware\HandleCors::class);

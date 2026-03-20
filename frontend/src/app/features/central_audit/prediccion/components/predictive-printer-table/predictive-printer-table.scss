@@ -1,0 +1,34 @@
+.row-critical {
+  background: rgba(220, 53, 69, 0.08);
+}
+
+.row-risk {
+  background: rgba(255, 193, 7, 0.08);
+}
+
+.badge {
+  font-size: 0.75rem;
+}
+
+td strong {
+  color: #0d6efd;
+}
+
+.toner-mini {
+  display: flex; /* o block */
+  width: 100px; /* Ancho total de la barra */
+  height: 8px;
+  background-color: #e9ecef; /* Fondo gris para la parte vacía */
+  border-radius: 4px;
+  overflow: hidden;
+
+  span {
+    display: block;
+    height: 100%;
+  }
+
+  .k { background-color: #000000; } /* Negro */
+  .c { background-color: #00aeef; } /* Cyan */
+  .m { background-color: #ec008c; } /* Magenta */
+  .y { background-color: #fff200; } /* Amarillo */
+}

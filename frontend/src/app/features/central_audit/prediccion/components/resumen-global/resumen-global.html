@@ -1,7 +1,7 @@
 <div class="resumen-container" *ngIf="!loading && summary">
 
   <div class="resumen-header">
-    <h3>Resumen Predictivo Global</h3>
+      <h3>{{ titulo }}</h3>
 
     <small *ngIf="lastUpdate" class="text-muted">
       Actualizado: {{ lastUpdate | date:'short' }}
@@ -21,8 +21,9 @@
     </app-trend-chart>
 
     <!-- URGENT -->
-    <app-urgent-printers
-      [printers]="urgentPrinters">
+    <app-urgent-printers 
+      [printers]="urgentPrinters"
+      (printerClicked)="onPrinterSelected($event)"> 
     </app-urgent-printers>
 
   </div>

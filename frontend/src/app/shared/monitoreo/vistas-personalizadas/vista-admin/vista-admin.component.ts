@@ -24,7 +24,7 @@ interface CategoriaUI {
   styleUrls: ['./vista-admin.scss']
 })
 export class VistaAdminComponent implements OnInit {
-
+  esAdmin: boolean = true;
   vistas: VistaPersonalizada[] = [];
   columnasMaestras: ColumnaVistaSistema[] = [];
 

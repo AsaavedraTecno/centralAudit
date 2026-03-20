@@ -49,14 +49,6 @@ class Printer extends Model
     ];
 
     /**
-     * Sucursal a la que pertenece
-     */
-    public function locationRelation(): BelongsTo
-    {
-        return $this->belongsTo(Location::class, 'location_id');
-    }
-
-    /**
      * Historial de contadores
      */
     public function counters(): HasMany

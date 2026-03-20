@@ -1,39 +1,56 @@
 <div class="panel">
 
-  <h4>Impresoras urgentes</h4>
+  <div class="panel-header">
+    <h4>🚨 Top 5 impresoras con suministro crítico </h4>
+    <span class="count">{{ printers.length || 0 }} problemas</span>
+  </div>
 
-  <div class="printer-grid">
+  <div class="printer-list">
 
-    <div class="printer-card"
-         *ngFor="let printer of printers">
+      <div class="printer-row" 
+        *ngFor="let printer of printers" 
+        (click)="onPrinterClick(printer)"
+        style="cursor: pointer;">
 
-      <div class="printer-header">
+      <div class="printer-info">
 
-        <span class="printer-name">
-          {{ printer.printer_name }}
-        </span>
+        <div class="printer-name">
+          {{ printer.printer_name || printer.nombre }}
+        </div>
 
-        <span class="risk-badge"
-              [ngClass]="getRiskClass(printer.risk_score)">
-          {{ printer.risk_score }}
-        </span>
+        <div class="printer-meta">
+
+            <div class="supply">
+                {{ (printer.most_critical_supply || printer.predictedIssue) | titlecase }} crítico
+            </div>
+
+            <div class="days">
+                ⏳ {{ printer.days_remaining != null ? printer.days_remaining : printer.daysRemaining }} días restantes
+            </div>
+
+            <div class="location" *ngIf="printer.location_name || printer.location_id">
+                📍 {{ printer.location_name || 'Sucursal ' + printer.location_id }}
+            </div>
+
+        </div>
 
       </div>
 
-      <div class="printer-body">
+      <div class="printer-status">
 
-        <div class="supply">
-          {{ printer.most_critical_supply }}
-        </div>
-
-        <div class="days">
-          {{ printer.days_remaining }} días restantes
-        </div>
+        <span class="risk-badge"
+          [ngClass]="printer.risk_score ? getRiskClass(printer.risk_score) : 'risk-critical'">
+          {{ printer.risk_score ? printer.risk_score : 'Crítico' }}
+        </span>
 
       </div>
 
     </div>
 
+  </div>
+
+  <div *ngIf="printers?.length === 0" class="p-3 text-center text-muted small">
+    No hay acciones urgentes requeridas.
   </div>
 
 </div>

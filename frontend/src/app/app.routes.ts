@@ -22,7 +22,10 @@ import { PanelComponent } from './shared/monitoreo/panel/panel.component';
 import { DashboardComponent } from './shared/monitoreo/dashboard/dashboard.component';
 import { VistaAdminComponent } from './shared/monitoreo/vistas-personalizadas/vista-admin/vista-admin.component';
 import { MonitoreoLayoutComponent } from './shared/monitoreo/monitoreo-layout/monitoreo-layout.component';
+
+// Componentes de Prediccion
 import { PrediccionComponent } from './features/central_audit/prediccion/prediccion.component';
+import { PrediccionDetalleComponent } from './features/central_audit/prediccion/components/prediccion-detalle/prediccion-detalle.component';
 
 // Componentes de Clientes
 import { layoutComponent } from './layouts/layout/layout.component';
@@ -66,6 +69,9 @@ export const routes: Routes = [
             canActivate: [CentralOnlyGuard] 
           },
           {path:'prediccion', component: PrediccionComponent},
+          { path: 'prediccion/sucursal/:tenantCode/:locationId', component: PrediccionComponent },
+          { path: 'prediccion/impresora/:tenantCode/:locationId/:printerId', component: PrediccionComponent },
+          { path: 'prediccion/impresora/:tenantCode/:locationId/:printerId', component: PrediccionDetalleComponent },
           {path: '', redirectTo: 'panel', pathMatch: 'full'}
         ]
       },

@@ -6,48 +6,15 @@ import { environment } from '../../../../environments/environment';
 
 import {
   PredictionDashboard,
-  PrinterPrediction,
-  PredictionSummary
+  PredictivePrinter,
+  PredictionSummary,
+  PredictionSummaryDetailed,
+  TenantSummary,
+  LocationSummary,
+  CriticalPrinter,
+  TrendData
 } from '../../../models/prediction';
 
-export interface PredictionSummaryDetailed extends PredictionSummary {
-  critical_percentage: number;
-  warning_percentage: number;
-  ok_percentage: number;
-  total_tenants: number;
-  total_locations: number;
-}
-
-export interface TenantSummary extends PredictionSummary {
-  tenant_code: string;
-  critical_percentage: number;
-  warning_percentage: number;
-  ok_percentage: number;
-}
-
-export interface LocationSummary extends TenantSummary {
-  location_id: number;
-}
-
-export interface CriticalPrinter {
-  tenant_code: string;
-  printer_name: string;
-  model: string;
-  location_id: number;
-  risk_score: number;
-  risk_level: string;
-  most_critical_supply: string;
-  days_remaining: number;
-  snapshot_at: string;
-}
-
-export interface TrendData {
-  date: string;
-  total: number;
-  critical: number;
-  warning: number;
-  ok: number;
-}
 
 @Injectable({
   providedIn: 'root'
@@ -141,32 +108,23 @@ export class PredictionService {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════
   // ENDPOINTS POR CLIENTE/TENANT
-  // ═══════════════════════════════════════════════════════════════
 
   /**
    * Predicciones globales del cliente
    * GET /tenants/{clientCode}/predictions/client
    */
   getGlobalPredictions(clientCode: string): Observable<PredictionDashboard> {
-    return this.http.get<any>(
-      `${this.baseUrl}/tenants/${clientCode}/predictions/client`
-    );
+    return this.http.get<PredictionDashboard>(`${this.baseUrl}/tenants/${clientCode}/predictions/client`);
   }
 
   /**
    * Predicciones por sucursal/ubicación
    * GET /tenants/{clientCode}/predictions/location/{locationId}
    */
-  getLocationPredictions(
-    clientCode: string,
-    locationId: number
-  ): Observable<PredictionDashboard> {
-    return this.http.get<any>(
-      `${this.baseUrl}/tenants/${clientCode}/predictions/location/${locationId}`
-    );
-  }
+  getLocationPredictions(clientCode: string, locationId: number): Observable<any> {
+      return this.http.get<any>(`${this.baseUrl}/tenants/${clientCode}/predictions/location/${locationId}`);
+    }
 
   /**
    * Predicción de una impresora específica
@@ -175,8 +133,8 @@ export class PredictionService {
   getPrinterPrediction(
     clientCode: string,
     printerId: number
-  ): Observable<PrinterPrediction> {
-    return this.http.get<PrinterPrediction>(
+  ): Observable<PredictivePrinter> {
+    return this.http.get<PredictivePrinter>(
       `${this.baseUrl}/tenants/${clientCode}/predictions/printer/${printerId}`
     );
   }
@@ -188,36 +146,38 @@ export class PredictionService {
   /**
    * Filtrar impresoras críticas (risk_score >= 70)
    */
-  getCriticalPrinters(predictions: PrinterPrediction[]): PrinterPrediction[] {
+  getCriticalPrinters(predictions: any[]): any[] {
     return predictions
-      .filter(p => p.predictions.risk_score >= 70)
-      .sort((a, b) => b.predictions.risk_score - a.predictions.risk_score)
+      .filter(p => {
+        const risk = p?.predictions?.risk_score ?? p?.risk_score ?? 0;
+        return risk >= 70;
+      })
+      .sort((a, b) => {
+        const ra = a?.predictions?.risk_score ?? a?.risk_score ?? 0;
+        const rb = b?.predictions?.risk_score ?? b?.risk_score ?? 0;
+        return rb - ra;
+      })
       .slice(0, 10);
   }
 
   /**
    * Consumibles en riesgo (≤ 30 días)
    */
-  getConsumablesRisk(predictions: PrinterPrediction[]) {
+  getConsumablesRisk(predictions: PredictivePrinter[]) {
     const result: Record<string, number> = {};
 
     predictions.forEach(printer => {
-      const supplies = printer.predictions.supplies_prediction;
+      const issue = printer.predictedIssue;
+      const days = printer.days_remaining;
 
-      Object.keys(supplies).forEach(type => {
-        const supply = supplies[type];
-        const days = supply?.forecast?.days_remaining;
-
-        if (days !== undefined && days !== null && days <= 30) {
-          if (!result[type]) {
-            result[type] = 0;
-          }
-          result[type]++;
+      if (issue && issue !== 'Ninguno' && days !== undefined && days <= 30) {
+        if (!result[issue]) {
+          result[issue] = 0;
         }
-      });
+        result[issue]++;
+      }
     });
 
     return result;
   }
-
 }

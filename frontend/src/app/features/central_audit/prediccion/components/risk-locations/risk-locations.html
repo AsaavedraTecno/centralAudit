@@ -1,46 +1,33 @@
-<div class="panel">
+<div class="panel" *ngIf="locations && locations.length > 0">
+  
+  <h4 class="mb-3">🏢 Sucursales con mayor riesgo</h4>
 
-<h4>Sucursales con mayor riesgo</h4>
+  <div class="location-list">
+    
+    <div class="location-row d-flex justify-content-between align-items-center border-bottom py-3" 
+         *ngFor="let loc of locations">
+      
+      <div class="location-info fw-bold">
+        {{ loc.location_name || 'Sucursal ' + loc.location_id }}
+      </div>
 
-<div class="location-list">
+      <div class="location-stats d-flex gap-2">
+        
+        <span class="badge bg-danger p-2" *ngIf="loc.critical > 0">
+          <i class="fas fa-exclamation-circle me-1"></i> {{ loc.critical }} Críticas
+        </span>
+        
+        <span class="badge bg-warning text-dark p-2" *ngIf="loc.warning > 0">
+          <i class="fas fa-exclamation-triangle me-1"></i> {{ loc.warning }} Riesgo
+        </span>
 
-<div class="location-card"
-     *ngFor="let loc of locations">
+        <span class="badge bg-success p-2" *ngIf="loc.critical === 0 && loc.warning === 0">
+           Todo en orden
+        </span>
 
-<div class="location-name">
+      </div>
 
-Sucursal {{ loc.location_id }}
+    </div>
 
-</div>
-
-<div class="risk-bars">
-
-<div class="bar critical"
-     [style.width.%]="loc.critical * 20">
-
-</div>
-
-<div class="bar warning"
-     [style.width.%]="loc.warning * 20">
-
-</div>
-
-</div>
-
-<div class="stats">
-
-<span class="critical">
-{{ loc.critical }} críticas
-</span>
-
-<span class="warning">
-{{ loc.warning }} riesgo
-</span>
-
-</div>
-
-</div>
-
-</div>
-
+  </div>
 </div>

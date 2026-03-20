@@ -1,44 +1,31 @@
-.location-list{
-display:flex;
-flex-direction:column;
-gap:10px;
+.location-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.location-card{
-border:1px solid #e5e7eb;
-border-radius:8px;
-padding:12px;
-background:white;
+.location-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+  border-radius: 8px;
+
+  &:hover {
+    background: #f5f7fa;
+  }
 }
 
-.location-name{
-font-weight:600;
-margin-bottom:6px;
+.badge {
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: white;
 }
 
-.risk-bars{
-display:flex;
-height:6px;
-background:#f3f4f6;
-border-radius:4px;
-overflow:hidden;
-margin-bottom:6px;
+.critical {
+  background: #e53935;
 }
 
-.bar{
-height:100%;
-}
-
-.critical{
-background:#ef4444;
-}
-
-.warning{
-background:#f59e0b;
-}
-
-.stats{
-display:flex;
-gap:10px;
-font-size:12px;
+.warning {
+  background: #fb8c00;
 }

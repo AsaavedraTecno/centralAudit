@@ -82,4 +82,8 @@ export class ImpresoraService {
       `${this.baseUrl}/tenants/${clientCode}/sucursales/${locationId}/impresoras/${printerId}`
     );
   }
+
+  obtenerResumenGlobalConexiones(): Observable<any> {
+    return this.http.get(`${this.baseUrl}/global-connection-status`);
+  }
 }

@@ -154,16 +154,12 @@
                         </span>
 
                         <div class="sucursal-cell">
-
                           <span
                             class="printer-status-dot"
                             [ngClass]="getEstadoSucursal(sucursal).color">
                           </span>
 
-                          <div class="sucursal-nombre">
-                            <span>{{ sucursal.nombre || '-' }}</span>
-                          </div>
-
+                          <span>{{ sucursal.nombre || '-' }}</span>
                         </div>
 
                       </td>
@@ -215,7 +211,7 @@
                               {{ obtenerValorColumnaFormateado(impresora, col) }}
 
                               <div class="text-muted small">
-                                {{ getTiempoRelativo(impresora.minutosSinConexion) }}
+                                {{ getTiempoRelativo(impresora.minutosSinConexion || 0) }}
                               </div>
 
                             </ng-container>

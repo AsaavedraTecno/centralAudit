@@ -13,24 +13,12 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // Generar snapshots de predicciones cada noche a las 2 AM
-        $schedule->job(new GeneratePredictionSnapshots())
-            ->dailyAt('02:00')
-            ->onOneServer()
-            ->withoutOverlapping() // No ejecutar si ya está en progreso
-            ->runInBackground();
+        $schedule->call(function () {
+            echo "EJECUTANDO SNAPSHOT\n";
 
-        // ALTERNATIVA: Si prefieres cada 6 horas
-        // $schedule->job(new GeneratePredictionSnapshots())
-        //     ->everyFourHours()
-        //     ->onOneServer()
-        //     ->withoutOverlapping();
+            app(\App\Services\Predictions\SnapshotService::class)->generate();
 
-        // ALTERNATIVA: Si prefieres cada 1 hora (no recomendado para 1000 impresoras)
-        // $schedule->job(new GeneratePredictionSnapshots())
-        //     ->hourly()
-        //     ->onOneServer()
-        //     ->withoutOverlapping();
+        })->everyMinute();
     }
     /**
      * Register the commands for the application.

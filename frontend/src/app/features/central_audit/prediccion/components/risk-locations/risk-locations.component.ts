@@ -1,7 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { LocationSummary  } from '../../../../../../app/core/services/predictions/prediction.service';
-
+import { LocationSummary } from '../../../../../models/prediction';
 
 @Component({
   selector: 'app-risk-locations',

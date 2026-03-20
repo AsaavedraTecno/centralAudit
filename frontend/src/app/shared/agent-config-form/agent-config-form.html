@@ -132,7 +132,7 @@
             {{ editingRangeIndex !== null ? 'Editar Rango de IP' : 'Nuevo Rango de IP' }}
           </h6>
         </div>
-        <div class="card-body p-4" [formGroup]="ipRangesArray.at(editingRangeIndex || 0)!">
+        <div class="card-body p-4" [formGroup]="getRangeGroup(editingRangeIndex)">
           <div class="row g-3 mb-4">
             <div class="col-md-6">
               <label class="form-label small fw-bold">IP Desde <span class="text-danger">*</span></label>
@@ -140,7 +140,7 @@
                      class="form-control"
                      formControlName="ip_from"
                      placeholder="192.168.1.1"
-                     [class.is-invalid]="ipRangesArray.at(editingRangeIndex || 0)?.get('ip_from')?.invalid && ipRangesArray.at(editingRangeIndex || 0)?.get('ip_from')?.touched">
+                     [class.is-invalid]="getRangeGroup(editingRangeIndex).get('ip_from')?.invalid && getRangeGroup(editingRangeIndex).get('ip_from')?.touched">
               <div class="invalid-feedback" *ngIf="ipRangesArray.at(editingRangeIndex || 0)?.get('ip_from')?.hasError('required')">
                 IP es obligatoria
               </div>
@@ -155,7 +155,7 @@
                      class="form-control"
                      formControlName="ip_to"
                      placeholder="192.168.1.254"
-                     [class.is-invalid]="ipRangesArray.at(editingRangeIndex || 0)?.get('ip_to')?.invalid && ipRangesArray.at(editingRangeIndex || 0)?.get('ip_to')?.touched">
+                     [class.is-invalid]="getRangeGroup(editingRangeIndex).get('ip_to')?.invalid && getRangeGroup(editingRangeIndex).get('ip_to')?.touched">
               <div class="invalid-feedback" *ngIf="ipRangesArray.at(editingRangeIndex || 0)?.get('ip_to')?.hasError('required')">
                 IP es obligatoria
               </div>
@@ -170,7 +170,7 @@
                      class="form-control"
                      formControlName="subnet_mask"
                      placeholder="255.255.255.0"
-                     [class.is-invalid]="ipRangesArray.at(editingRangeIndex || 0)?.get('subnet_mask')?.invalid && ipRangesArray.at(editingRangeIndex || 0)?.get('subnet_mask')?.touched">
+                     [class.is-invalid]="getRangeGroup(editingRangeIndex).get('subnet_mask')?.invalid && getRangeGroup(editingRangeIndex).get('subnet_mask')?.touched">
               <div class="invalid-feedback" *ngIf="ipRangesArray.at(editingRangeIndex || 0)?.get('subnet_mask')?.invalid">
                 Máscara es obligatoria
               </div>
@@ -196,7 +196,7 @@
             </button>
             <button type="button" 
                     class="btn btn-primary" 
-                    [disabled]="ipRangesArray.at(editingRangeIndex || 0)?.invalid"
+                    [disabled]="getRangeGroup(editingRangeIndex).invalid"
                     (click)="editingRangeIndex = null; showRangeForm = false">
               <i class="fas fa-save me-1"></i>
               {{ editingRangeIndex !== null ? 'Actualizar' : 'Agregar' }} Rango

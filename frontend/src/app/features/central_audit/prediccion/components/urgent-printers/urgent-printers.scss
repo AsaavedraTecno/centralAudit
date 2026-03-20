@@ -1,50 +1,71 @@
-.printer-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px,1fr));
-  gap: 14px;
+.panel {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
 }
 
-.printer-card {
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  padding: 14px;
-  background: #fafafa;
-}
-
-.printer-header {
+.panel-header {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
+
+  h4 {
+    margin: 0;
+  }
+
+  .count {
+    font-size: 12px;
+    color: #888;
+  }
+}
+
+.printer-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.printer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  border-radius: 8px;
+  transition: 0.2s;
+
+  &:hover {
+    background: #f5f7fa;
+  }
 }
 
 .printer-name {
   font-weight: 600;
 }
 
-.risk-badge {
-  padding: 3px 8px;
-  border-radius: 6px;
-  color: white;
-  font-size: 12px;
-}
-
-.risk-high {
-  background: #ef4444;
-}
-
-.risk-medium {
-  background: #f59e0b;
-}
-
-.risk-low {
-  background: #10b981;
-}
-
-.supply {
-  font-size: 13px;
+.printer-meta {
+  font-size: 16px;
+  color: #666;
 }
 
 .days {
+  font-weight: bold;
+}
+
+.risk-badge {
+  padding: 4px 8px;
+  border-radius: 6px;
   font-size: 12px;
-  color: #6b7280;
+  color: white;
+}
+
+.risk-high {
+  background: #e53935;
+}
+
+.risk-medium {
+  background: #fb8c00;
+}
+
+.risk-low {
+  background: #43a047;
 }

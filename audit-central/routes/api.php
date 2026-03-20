@@ -57,7 +57,7 @@ Route::domain($centralDomain)->group(function () {
         // --- Auth General ---
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/me', [AuthController::class, 'me']);
-
+        Route::get('global-connection-status', [PrinterController::class, 'globalConnectionStatus']);
 
         // =============================================
         // A. PANEL ADMINISTRATIVO (CENTRAL)
@@ -141,7 +141,12 @@ Route::domain($centralDomain)->group(function () {
             });
 
 
+            Route::prefix('predictions')->group(function () {
 
+                Route::get('/client', [PredictionController::class, 'client']);
+                Route::get('/location/{locationId}', [PredictionController::class, 'byLocationTenant']);
+
+            });
 
         });
 

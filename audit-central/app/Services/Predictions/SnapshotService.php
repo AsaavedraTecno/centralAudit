@@ -22,6 +22,7 @@ class SnapshotService
 
     public function generate()
     {
+        echo "ENTRANDO AL SERVICE\n";
         $tenants = Tenant::where('status', 'active')->cursor();
 
         foreach ($tenants as $tenant) {
@@ -29,7 +30,9 @@ class SnapshotService
             Tenancy::initialize($tenant);
 
             try {
-                Printer::chunkById(50, function ($printers) use ($tenant) {
+                Printer::with(['location:id,nombre'])
+                ->select('id','location_id','name','model')
+                ->chunkById(50, function ($printers) use ($tenant) {
 
                     $printerIds = $printers->pluck('id')->toArray();
 
@@ -55,18 +58,16 @@ class SnapshotService
 
                             $risk = $prediction['risk_score'];
                             $critical = $prediction['most_critical_supply'];
-
+                            echo "INSERTANDO PRINTER {$printer->id}\n"; 
                             DB::connection('central')
                                 ->table('printer_prediction_snapshots')
-                                ->updateOrInsert(
+                                ->insert(
                                     [
                                         'tenant_id' => $tenant->id,
                                         'printer_id' => $printer->id,
-                                    ],
-                                    [
                                         'tenant_code' => $tenant->code,
                                         'location_id' => $printer->location_id,
-                                        'location_name' => $printer->location?->name ?? null,
+                                        'location_name' => $printer->location?->nombre ?? 'Sin sucursal',
                                         'printer_name' => $printer->name,
                                         'model' => $printer->model,
                                         'risk_score' => (int) $risk,
@@ -75,6 +76,7 @@ class SnapshotService
                                         'monthly_volume' => (int) ($prediction['monthly_volume_prediction'] ?? 0),
                                         'anomaly' => (bool) ($prediction['anomaly'] ?? false),
                                         'snapshot_at' => now(),
+                                        'created_at' => now(),
                                         'updated_at' => now(),
                                     ]
                                 );

@@ -95,6 +95,13 @@ export class AgentConfigFormComponent implements OnInit {
   }
 
   /**
+   * Getter para acceder al FormGroup específico sin errores de tipado
+   */
+  getRangeGroup(index: number | null): FormGroup {
+    return this.ipRangesArray.at(index || 0) as FormGroup;
+  }
+
+  /**
    * Agregar nuevo rango de IP (validado)
    */
   addRange() {

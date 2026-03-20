@@ -1,0 +1,88 @@
+<table class="table table-hover">
+
+  <thead>
+    <tr>
+
+      <th (click)="ordenarColumna('nombre')" class="sortable">Nombre</th>
+      <th>ID</th>
+      <th>Modelo</th>
+      <th>IP</th>
+
+      <th (click)="ordenarColumna('predictionStatus')" class="sortable">
+        Estado Predictivo
+      </th>
+
+      <th (click)="ordenarColumna('daysRemaining')" class="sortable">
+        Días Restantes
+      </th>
+
+      <th>Problema</th>
+      <th>Acción</th>
+
+      <th>Toner</th>
+
+      <th></th>
+
+    </tr>
+  </thead>
+
+  <tbody>
+
+    <tr *ngFor="let imp of printers"
+        [ngClass]="{
+          'row-critical': imp.predictionStatus === 'critical',
+          'row-risk': imp.predictionStatus === 'risk'
+        }">
+
+      <td>{{ imp.nombre }}</td>
+      <td>{{ imp.internal_id }}</td>
+      <td>{{ imp.modelo }}</td>
+      <td><code>{{ imp.ip }}</code></td>
+
+      <!-- ESTADO -->
+      <td>
+        <span class="badge"
+              [ngClass]="getStatusClass(imp.predictionStatus)">
+          {{ getStatusLabel(imp.predictionStatus) }}
+        </span>
+      </td>
+
+      <!--  DÍAS -->
+      <td>
+        <strong>{{ imp.daysRemaining }} días</strong>
+      </td>
+
+      <!--  PROBLEMA -->
+      <td>
+        {{ imp.predictedIssue }}
+      </td>
+
+      <!-- ACCIÓN -->
+      <td>
+        <span class="text-primary fw-semibold">
+          {{ imp.recommendedAction }}
+        </span>
+      </td>
+
+      <!-- TONER -->
+      <td class="toner-cell">
+        <div class="toner-mini">
+          <span class="k" [style.width.%]="imp.tonerBlack || 0"></span>
+          <span class="c" [style.width.%]="imp.tonerCyan || 0"></span>
+          <span class="m" [style.width.%]="imp.tonerMagenta || 0"></span>
+          <span class="y" [style.width.%]="imp.tonerYellow || 0"></span>
+        </div>
+      </td>
+
+      <td>
+        <button class="btn btn-sm btn-outline-primary"
+                (click)="verDetalles.emit(imp)">
+          <i class="fas fa-eye"></i>
+        </button>
+      </td>
+
+    </tr>
+
+  </tbody>
+
+</table>
