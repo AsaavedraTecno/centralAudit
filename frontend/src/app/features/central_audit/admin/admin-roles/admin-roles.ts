@@ -13,11 +13,20 @@ import { ColorPickerDirective } from 'ngx-color-picker';
   styleUrls: ['./admin-roles.scss']
 })
 export class AdminRolesComponent implements OnInit {
-  roles: Role[] = [];
-  loadingRoles = false;
+  
+  // --- CONTROL DE VISTAS ---
+  vistaActual: 'lista' | 'crear' | 'editar' = 'lista';
 
+  // --- ESTADOS DE CARGA Y MENSAJES ---
+  isSaving = false;
+  isDeleting = false;
+  loadingRoles = true; // Empieza en true para evitar el flash de "no hay datos"
+  formError = '';
+  formExito = '';
+
+  roles: Role[] = [];
   permisosDisponibles: any = {};
-  todosLosPermisos: any[] = []; // Lista plana de todos los permisos para "seleccionar todos"
+  todosLosPermisos: any[] = []; 
   
   nuevoRol: { name: string, description: string , color: string} = { name: '', description: '', color: '#cccccc' };
   permisosSeleccionadosNuevo: Set<number> = new Set();
@@ -26,12 +35,10 @@ export class AdminRolesComponent implements OnInit {
   modalEliminarRolAbierto = false;
   rolAEliminar: Role | null = null;
 
-  modalEditarRolAbierto = false;
   rolAEditar: any = null;
   permisosSeleccionadosEditar: Set<number> = new Set();
   seleccionarTodosEditar = false;
 
-  // Helper para poder iterar sobre las keys de un objeto en el template
   objectKeys = Object.keys;
 
   constructor(
@@ -44,16 +51,54 @@ export class AdminRolesComponent implements OnInit {
     this.cargarPermisos();
   }
 
+  // ==========================================
+  // NAVEGACIÓN Y LIMPIEZA
+  // ==========================================
+
+  volverALista(): void {
+    this.vistaActual = 'lista';
+    this.limpiarEstados();
+  }
+
+  abrirVistaCrear(): void {
+    this.vistaActual = 'crear';
+    this.nuevoRol = { name: '', description: '', color: '#cccccc' };
+    this.permisosSeleccionadosNuevo.clear();
+    this.seleccionarTodosNuevo = false;
+    this.limpiarEstados();
+  }
+
+  abrirVistaEditar(rol: Role): void {
+    this.rolAEditar = JSON.parse(JSON.stringify(rol)); 
+    this.permisosSeleccionadosEditar.clear();
+    if (this.rolAEditar.permissions) {
+      this.rolAEditar.permissions.forEach((p: any) => this.permisosSeleccionadosEditar.add(p.id));
+    }
+    this.actualizarEstadoTodos('edit');
+    this.limpiarEstados();
+    this.vistaActual = 'editar';
+  }
+
+  limpiarEstados(): void {
+    this.formError = '';
+    this.formExito = '';
+    this.isSaving = false;
+    this.isDeleting = false;
+  }
+
+  // ==========================================
+  // LÓGICA DE DATOS
+  // ==========================================
+
   cargarRoles(): void {
     this.loadingRoles = true;
     this.roleService.getRoles().subscribe({
       next: (response) => {
-        // La respuesta es un objeto paginado, los roles están en response.roles.data
         this.roles = response?.roles?.data || [];
         this.loadingRoles = false;
       },
       error: (error) => {
-        console.error('Error al cargar roles:', error);
+        console.error('Error roles:', error);
         this.loadingRoles = false;
       }
     });
@@ -63,18 +108,20 @@ export class AdminRolesComponent implements OnInit {
     this.permissionService.getPermissionsList().subscribe({
       next: (response) => {
         this.permisosDisponibles = response;
-        // Aplanar los permisos para facilitar la lógica de "seleccionar todos"
         this.todosLosPermisos = Object.values(response).flat();
       },
-      error: (error) => console.error('Error al cargar permisos:', error)
+      error: (error) => console.error('Error permisos:', error)
     });
   }
 
   crearRol(): void {
     if (!this.nuevoRol.name) {
-      alert('El nombre del rol es obligatorio.');
+      this.formError = 'El nombre del rol es obligatorio.';
       return;
     }
+
+    this.isSaving = true;
+    this.formError = '';
 
     const payload = {
       ...this.nuevoRol,
@@ -83,37 +130,22 @@ export class AdminRolesComponent implements OnInit {
 
     this.roleService.createRole(payload).subscribe({
       next: () => {
-        alert('Rol creado exitosamente');
-        this.nuevoRol = { name: '', description: '', color: '#cccccc' };
-        this.permisosSeleccionadosNuevo.clear();
-        this.seleccionarTodosNuevo = false;
+        this.formExito = 'Rol creado correctamente.';
         this.cargarRoles();
+        setTimeout(() => this.volverALista(), 1500);
       },
       error: (err) => {
-        console.error('Error al crear rol:', err);
-        alert('Error al crear rol: ' + (err.error?.message || 'Error desconocido'));
+        this.formError = err.error?.message || 'Error al crear rol.';
+        this.isSaving = false;
       }
     });
   }
 
-  abrirModalEditarRol(rol: Role): void {
-    this.rolAEditar = JSON.parse(JSON.stringify(rol)); // Clon profundo para no mutar el original
-    this.permisosSeleccionadosEditar.clear();
-    if (this.rolAEditar.permissions) {
-      this.rolAEditar.permissions.forEach((p: any) => this.permisosSeleccionadosEditar.add(p.id));
-    }
-    this.actualizarEstadoTodos('edit');
-    this.modalEditarRolAbierto = true;
-  }
-
-  cerrarModalEditarRol(): void {
-    this.modalEditarRolAbierto = false;
-    this.rolAEditar = null;
-    this.seleccionarTodosEditar = false;
-  }
-
   actualizarRol(): void {
     if (!this.rolAEditar) return;
+    
+    this.isSaving = true;
+    this.formError = '';
 
     const payload = {
       name: this.rolAEditar.name,
@@ -124,46 +156,60 @@ export class AdminRolesComponent implements OnInit {
 
     this.roleService.updateRole(this.rolAEditar.id, payload).subscribe({
       next: () => {
-        alert('Rol actualizado exitosamente');
-        this.cerrarModalEditarRol();
+        this.formExito = 'Rol actualizado correctamente.';
         this.cargarRoles();
+        setTimeout(() => this.volverALista(), 1500);
       },
       error: (err) => {
-        console.error('Error al actualizar rol:', err);
-        alert('Error al actualizar rol: ' + (err.error?.message || 'Error desconocido'));
+        this.formError = err.error?.message || 'Error al actualizar.';
+        this.isSaving = false;
       }
     });
   }
 
+  // ==========================================
+  // ELIMINACIÓN (CON BLOQUEO)
+  // ==========================================
+
   abrirModalEliminarRol(rol: Role): void {
     this.rolAEliminar = rol;
+    this.isDeleting = false;
     this.modalEliminarRolAbierto = true;
   }
 
   cerrarModalEliminarRol(): void {
     this.modalEliminarRolAbierto = false;
     this.rolAEliminar = null;
+    this.isDeleting = false;
   }
 
   confirmarEliminarRol(): void {
     if (!this.rolAEliminar) return;
+    
+    // BLOQUEO INSTANTÁNEO
+    this.isDeleting = true;
+
     this.roleService.deleteRole(this.rolAEliminar.id).subscribe({
       next: () => {
-        alert('Rol eliminado');
+        this.isDeleting = false;
         this.cerrarModalEliminarRol();
         this.cargarRoles();
       },
-      error: (err) => console.error('Error al eliminar rol:', err)
+      error: (err) => {
+        console.error('Error eliminar:', err);
+        this.isDeleting = false;
+        alert('No se pudo eliminar el rol.');
+      }
     });
   }
 
+  // ==========================================
+  // PERMISOS (LÓGICA)
+  // ==========================================
+
   togglePermiso(permisoId: number, context: 'new' | 'edit'): void {
     const set = context === 'new' ? this.permisosSeleccionadosNuevo : this.permisosSeleccionadosEditar;
-    if (set.has(permisoId)) {
-      set.delete(permisoId);
-    } else {
-      set.add(permisoId);
-    }
+    set.has(permisoId) ? set.delete(permisoId) : set.add(permisoId);
     this.actualizarEstadoTodos(context);
   }
 
@@ -176,27 +222,17 @@ export class AdminRolesComponent implements OnInit {
     const targetState = context === 'new' ? !this.seleccionarTodosNuevo : !this.seleccionarTodosEditar;
     const set = context === 'new' ? this.permisosSeleccionadosNuevo : this.permisosSeleccionadosEditar;
 
-    if (targetState) {
-      this.todosLosPermisos.forEach(p => set.add(p.id));
-    } else {
-      set.clear();
-    }
+    targetState ? this.todosLosPermisos.forEach(p => set.add(p.id)) : set.clear();
 
-    if (context === 'new') {
-      this.seleccionarTodosNuevo = targetState;
-    } else {
-      this.seleccionarTodosEditar = targetState;
-    }
+    if (context === 'new') this.seleccionarTodosNuevo = targetState;
+    else this.seleccionarTodosEditar = targetState;
   }
 
   actualizarEstadoTodos(context: 'new' | 'edit'): void {
     const set = context === 'new' ? this.permisosSeleccionadosNuevo : this.permisosSeleccionadosEditar;
     const allSelected = this.todosLosPermisos.length > 0 && this.todosLosPermisos.every(p => set.has(p.id));
 
-    if (context === 'new') {
-      this.seleccionarTodosNuevo = allSelected;
-    } else {
-      this.seleccionarTodosEditar = allSelected;
-    }
+    if (context === 'new') this.seleccionarTodosNuevo = allSelected;
+    else this.seleccionarTodosEditar = allSelected;
   }
 }

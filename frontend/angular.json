@@ -81,7 +81,7 @@
             "host": "0.0.0.0",
             "allowedHosts": [
               "localhost",
-              ".tecnodatasa.cl"
+              ".tdmonitor.cl"
             ]
           },
           "builder": "@angular/build:dev-server",

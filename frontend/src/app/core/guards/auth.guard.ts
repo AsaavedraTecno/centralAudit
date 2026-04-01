@@ -24,7 +24,7 @@ export class AuthGuard implements CanActivate {
     // 2. Lógica de seguridad por dominio
     if (isPlatformBrowser(this.platformId)) {
       const hostname = window.location.hostname;
-      const centralDomain = 'centralaudit.tecnodatasa.cl';
+      const centralDomain = 'tdmonitor.cl';
       const isCentral = (hostname === centralDomain || hostname === 'localhost' || hostname === '127.0.0.1');
 
       const urlDestino = state.url;

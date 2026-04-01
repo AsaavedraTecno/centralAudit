@@ -1,14 +1,14 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { FiltrosImpresora } from './filtros-impresora.component';
+import { FiltrosImpresoraComponent } from './filtros-impresora.component';
 
-describe('FiltrosImpresora', () => {
-  let component: FiltrosImpresora;
-  let fixture: ComponentFixture<FiltrosImpresora>;
+describe('FiltrosImpresoraComponent', () => {
+  let component: FiltrosImpresoraComponent;
+  let fixture: ComponentFixture<FiltrosImpresoraComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [FiltrosImpresora]
+      imports: [FiltrosImpresoraComponent]
     })
     .compileComponents();
 

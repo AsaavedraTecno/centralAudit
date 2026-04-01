@@ -1,144 +1,310 @@
-<div class="usuarios-container">
-	<div class="usuarios-form-col">
-		<h4><i class="fas fa-user-plus me-2"></i>Crear Nuevo Usuario</h4>
-		<hr>
-		<form class="usuario-form" (ngSubmit)="crearUsuario()">
-			<div class="form-group mb-3">
-				<label class="form-label">Nombre Completo *</label>
-				<input type="text" class="form-control" [(ngModel)]="nuevoUsuario.name" name="newName" required placeholder="Ej: Juan Pérez">
-			</div>
-			<div class="form-group mb-3">
-				<label class="form-label">Email *</label>
-				<input type="email" class="form-control" [(ngModel)]="nuevoUsuario.email" name="newEmail" required placeholder="juan@empresa.com">
-			</div>
-			<div class="form-group mb-3">
-				<label class="form-label">Rol *</label>
-				<select class="form-control" [(ngModel)]="nuevoUsuario.role_id" name="newRole" required>
-					<option [ngValue]="null">-- Seleccionar --</option>
-					<option *ngFor="let rol of rolesDisponibles" [value]="rol.id">{{ rol.name }}</option>
-				</select>
-			</div>
-			<div class="form-group mb-3">
-				<label class="form-label">Clientes Asignados</label>
-				<div class="cliente-checkboxes">
-					<div class="form-check checkbox-todos">
-						<input class="form-check-input" type="checkbox" id="seleccionarTodos" [checked]="seleccionarTodos" (change)="toggleSeleccionarTodos()">
-						<label class="form-check-label" for="seleccionarTodos"><strong>📋 Todos los clientes</strong></label>
-					</div>
-					<div style="border-top: 1px solid #dee2e6; margin: 8px 0; padding-top: 8px;"></div>
-					<div class="form-check" *ngFor="let cliente of clientesDisponibles">
-						<input class="form-check-input" type="checkbox" [checked]="isClienteSeleccionado(cliente.id)" (change)="toggleCliente(cliente.id)">
-						<label class="form-check-label">{{ cliente.nombre }}</label>
-					</div>
-					<div *ngIf="clientesDisponibles.length === 0" class="text-muted small py-2">
-						<i class="fas fa-info-circle me-1"></i>No hay clientes disponibles
-					</div>
-				</div>
-			</div>
-			<div class="form-group mb-3">
-				<div class="form-check">
-					<input class="form-check-input" type="checkbox" id="activo" [(ngModel)]="nuevoUsuario.active" name="newActive">
-					<label class="form-check-label" for="activo">Activo</label>
-				</div>
-			</div>
-			<button type="submit" class="btn btn-primary w-100"><i class="fas fa-plus me-2"></i>Crear Usuario</button>
-			<p class="text-muted small mt-2">* La contraseña se genera automáticamente.</p>
-		</form>
-	</div>
+<div class="p-3">
 
+    <div *ngIf="vistaActual === 'lista'" class="animate-fade-in">
+        
+        <div class="d-flex justify-content-between align-items-end mb-4">
+            <div>
+                <h3 class="fw-bold mb-1 text-dark">Usuarios</h3>
+                <p class="text-muted small mb-0">Gestiona los accesos y roles del sistema.</p>
+            </div>
+            <button class="btn btn-primary modern-btn shadow-sm" (click)="abrirVistaCrear()">
+                <i class="fas fa-plus me-2"></i> Nuevo Usuario
+            </button>
+        </div>
 
-	<!-- Columna de lista de usuarios -->
+        <div class="modern-card">
+            <div *ngIf="loadingUsuarios" class="text-center py-5">
+                <div class="spinner-border spinner-border-sm text-primary"></div>
+                <p class="text-muted small mt-2">Cargando usuarios...</p>
+            </div>
+            
+            <div *ngIf="!loadingUsuarios && usuarios.length === 0" class="text-center py-5 text-muted">
+                <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
+                    <i class="fas fa-users fs-4 text-secondary"></i>
+                </div>
+                <p class="mb-0">No hay usuarios registrados en el sistema.</p>
+            </div>
 
-	<div class="usuarios-list-col">
-		<h4><i class="fas fa-users me-2"></i>Usuarios del Sistema</h4>
-		<hr>
-		<div class="usuarios-list-content">
-			<div *ngIf="loadingUsuarios" class="text-center py-3">
-				<div class="spinner-border spinner-border-sm text-primary"></div>
-				<p class="text-muted small mt-2">Cargando usuarios...</p>
-			</div>
-			<div *ngIf="!loadingUsuarios && usuarios.length === 0" class="alert alert-info small mb-0">
-				<i class="fas fa-info-circle me-2"></i>No hay usuarios registrados
-			</div>
-			<div *ngIf="!loadingUsuarios && usuarios.length > 0" class="table-responsive">
-				<table class="usuarios-table table">
-					<thead>
-						<tr>
-							<th>Nombre</th>
-							<th>Correo</th>
-							<th>Rol</th>
-							<th class="text-center">Estado</th>
-							<th class="text-center">Acciones</th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr *ngFor="let usuario of usuarios">
-							<td class="name-col"><strong>{{ usuario.name }}</strong><span class="badge-self" *ngIf="usuario.id === userIdActual">(tú)</span></td>
-							<td class="email-col">{{ usuario.email }}</td>
-							<td class="role-col"><span class="badge" [style.backgroundColor]="getRoleColor(usuario.role)">{{ usuario.role || 'Sin rol' }}</span></td>
-							<td class="text-center"><span class="badge" [ngClass]="usuario.active ? 'bg-success' : 'bg-danger'">{{ usuario.active ? '✓ Habilitado' : '✗ Deshabilitado' }}</span></td>
-							<td class="text-center">
-								<button *ngIf="usuario.active"
-												class="btn btn-sm btn-outline-secondary"
-												(click)="toggleUsuarioActivo(usuario.id, true)"
-												[disabled]="usuario.id === userIdActual">
-										<i class="fas fa-toggle-off"></i> Deshabilitar
-								</button>
+            <div *ngIf="!loadingUsuarios && usuarios.length > 0" class="table-responsive">
+                <table class="table modern-table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>NOMBRE DEL USUARIO</th>
+                            <th>CORREO ELECTRÓNICO</th>
+                            <th>ROL ASIGNADO</th>
+                            <th class="text-center">ESTADO</th>
+                            <th class="text-end pe-4">ACCIONES</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let usuario of usuarios">
+                            <td>
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="avatar-circle-sm bg-primary-soft text-primary">
+                                        {{ usuario.name.charAt(0).toUpperCase() }}
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold text-dark mb-0">{{ usuario.name }}
+                                            <span class="badge bg-secondary-soft text-secondary ms-2" *ngIf="usuario.id === userIdActual">Tú</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-muted">{{ usuario.email }}</td>
+                            <td>
+                                <span class="modern-badge" [style.color]="getRoleColor(usuario.role)" [style.backgroundColor]="getRoleColor(usuario.role) + '20'">
+                                    <i class="fas fa-circle me-1" style="font-size: 6px; vertical-align: middle;"></i>
+                                    {{ usuario.role || 'Sin rol' }}
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <span class="modern-badge" [ngClass]="usuario.active ? 'badge-success' : 'badge-danger'">
+                                    {{ usuario.active ? 'Activo' : 'Inactivo' }}
+                                </span>
+                            </td>
+                            <td class="text-end pe-3">
+                                <div class="d-flex justify-content-end gap-1">
+                                    <button *ngIf="usuario.active" class="btn-icon" title="Deshabilitar" (click)="toggleUsuarioActivo(usuario.id, true)" [disabled]="usuario.id === userIdActual">
+                                        <i class="fas fa-ban text-warning"></i>
+                                    </button>
+                                    <button *ngIf="!usuario.active" class="btn-icon" title="Habilitar" (click)="toggleUsuarioActivo(usuario.id, false)">
+                                        <i class="fas fa-check-circle text-success"></i>
+                                    </button>
+                                    <button class="btn-icon" title="Editar" (click)="abrirVistaEditar(usuario)">
+                                        <i class="fas fa-pen text-primary"></i>
+                                    </button>
+                                    <button class="btn-icon hover-danger" title="Eliminar" (click)="abrirModalEliminarUsuario(usuario)" [disabled]="usuario.id === userIdActual">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 
-								<!-- Botón para ACTIVAR (si el usuario está inactivo) -->
-								<button *ngIf="!usuario.active"
-												class="btn btn-sm btn-outline-success"
-												(click)="toggleUsuarioActivo(usuario.id, false)">
-										<i class="fas fa-toggle-on"></i> Habilitar
-								</button>
+    <div *ngIf="vistaActual === 'crear'" class="animate-slide-in">
+        
+        <div class="d-flex align-items-center mb-4">
+            <button class="btn-back me-3" (click)="volverALista()">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <div>
+                <h4 class="mb-0 fw-bold text-dark">Crear Usuario</h4>
+                <p class="text-muted small mb-0">Completa los datos para invitar a un nuevo miembro.</p>
+            </div>
+        </div>
 
-								<button class="btn btn-sm btn-outline-primary" (click)="abrirModalEditarUsuario(usuario)">
-				                    <i class="fas fa-edit"></i> Editar
-								</button>
+        <div *ngIf="formError" class="modern-alert alert-danger mx-auto mb-4" style="max-width: 800px;">
+            <i class="fas fa-exclamation-circle fs-5"></i> <span>{{ formError }}</span>
+        </div>
+        <div *ngIf="formExito" class="modern-alert alert-success mx-auto mb-4" style="max-width: 800px;">
+            <i class="fas fa-check-circle fs-5"></i> <span>{{ formExito }}</span>
+        </div>
+        
+        <div class="modern-card p-4 mx-auto" style="max-width: 800px;">
+            <form class="usuario-form" (ngSubmit)="crearUsuario()">
+                <div class="row g-4 mb-4">
+                    <div class="col-md-6">
+                        <label class="modern-label">Nombre Completo <span class="text-danger">*</span></label>
+                        <input type="text" class="modern-input" [(ngModel)]="nuevoUsuario.name" name="newName" required placeholder="Ej: Juan Pérez" [disabled]="isSaving">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="modern-label">Correo Electrónico <span class="text-danger">*</span></label>
+                        <input type="email" class="modern-input" [(ngModel)]="nuevoUsuario.email" name="newEmail" required placeholder="juan@empresa.com" [disabled]="isSaving">
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="modern-label">Rol del Sistema <span class="text-danger">*</span></label>
+                    <select class="modern-input" [(ngModel)]="nuevoUsuario.role_id" name="newRole" required [disabled]="isSaving">
+                        <option [ngValue]="null" disabled selected>Selecciona un rol...</option>
+                        <option *ngFor="let rol of rolesDisponibles" [value]="rol.id">{{ rol.name }}</option>
+                    </select>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="modern-label">Clientes Asignados</label>
+                    <div class="clientes-grid">
+                        <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
+                            <div>
+                                <strong class="text-dark"><i class="fas fa-building text-primary me-2"></i>Otorgar acceso total</strong>
+                            </div>
+                            <div class="form-check form-switch fs-5 mb-0">
+                                <input class="form-check-input cursor-pointer" type="checkbox" 
+                                       [(ngModel)]="seleccionarTodos" name="selectAll" [disabled]="isSaving"
+                                       (change)="toggleSeleccionarTodos()">
+                            </div>
+                        </div>
 
-								<button class="btn btn-sm btn-outline-danger" (click)="abrirModalEliminarUsuario(usuario)" [disabled]="usuario.id === userIdActual">
-									<i class="fas fa-trash"></i> Eliminar
-								</button>
-							</td>
-						</tr>
-					</tbody>
-				</table>
-			</div>
-		</div>
-	</div>
+                        <fieldset [disabled]="isSaving" class="border-0 p-0 m-0">
+                            <div class="clientes-scroll-area">
+                                <div class="row g-2">
+                                    <div class="col-md-6" *ngFor="let cliente of clientesDisponibles">
+                                        <div class="cliente-card" [class.selected]="isClienteSeleccionado(cliente.id)" (click)="toggleCliente(cliente.id)">
+                                            <div class="form-check w-100 m-0 d-flex align-items-center">
+                                                <input class="form-check-input m-0" type="checkbox" 
+                                                       [checked]="isClienteSeleccionado(cliente.id)" 
+                                                       (click)="$event.stopPropagation()" 
+                                                       (change)="toggleCliente(cliente.id)">
+                                                <label class="form-check-label w-100 ms-2">{{ cliente.nombre }}</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </fieldset>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center justify-content-between border-top pt-4">
+                    <div class="form-check form-switch d-flex align-items-center gap-2">
+                        <input class="form-check-input mt-0 fs-5" type="checkbox" id="activo" [(ngModel)]="nuevoUsuario.active" name="newActive" [disabled]="isSaving">
+                        <label class="form-check-label mb-0 fw-medium" for="activo">Cuenta Activa</label>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary modern-btn px-4" [disabled]="isSaving">
+                        <span *ngIf="!isSaving">Guardar Usuario</span>
+                        <span *ngIf="isSaving"><i class="fas fa-circle-notch fa-spin me-2"></i>Guardando...</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div *ngIf="vistaActual === 'editar'" class="animate-slide-in">
+        
+        <div class="d-flex align-items-center mb-4">
+            <button class="btn-back me-3" (click)="volverALista()">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <div>
+                <h4 class="mb-0 fw-bold text-dark">Editar Usuario</h4>
+                <p class="text-muted small mb-0">Actualiza los datos y permisos del usuario.</p>
+            </div>
+        </div>
+
+        <div *ngIf="formError" class="modern-alert alert-danger mx-auto mb-4" style="max-width: 800px;">
+            <i class="fas fa-exclamation-circle fs-5"></i> <span>{{ formError }}</span>
+        </div>
+        <div *ngIf="formExito" class="modern-alert alert-success mx-auto mb-4" style="max-width: 800px;">
+            <i class="fas fa-check-circle fs-5"></i> <span>{{ formExito }}</span>
+        </div>
+        
+        <div class="modern-card p-4 mx-auto" style="max-width: 800px;">
+            <form (ngSubmit)="actualizarUsuario()" #formEditarUsuario="ngForm">
+                <div class="row g-4 mb-4">
+                    <div class="col-md-6">
+                        <label class="modern-label">Nombre Completo</label>
+                        <input class="modern-input" [(ngModel)]="usuarioAEditar.name" name="name" required [disabled]="isSaving" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="modern-label">Correo Electrónico</label>
+                        <input class="modern-input" [(ngModel)]="usuarioAEditar.email" name="email" required type="email" [disabled]="isSaving" />
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="modern-label">Rol del Sistema</label>
+                    <select class="modern-input" [(ngModel)]="usuarioAEditar.role_id" name="role_id" required [disabled]="isSaving">
+                        <option [ngValue]="null" disabled>Selecciona un rol...</option>
+                        <option *ngFor="let rol of rolesDisponibles" [value]="rol.id">{{ rol.name }}</option>
+                    </select>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="modern-label">Clientes Asignados</label>
+                    <div class="clientes-grid shadow-sm">
+                        <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
+                            <div>
+                                <strong class="text-dark"><i class="fas fa-building text-primary me-2"></i>Otorgar acceso total</strong>
+                            </div>
+                            <div class="form-check form-switch fs-5 mb-0">
+                                <input class="form-check-input cursor-pointer" type="checkbox" 
+                                       [checked]="todosSeleccionadosEditar"
+                                       [disabled]="isSaving"
+                                       (change)="toggleTodosEditar($event)">
+                            </div>
+                        </div>
+
+                        <fieldset [disabled]="isSaving" class="border-0 p-0 m-0">
+                            <div class="clientes-scroll-area">
+                                <div class="row g-2">
+                                    <div class="col-md-6" *ngFor="let cliente of clientesDisponibles">
+                                        <div class="cliente-card" 
+                                             [class.selected]="usuarioAEditar?.clientes?.includes(cliente.id)" 
+                                             (click)="toggleClienteAsignadoEditar(cliente.id)">
+                                            <div class="form-check w-100 m-0 d-flex align-items-center">
+                                                <input class="form-check-input m-0" type="checkbox" 
+                                                       [checked]="usuarioAEditar?.clientes?.includes(cliente.id)" 
+                                                       (click)="$event.stopPropagation()" 
+                                                       (change)="toggleClienteAsignadoEditar(cliente.id)" /> 
+                                                <label class="form-check-label w-100 ms-2">{{ cliente.nombre }}</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </fieldset>
+                    </div>
+                </div>
+                
+                <div class="d-flex align-items-center justify-content-between border-top pt-4">
+                    <div class="form-check form-switch d-flex align-items-center gap-2">
+                        <input class="form-check-input mt-0 fs-5" type="checkbox" id="activoEdit" [(ngModel)]="usuarioAEditar.active" name="activeEdit" [disabled]="isSaving">
+                        <label class="form-check-label mb-0 fw-medium" for="activoEdit">Cuenta Activa</label>
+                    </div>
+                    
+                    <button class="btn btn-primary modern-btn px-4" type="submit" [disabled]="isSaving">
+                        <span *ngIf="!isSaving">Guardar Cambios</span>
+                        <span *ngIf="isSaving"><i class="fas fa-circle-notch fa-spin me-2"></i>Actualizando...</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
 </div>
 
-<!-- Modales -->
 <div class="modal-overlay" *ngIf="modalEliminarUsuarioAbierto">
-	<div class="modal-content-eliminarUser">
-		<div class="modal-header"><h5 class="modal-title">Eliminar usuario</h5><button type="button" class="close" (click)="cerrarModalEliminarUsuario()">&times;</button></div>
-		<div class="modal-body">¿Estás seguro de eliminar al usuario <strong>{{ usuarioAEliminar?.name }}</strong>?</div>
-		<div class="modal-footer"><button class="btn btn-secondary" (click)="cerrarModalEliminarUsuario()">Cancelar</button><button class="btn btn-danger" (click)="confirmarEliminarUsuario()">Eliminar</button></div>
-	</div>
-</div>
+    <div class="modal-content-eliminarUser modern-card">
+        
+        <div class="p-4">
+            <h5 class="fw-bold mb-3 text-dark">Eliminar Usuario</h5>
+            <p class="text-muted mb-0">
+                ¿Estás seguro de que deseas eliminar permanentemente a 
+                <strong class="text-dark">{{ usuarioAEliminar?.name }}</strong>? 
+                Esta acción no se puede deshacer.
+            </p>
+        </div>
 
-<div class="modal-overlay" *ngIf="modalEditarUsuarioAbierto">
-	<div class="modal-content-editarUser">
-		<div class="modal-header"><h5 class="modal-title">Editar usuario</h5><button type="button" class="close" (click)="cerrarModalEditarUsuario()">&times;</button></div>
-		<div class="modal-body">
-			<form (ngSubmit)="actualizarUsuario()" #formEditarUsuario="ngForm">
-				<div class="mb-3"><label>Nombre</label><input class="form-control" [(ngModel)]="usuarioAEditar.name" name="name" required /></div>
-				<div class="mb-3"><label>Email</label><input class="form-control" [(ngModel)]="usuarioAEditar.email" name="email" required type="email" /></div>
-				<div class="mb-3"><label>Rol</label>
-					<select class="form-control" [(ngModel)]="usuarioAEditar.role_id" name="role_id" required>
-						<option [ngValue]="null">-- Seleccionar --</option>
-						<option *ngFor="let rol of rolesDisponibles" [value]="rol.id">{{ rol.name }}</option>
-					</select>
-				</div>
-				<div class="mb-3"><label>Clientes asignados</label>
-					<div style="max-height:150px; overflow-y:auto; border:1px solid #dee2e6; padding:8px; border-radius:4px;">
-						<div *ngFor="let cliente of clientesDisponibles">
-							<input type="checkbox" [value]="cliente.id" [checked]="usuarioAEditar?.clientes?.includes(cliente.id)" (change)="toggleClienteAsignadoEditar(cliente.id)" /> {{ cliente.nombre }}
-						</div>
-					</div>
-				</div>
-				<div class="modal-footer px-0 pb-0"><button class="btn btn-secondary" type="button" (click)="cerrarModalEditarUsuario()">Cancelar</button><button class="btn btn-primary" type="submit">Actualizar usuario</button></div>
-			</form>
-		</div>
-	</div>
+        <div class="bg-light p-3 d-flex justify-content-end gap-2 border-top" style="border-radius: 0 0 12px 12px;">
+            
+            <button type="button" 
+                    class="btn btn-light border px-4 fw-bold" 
+                    (click)="cerrarModalEliminarUsuario()" 
+                    [disabled]="isDeleting">
+                Cancelar
+            </button>
+            
+            <button type="button" 
+                    class="btn btn-danger px-4 fw-bold d-flex align-items-center justify-content-center" 
+                    style="min-width: 120px;"
+                    (click)="confirmarEliminarUsuario()" 
+                    [disabled]="isDeleting">
+                
+                <ng-container *ngIf="!isDeleting">
+                    Eliminar
+                </ng-container>
+
+                <ng-container *ngIf="isDeleting">
+                    <i class="fas fa-circle-notch fa-spin me-2"></i>
+                    Eliminando...
+                </ng-container>
+            </button>
+
+        </div>
+    </div>
 </div>

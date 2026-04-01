@@ -14,11 +14,11 @@ export class TenantPanelService {
     
     if (host === 'localhost' || 
         host === '127.0.0.1' || 
-        host === 'centralaudit.tecnodatasa.cl') {
+        host === 'tdmonitor.cl') {
       return false;
     }
     
-    return host.endsWith('centralaudit.tecnodatasa.cl');
+    return host.endsWith('tdmonitor.cl');
   }
 
   getTenantCode(): string | null {

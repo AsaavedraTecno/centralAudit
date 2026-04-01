@@ -38,8 +38,7 @@ export class RegisterComponent implements OnInit {
       
       // LOGICA DE SEGURIDAD:
       // Si estamos en la central o localhost (sin subdominio), PROHIBIDO REGISTRARSE.
-      // Ajusta 'centralaudit.tecnodatasa.cl' a tu dominio real de producción.
-      if (hostname === 'centralaudit.tecnodatasa.cl' || hostname === 'localhost' || hostname === '127.0.0.1') {
+      if (hostname === 'tdmonitor.cl' || hostname === 'localhost' || hostname === '127.0.0.1') {
         Swal.fire('Acceso Restringido', 'El registro de usuarios solo está permitido en los sitios de empresas.', 'warning');
         this.router.navigate(['/login']);
       }

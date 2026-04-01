@@ -23,6 +23,8 @@ class CreateTenantsTable extends Migration
             // --- Identificación ---
             $table->string('nombre');
             $table->string('rut')->unique();
+            $table->string('logo_url')->nullable();
+
 
             // --- Conexión DB ---
             $table->string('db_name')->unique();
@@ -44,7 +46,6 @@ class CreateTenantsTable extends Migration
             $table->integer('user_limit')->default(5);
 
             // --- Personalización ---
-            $table->string('logo_url')->nullable()->after('nombre');
 
             $table->timestamps();
             $table->softDeletes();

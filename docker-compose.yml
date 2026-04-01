@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  # Base de Datos PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: central_audit
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin123
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+  # Backend (Laravel)
+  backend:
+    build:
+      context: ./audit-central
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    environment:
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: central_audit
+      DB_USERNAME: postgres
+      DB_PASSWORD: admin123
+    volumes:
+      - ./audit-central:/var/www/html 
+    depends_on:
+      - postgres
+
+  # Planificador de Tareas (Cron de Laravel)
+  scheduler:
+    build:
+      context: ./audit-central
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    entrypoint: ["php", "artisan", "schedule:work"]
+    environment:
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: central_audit
+      DB_USERNAME: postgres
+      DB_PASSWORD: admin123
+    volumes:
+      - ./audit-central:/var/www/html 
+    depends_on:
+      - postgres
+
+  # Frontend (Angular)
+  #frontend:
+  # build:
+  #    context: ./frontend
+  #    dockerfile: Dockerfile
+  #  restart: unless-stopped
+  #  ports:
+  #   - "4200:80"
+  #  depends_on:
+  #    - backend
+
+volumes:
+  pg_data:

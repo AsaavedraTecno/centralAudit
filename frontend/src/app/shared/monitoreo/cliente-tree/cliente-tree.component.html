@@ -1,61 +1,79 @@
 <div class="cliente-tree-wrapper">
-  <!-- Controles compactos - FIJOS EN TOP -->
+  
   <div class="controls-bar">
-    <div class="controls-content">
-      <div class="d-flex flex-column">
-        <small class="text-success fw-bold d-flex align-items-center mt-1">
-          <i class="far fa-clock me-1"></i> Última actualización: {{ ultimaActualizacion | date:'HH:mm:ss' }}
-        </small>
-
-
-        <span class="text-muted">
-          Página {{ currentPage }} de {{ totalPages }} | Total: {{ totalClientes }} clientes
-        </span>
+    <div class="controls-content d-flex align-items-center w-100 px-3 py-2 border-bottom bg-light">
+      
+      <div style="flex: 1;">
+        <div class="d-flex flex-column text-muted justify-content-center" style="font-size: 0.85rem;">
+          <span class="fw-bold text-dark">Página {{ currentPage }} de {{ totalPages }}</span>
+          <span>Total: {{ totalClientes }} clientes</span>
+        </div>
       </div>
 
-      <div class="printer-summary">
-        <div>
-          <i >Estado de conexiones: </i>
+      <div class="d-flex flex-column align-items-center justify-content-center">
+        
+        <div class="d-inline-flex align-items-center px-3 py-1 rounded-pill shadow-sm mb-1 bg-white border" 
+            style="font-size: 0.85rem; font-weight: 600; transition: all 0.4s ease; min-width: 260px; justify-content: center;"
+            [ngClass]="{
+              'border-primary text-primary': isAutoRefreshing,
+              'border-success text-success': !isAutoRefreshing && refreshStatus === 'success',
+              'border-danger text-danger': refreshStatus === 'error',
+              'text-secondary': !isAutoRefreshing && refreshStatus === 'idle'
+            }">
+          <i class="fas fa-sync fa-spin me-2" *ngIf="isAutoRefreshing"></i>
+          <i class="fas fa-check-circle me-2" *ngIf="!isAutoRefreshing && refreshStatus === 'success'"></i>
+          <i class="fas fa-exclamation-triangle me-2" *ngIf="refreshStatus === 'error'"></i>
+          <i class="far fa-clock me-2" *ngIf="!isAutoRefreshing && refreshStatus === 'idle'"></i>
+
+          <span>
+            <ng-container *ngIf="isAutoRefreshing">Sincronizando...</ng-container>
+            <ng-container *ngIf="!isAutoRefreshing && refreshStatus === 'success'">Actualizado: {{ ultimaActualizacion | date:'HH:mm:ss' }}</ng-container>
+            <ng-container *ngIf="!isAutoRefreshing && refreshStatus === 'error'">Error de red</ng-container>
+            <ng-container *ngIf="!isAutoRefreshing && refreshStatus === 'idle'">Última actualización: {{ ultimaActualizacion | date:'HH:mm:ss' }}</ng-container>
+          </span>
         </div>
 
-        <span class="summary-item online">
-          ● {{ totalOnline }} activas
-        </span>
-
-        <span class="summary-item warning">
-          ● {{ totalWarning }} retrasadas
-        </span>
-
-        <span class="summary-item offline">
-          ● {{ totalOffline }} desconectadas
-        </span>
-
+        <div class="printer-summary d-flex align-items-center gap-3" style="font-size: 0.85rem;">
+          <span class="text-muted fw-bold">ESTADO GLOBAL:</span>
+          <span class="summary-item fw-bold text-success">
+            <i class="fas fa-circle me-1" style="font-size: 0.6rem;"></i> {{ totalOnline }} Activas
+          </span>
+          <span class="summary-item fw-bold text-warning" style="color: #d97706 !important;">
+            <i class="fas fa-circle me-1" style="font-size: 0.6rem;"></i> {{ totalWarning }} Retrasadas
+          </span>
+          <span class="summary-item fw-bold text-danger">
+            <i class="fas fa-circle me-1" style="font-size: 0.6rem;"></i> {{ totalOffline }} Desconectadas
+          </span>
+        </div>
       </div>
 
-      <div class="d-flex align-items-center gap-2">
+      <div class="d-flex align-items-center gap-2 justify-content-end" style="flex: 1;">
+        
         <select class="form-select form-select-sm"
-                style="width: 200px;"
+                style="width: 140px;"
                 [(ngModel)]="vistaActivaId"
                 (ngModelChange)="cambiarVista($event)"
                 *ngIf="!isTenant()">
-
-          <option *ngFor="let vista of vistas"
-                  [ngValue]="vista.id">
+          <option *ngFor="let vista of vistas" [ngValue]="vista.id">
             {{ vista.nombre }}
           </option>
-
         </select>
-        <input type="text" class="form-control form-control-sm" style="width: 240px;" placeholder="Buscar por RUT o nombre..." [(ngModel)]="busqueda" name="busqueda" (ngModelChange)="onBuscarRealtime()" />
+        
+        <input type="text" class="form-control form-control-sm" style="width: 200px;" 
+              placeholder="Buscar RUT o nombre..." [(ngModel)]="busqueda" 
+              name="busqueda" (ngModelChange)="onBuscarRealtime()" />
+        
         <button type="button" class="btn btn-outline-secondary btn-sm" (click)="onLimpiarBusqueda()" title="Limpiar búsqueda">
           <i class="fas fa-times"></i>
         </button>
-        <button class="btn btn-outline-primary btn-sm" (click)="forzarRecarga()" title="Recargar (limpia caché)">
-          <i class="fas fa-sync" [class.fa-spin]="loading"></i> Recargar Todo
+        
+        <button class="btn btn-outline-primary btn-sm" (click)="forzarRecarga()" title="Recargar Todo">
+          <i class="fas fa-sync" [class.fa-spin]="loading"></i>
         </button>
       </div>
+      
     </div>
   </div>
-
 
   <div class="loading-bar-wrapper" *ngIf="loading">
     <div class="loading-bar-container">
@@ -63,8 +81,6 @@
     </div>
   </div>
 
-
-  <!-- Contenedor principal - Tabla con scrolls -->
   <div class="clientes-container" [class.loading-fade]="loading">
       
       <div *ngIf="!loading && clientes.length === 0" class="alert alert-warning m-3">
@@ -72,21 +88,17 @@
         No hay clientes para mostrar.
       </div>
 
-    <!-- Tabla jerárquica (Cliente > Sucursal > Impresora) - Full width con scroll horizontal -->
     <div *ngIf="!loading && clientes.length > 0" class="panel-container-full">
-      
-      <!-- Scroll-container con HEADERS STICKY y CONTENIDO -->
       <div class="scroll-container" #scrollContainer (scroll)="onTableScroll($event)">
-        <table class="table table-sm panel-table-full">
+        
+        <table class="table panel-table-modern">
 
-            <!-- HEADERS -->
-            <thead class="table-dark sticky-thead">
+            <thead class="modern-thead">
               <tr>
-                <th style="width: 280px; min-width: 280px; text-align: center;">
-                  Nombre | Rut | Impresoras
+                <th style="width: 280px; min-width: 280px;" class="ps-3 text-start">
+                  Cliente | Sucursal | Impresoras
                 </th>
-
-                <th *ngFor="let col of columnasVisibles"
+                <th *ngFor="let col of columnasVisibles; trackBy: trackByColumna"
                     [style.width.px]="col.ancho"
                     [style.minWidth.px]="col.ancho">
                   {{ col.nombre }}
@@ -96,201 +108,156 @@
 
             <tbody>
 
-              <!-- CLIENTES -->
               <ng-container *ngFor="let cliente of clientes; trackBy: trackByClienteRut">
-
-                <tr class="cliente-row level-0"
+                <tr class="modern-row level-cliente"
                     (click)="toggleNode('cliente_' + cliente.id)"
                     style="cursor:pointer;">
 
-                  <td style="width: 280px; min-width: 280px;" class="fw-bold client-name">
+                  <td style="width: 280px; min-width: 280px;" class="ps-3 fw-bold client-name text-start">
                     <span class="expand-icon">
                       {{ expandedNodes['cliente_' + cliente.id] ? '−' : '+' }}
                     </span>
                     <span class="cliente-info">
-
-                      <span
-                        class="printer-status-dot"
-                        [ngClass]="getEstadoCliente(cliente).color">
-                      </span>
-
-                      <span class="cliente-nombre">
-                        {{ cliente.nombre }}
-                      </span>
-
-                      <span class="cliente-rut">
-                        {{ cliente.rut }}
-                      </span>
-
-                      <span class="printer-count">
-                        {{ cliente.printers_count ?? 0 }}
-                      </span>
+                      <span class="printer-status-dot" [ngClass]="getEstadoCliente(cliente).color"></span>
+                      <span class="cliente-nombre">{{ cliente.nombre }}</span>
+                      <span class="cliente-rut">{{ cliente.rut }}</span>
+                      <span class="printer-count">{{ cliente.printers_count ?? 0 }}</span>
                     </span>
                   </td>
 
-                  <!-- Columnas vacías -->
-                  <td *ngFor="let col of columnasVisibles"
+                  <td *ngFor="let col of columnasVisibles; trackBy: trackByColumna"
                       [style.width.px]="col.ancho"
                       [style.minWidth.px]="col.ancho"
-                      class="text-muted">
+                      class="text-muted text-center">
                     -
                   </td>
                 </tr>
 
-
-                <!-- SUCURSALES -->
                 <ng-container *ngIf="expandedNodes['cliente_' + cliente.id] && cliente.sucursales">
-
                   <ng-container *ngFor="let sucursal of cliente.sucursales; trackBy: trackBySucursalId">
-
-                    <tr class="sucursal-row level-1"
+                    <tr class="modern-row level-sucursal"
                         (click)="toggleNode('sucursal_' + cliente.id + '_' + sucursal.id)"
                         style="cursor:pointer;">
 
-                      <td style="width: 280px; min-width: 280px;">
-
-                        <span class="expand-icon">
-                          {{ expandedNodes['sucursal_' + cliente.id + '_' + sucursal.id] ? '−' : '+' }}
-                        </span>
-
-                        <div class="sucursal-cell">
-                          <span
-                            class="printer-status-dot"
-                            [ngClass]="getEstadoSucursal(sucursal).color">
+                      <td style="width: 280px; min-width: 280px;" class="ps-4 text-start">
+                        <div class="sucursal-cell d-flex align-items-center">
+                          <span class="expand-icon mb-0">
+                            {{ expandedNodes['sucursal_' + cliente.id + '_' + sucursal.id] ? '−' : '+' }}
                           </span>
-
-                          <span>{{ sucursal.nombre || '-' }}</span>
+                          
+                          <span class="printer-status-dot" [ngClass]="getEstadoSucursal(sucursal).color"></span>
+                          
+                          <span class="fw-bold">{{ sucursal.nombre || '-' }}</span>
                         </div>
-
                       </td>
 
-                      <!-- Columnas vacías -->
-                      <td *ngFor="let col of columnasVisibles"
+                      <td *ngFor="let col of columnasVisibles; trackBy: trackByColumna"
                           [style.width.px]="col.ancho"
                           [style.minWidth.px]="col.ancho"
-                          class="text-muted">
+                          class="text-muted text-center">
                         -
                       </td>
                     </tr>
 
-
-                    <!-- IMPRESORAS -->
                     <ng-container *ngIf="expandedNodes['sucursal_' + cliente.id + '_' + sucursal.id]">
-
                       <tr *ngFor="let impresora of sucursal.impresoras; trackBy: trackByImpresoraId"
-                          class="impresora-row level-2">
+                          class="modern-row level-impresora">
 
-                        <!-- Columna nombre fija -->
-                        <td style="width: 280px; min-width: 280px;">
-                          <span
-                            class="printer-status-dot"
-                            [ngClass]="impresora.estadoColor"
-                            [title]="'Hace ' + impresora.minutosSinConexion + ' min'">
+                        <td style="width: 280px; min-width: 280px;" class="ps-5 text-start">
+                          <span class="printer-status-dot"
+                                [ngClass]="impresora.estadoColor"
+                                [title]="'Hace ' + impresora.minutosSinConexion + ' min'">
                           </span>
-
                           🖨️
-
-                          <b class="nombre-clickeable"
-                            (click)="abrirDetalles(impresora, $event)">
+                          <b class="nombre-clickeable ms-1" (click)="abrirDetalles(impresora, $event)">
                             {{ impresora.nombre || impresora.modelo || 'Impresora' }}
                           </b>
-
                         </td>
 
-                        <td *ngFor="let col of columnasVisibles"
-                          [style.minWidth.px]="col.ancho"
-                          [title]="vistaState.obtenerValorColumna(impresora, col)"
-                          [ngClass]="getClaseColumna(col)">
+                        <td *ngFor="let col of columnasVisibles; trackBy: trackByColumna"
+                            [style.width.px]="col.ancho"
+                            [style.minWidth.px]="col.ancho"
+                            [title]="vistaState.obtenerValorColumna(impresora, col) || ''"
+                            [ngClass]="getClaseColumna(col)" class="text-center">
                         
-                          <!-- TEXTO -->
+                          <div class="text-truncate-custom px-1">
 
-                          <ng-container *ngIf="col.componente === 'texto'">
-
-                            <ng-container *ngIf="col.identificador === 'last_seen_at' || col.identificador === 'imp_ultima_conexion'; else textoComun">
-
-                              {{ obtenerValorColumnaFormateado(impresora, col) }}
-
-                              <div class="text-muted small">
-                                {{ getTiempoRelativo(impresora.minutosSinConexion || 0) }}
-                              </div>
-
+                            <ng-container *ngIf="col.componente === 'texto'">
+                              <ng-container *ngIf="col.identificador === 'last_seen_at' || col.identificador === 'imp_ultima_conexion'; else textoComun">
+                                {{ obtenerValorColumnaFormateado(impresora, col) }}
+                                <div class="text-muted small">
+                                  {{ getTiempoRelativo(impresora.minutosSinConexion || 0) }}
+                                </div>
+                              </ng-container>
+                              <ng-template #textoComun>
+                                {{ vistaState.obtenerValorColumna(impresora, col) ?? '-' }}
+                              </ng-template>
                             </ng-container>
 
-                            <ng-template #textoComun>
-                              {{ vistaState.obtenerValorColumna(impresora, col) ?? '-' }}
-                            </ng-template>
-
-                          </ng-container>
-
-                          <!-- NUMERO -->
-                          <ng-container *ngIf="col.componente === 'numero'">
-                            <ng-container *ngIf="vistaState.obtenerValorColumna(impresora, col) !== null; else vacioNumero">
-                              {{ vistaState.obtenerValorColumna(impresora, col) | number }}
+                            <ng-container *ngIf="col.componente === 'numero'">
+                              <ng-container *ngIf="vistaState.obtenerValorColumna(impresora, col) !== null; else vacioNumero">
+                                {{ vistaState.obtenerValorColumna(impresora, col) | number }}
+                              </ng-container>
+                              <ng-template #vacioNumero>-</ng-template>
                             </ng-container>
-                            <ng-template #vacioNumero>-</ng-template>
-                          </ng-container>
 
-                          <!-- BADGE -->
-                          <ng-container *ngIf="col.componente === 'badge'">
-                            <span class="badge rounded-pill"
-                                  [ngClass]="vistaState.obtenerValorColumna(impresora, col) == 1
-                                              ? 'bg-success text-white'
-                                              : 'bg-danger text-white'">
-                              {{ vistaState.obtenerValorColumna(impresora, col) == 1 ? 'Activa' : 'Inactiva' }}
-                            </span>
-                          </ng-container>
+                            <ng-container *ngIf="col.componente === 'badge'">
+                              <ng-container *ngIf="col.identificador === 'estado'">
+                                <span class="badge rounded-pill" [ngClass]="vistaState.obtenerValorColumna(impresora, col) == 1 ? 'bg-success' : 'bg-secondary'">
+                                  {{ vistaState.obtenerValorColumna(impresora, col) == 1 ? 'Activa' : 'De Baja' }}
+                                </span>
+                              </ng-container>
+                              <ng-container *ngIf="col.identificador === 'online' || col.identificador === 'estadoConexion'">
+                                <span class="badge rounded-pill"
+                                      [ngClass]="{
+                                        'bg-success': impresora.estadoColor === 'green',
+                                        'bg-warning text-dark': impresora.estadoColor === 'yellow',
+                                        'bg-danger': impresora.estadoColor === 'red'
+                                      }">
+                                  {{ impresora.estadoColor === 'green' ? 'Conectada' : (impresora.estadoColor === 'yellow' ? 'Retrasada' : 'Desconectada') }}
+                                </span>
+                              </ng-container>
+                            </ng-container>
 
-                          <!-- BARRA -->
-                          <ng-container *ngIf="col.componente === 'barra'">
-                            <div class="component-bar">
-                              <div class="bar-container"
-                                [style.--fill]="(vistaState.obtenerValorColumna(impresora, col) || 0) + '%'">
+                            <ng-container *ngIf="col.componente === 'barra'">
+                              <div class="component-bar">
+                                <div class="bar-container"
+                                  [style.--fill]="(vistaState.obtenerValorColumna(impresora, col) || 0) + '%'">
+                                </div>
+                                <span class="bar-percentage">
+                                  {{ vistaState.obtenerValorColumna(impresora, col) || 0 }}%
+                                </span>
                               </div>
-
-                              <span class="bar-percentage">
-                                {{ vistaState.obtenerValorColumna(impresora, col) || 0 }}%
-                              </span>
-                            </div>
-                          </ng-container>
-
-                        </td>
-
+                            </ng-container>
+                          
+                          </div> </td>
                       </tr>
-
                     </ng-container>
                   </ng-container>
                 </ng-container>
               </ng-container>
-
             </tbody>
           </table>
         </div>
       </div>
 
-      <!-- Paginación - FIJA EN BOTTOM -->
       <div class="pagination-bar">
         <button class="btn btn-sm btn-outline-primary" (click)="previousPage()" [disabled]="currentPage <= 1 || loading">
           <i class="fas fa-chevron-left"></i> Anterior
         </button>
-        
         <span class="text-muted">
           Página <strong>{{ currentPage }}</strong> de <strong>{{ totalPages }}</strong>
         </span>
-        
         <button class="btn btn-sm btn-outline-primary" (click)="nextPage()" [disabled]="currentPage >= totalPages || loading">
           Siguiente <i class="fas fa-chevron-right"></i>
         </button>
       </div>
-
   </div>
-
 </div>
 
-<!-- Modal de detalles de impresora -->
 <app-detalle-impresora-modal 
   [impresora]="impresora_seleccionada" 
   [mostrar]="mostrar_modal_detalles" 
   (alCerrar)="cerrarDetalles()"
   (alGuardar)="onGuardarCambios($event)">
-
 </app-detalle-impresora-modal>

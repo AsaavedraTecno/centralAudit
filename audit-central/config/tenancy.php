@@ -17,9 +17,9 @@ return [
      * Only relevant if you're using the domain or subdomain identification middleware.
      */
     'central_domains' => [
-        '127.0.0.1',
         'localhost',
-        'centralaudit.tecnodatasa.cl',
+        '127.0.0.1',
+        'tdmonitor.cl',
     ],
 
     /**
@@ -31,7 +31,7 @@ return [
     'bootstrappers' => [
         Stancl\Tenancy\Bootstrappers\DatabaseTenancyBootstrapper::class,
         Stancl\Tenancy\Bootstrappers\CacheTenancyBootstrapper::class,
-        Stancl\Tenancy\Bootstrappers\FilesystemTenancyBootstrapper::class,
+        // Stancl\Tenancy\Bootstrappers\FilesystemTenancyBootstrapper::class,
         Stancl\Tenancy\Bootstrappers\QueueTenancyBootstrapper::class,
         // Stancl\Tenancy\Bootstrappers\RedisTenancyBootstrapper::class, // Note: phpredis is needed
     ],
@@ -54,7 +54,7 @@ return [
          * 
          * getDatabaseName() en Tenant model retorna: db_name field si existe, sino prefix + 8-chars-uuid + suffix
          */
-        'prefix' => 'audit_central_t',
+        'prefix' => 'tdmonitor_t',
         'suffix' => '',
 
         /**

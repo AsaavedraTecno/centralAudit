@@ -130,8 +130,8 @@ class Tenant extends BaseTenant implements TenantWithDatabase
 
         // Crear dominio automáticamente después de guardar
         static::created(function (Tenant $tenant) {
-            // Formato: usach-centralaudit.tecnodatasa.cl
-            $domainName = $tenant->code . '.centralaudit.tecnodatasa.cl';
+            // Formato: usach-tdmonitor.cl
+            $domainName = $tenant->code . '.tdmonitor.cl';
 
             $tenant->domains()->create([
                 'domain' => $domainName,

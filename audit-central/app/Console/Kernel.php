@@ -19,6 +19,11 @@ class Kernel extends ConsoleKernel
             app(\App\Services\Predictions\SnapshotService::class)->generate();
 
         })->everyMinute();
+
+        // Trabajador en segundo plano para el Dashboard
+        // Corre cada 5 minutos para no saturar los 30+ tenants al mismo tiempo
+        // Cambia esto temporalmente:
+        $schedule->command('dashboard:update-global-status')->everyMinute();
     }
     /**
      * Register the commands for the application.

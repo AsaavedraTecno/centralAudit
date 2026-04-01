@@ -19,14 +19,17 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => [],
-            /*'https://centralaudit.tecnodatasa.cl',
+    'allowed_origins' => [
+        'http://tdmonitor.cl:4200',
+        'http://localhost:4200',
+            /*'https://tdmonitor.cl',
             'http://localhost:4200',    // Asegúrate de que esta URL sea exacta
             'http://127.0.0.1:4200',    // Opcional, pero útil si usas la IP*/
+    ],
     'allowed_origins_patterns' => [
-        '#^http://localhost:4200$#',
-        '#^http://127\.0\.0\.1:4200$#',
-        '#^http://([a-z0-9-]+\.)?centralaudit\.tecnodatasa\.cl:4200$#'
+        '#^https?://([a-zA-Z0-9-]+\.)?tdmonitor\.cl(:[0-9]+)?$#',
+        '#^http://localhost(:[0-9]+)?$#',
+        '#^http://127\.0\.0\.1(:[0-9]+)?$#'
     ],
 
     'allowed_headers' => ['*'],

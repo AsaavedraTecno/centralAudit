@@ -64,7 +64,7 @@ return new class extends Migration
             $table->index('ip_address'); // Indexado pero NO unique (permite NULLs)
             $table->index('status');
             $table->index('mac_address');
-            $table->unique(['location_id', 'serial_number']);
+            $table->unique(['location_id', 'mac_address'], 'printers_location_mac_unique');
         });
     }
 
@@ -75,4 +75,5 @@ return new class extends Migration
     {
         Schema::dropIfExists('printers');
     }
+
 };

@@ -17,13 +17,19 @@ class AdminUserSeeder extends Seeder
         $adminRole = Role::where('name', 'admin')->first();
 
         if ($adminRole) {
-            $adminUser = User::factory()->create([
-                'name' => 'Administrador',
-                'password' => bcrypt('T1cn2d3t4s0'),
-                'email' => 'admin@admin.com',
-                'active' => true,
-            ]);
-            $adminUser->roles()->attach($adminRole);
+            // Buscamos al usuario por email. Si no existe, lo creamos.
+            $adminUser = User::firstOrCreate(
+                ['email' => 'admin@admin.com'], // La llave de búsqueda
+                [ // Los datos a insertar si no lo encuentra
+                    'name' => 'Administrador',
+                    'password' => bcrypt('T1cn2d3t4s0'),
+                    'active' => true,
+                ]
+            );
+
+            // syncWithoutDetaching asigna el rol solo si el usuario no lo tiene ya,
+            // evitando duplicados en la tabla pivote.
+            $adminUser->roles()->syncWithoutDetaching([$adminRole->id]);
         }
     }
 }

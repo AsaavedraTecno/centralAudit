@@ -66,11 +66,15 @@ export class BaseService {
 	getQueryGetMulti(query: string, data: any){
 		const headers = this.headers;
 		let uriBase = `${this.apiUrl}/${query}`;
+		const params: string[] = [];
 		if(data.fk_empresa){
-			uriBase = uriBase.concat(`?empresa_id=${data.fk_empresa}`);
+			params.push(`empresa_id=${data.fk_empresa}`);
 		}
 		if(data.id){
-			uriBase = uriBase.concat(`&id=${data.id}`);
+			params.push(`id=${data.id}`);
+		}
+		if(params.length > 0){
+			uriBase += '?' + params.join('&');
 		}
 		
 		return this.http.get(uriBase,{headers});

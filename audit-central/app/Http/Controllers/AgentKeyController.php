@@ -38,10 +38,17 @@ class AgentKeyController extends Controller
             return response()->json(['error' => 'Cliente no encontrado'], 404);
         }
 
+        $search = $request->query('search');
+
         // 3. Obtener Keys (DB Central)
         $keys = AgentKey::where('tenant_id', $tenant->id)
+            ->when($search, function ($query, $search) {
+                // Buscamos por nombre de la sucursal O por el final de la llave
+                $query->where('name', 'ILIKE', "%{$search}%")
+                      ->orWhere('masked_key', 'ILIKE', "%{$search}%");
+            })
             ->orderByDesc('created_at')
-            ->get(['id', 'name', 'location_id', 'active', 'last_seen_at', 'last_ip', 'created_at']);
+            ->get(['id', 'name', 'location_id', 'active', 'masked_key', 'last_seen_at', 'last_ip', 'created_at']);
 
         // 4. Resolver nombres de sucursales (DB Tenant)
         // Recolectamos los IDs de locations para hacer una sola consulta al tenant

@@ -1,6 +1,6 @@
 .split-layout {
   display: flex; 
-  height: calc(100vh - 50px); 
+  height: calc(100vh - 110px); 
   background: #f0f2f5;
   
   .tree-sidebar {
@@ -96,8 +96,32 @@
   transform-origin: 0% 50%;
 }
 
+.navigation-reset-btn {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background-color: #f1f5f9;
+    
+    h5 { color: #0056b3 !important; }
+    .fa-home { opacity: 1 !important; color: #0d6efd; }
+  }
+}
+
 @keyframes loading-animation {
   0% { transform: translateX(-100%) scaleX(0.1); }
   50% { transform: translateX(0%) scaleX(0.4); }
   100% { transform: translateX(100%) scaleX(0.1); }
+}
+
+@keyframes bounceLeft {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateX(0);
+  }
+  40% {
+    transform: translateX(-10px);
+  }
+  60% {
+    transform: translateX(-5px);
+  }
 }

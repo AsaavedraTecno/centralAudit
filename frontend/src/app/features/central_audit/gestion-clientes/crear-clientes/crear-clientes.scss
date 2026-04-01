@@ -1,46 +1,28 @@
-/* src/styles.scss */
-/* Importamos el tema Bootstrap para ng-select */
-@import "@ng-select/ng-select/themes/default.theme.css";
-// Opcional: Si prefieres el estilo "Material Design" usa este otro:
-// @import "@ng-select/ng-select/themes/material.theme.css"; 
+/* --- Estilos Base --- */
+.container { max-width: 1100px; }
 
-
-// Fix para que el buscador sea visible y tenga altura
-.ng-select {
-    padding-bottom: 0;
+.card {
+  border-radius: 16px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05) !important;
+  background: #ffffff;
 }
 
-.ng-select .ng-select-container {
-    min-height: 38px; /* Altura estándar de Bootstrap */
-    border-radius: 6px;
-    border: 1px solid #dee2e6;
-}
-
-.ng-dropdown-panel {
-    z-index: 9999 !important; /* Para que no se esconda detrás de nada */
-}
-
+/* --- Wizard Steps --- */
 .wizard-steps {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
+  display: flex; align-items: center; justify-content: center;
   .step-item {
     text-align: center;
-    position: relative;
     .step-circle {
-      width: 42px; height: 42px;
+      width: 48px; height: 48px;
       background: #fff; border: 2px solid #dee2e6;
-      border-radius: 50%; display: flex;
-      align-items: center; justify-content: center;
-      font-weight: bold; margin: 0 auto 8px;
-      transition: all 0.4s ease;
-      color: #adb5bd;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-weight: 700; margin: 0 auto 10px; transition: all 0.3s ease;
+      color: #adb5bd; font-size: 1.1rem;
     }
-    .step-label { font-size: 0.7rem; font-weight: 800; color: #adb5bd; text-transform: uppercase; letter-spacing: 0.5px; }
+    .step-label { font-size: 0.75rem; font-weight: 700; color: #adb5bd; text-transform: uppercase; letter-spacing: 0.8px; }
 
     &.active {
-      .step-circle { border-color: #0d6efd; color: #0d6efd; transform: scale(1.1); box-shadow: 0 4px 10px rgba(13, 110, 253, 0.15); }
+      .step-circle { border-color: #0d6efd; color: #0d6efd; box-shadow: 0 10px 15px rgba(13, 110, 253, 0.2); }
       .step-label { color: #0d6efd; }
     }
     &.done {
@@ -48,27 +30,67 @@
       .step-label { color: #198754; }
     }
   }
+  .step-line { flex: 0 0 80px; height: 3px; background: #dee2e6; margin: -25px 10px 0; border-radius: 2px; }
+}
 
-  .step-line {
-    flex: 0 0 70px; height: 2px; background: #dee2e6; margin: -20px 15px 0;
+/* --- Formulario --- */
+.form-control, .ng-select-container {
+  border-radius: 8px !important; border: 1px solid #dee2e6 !important;
+  &:focus { border-color: #0d6efd !important; box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.1) !important; }
+}
+
+/* Estilo para campos bloqueados */
+.input-locked {
+  background-color: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+  color: #475569 !important;
+  cursor: default !important; /* Mantiene la flecha del mouse */
+  user-select: all; /* Permite seleccionar para copiar */
+  box-shadow: none !important;
+  pointer-events: auto;
+  &:focus { border-color: #e2e8f0 !important; }
+}
+
+/* --- Modal Personalizado --- */
+.custom-modal-overlay {
+  position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1060; backdrop-filter: blur(8px);
+  .modal-content-custom {
+    background: white; border-radius: 20px; width: 100%; max-width: 480px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   }
 }
 
-.font-monospace { letter-spacing: 2px; font-weight: bold; font-size: 1.1rem; }
-
-.card {
-  border-radius: 12px;
+.icon-box-confirm {
+  width: 80px; height: 80px; background: rgba(13, 110, 253, 0.1);
+  color: #0d6efd; border-radius: 50%; display: flex; 
+  align-items: center; justify-content: center; margin: 0 auto 20px; font-size: 2rem;
 }
 
-.table thead th {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  color: #6c757d;
-  letter-spacing: 0.5px;
+
+.icon-box-confirm {
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 20px;
+  font-size: 2rem;
 }
 
-::ng-deep .is-invalid-custom .ng-select-container {
-    border-color: #dc3545 !important;
-    box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25) !important;
+.icon-box-confirm {
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 20px;
+  font-size: 2.5rem;
+  transition: all 0.3s ease;
 }
 
+/* Animación para el modal de error */
+.animate__shakeX {
+  animation-duration: 0.8s;
+}
+
+::ng-deep .ng-dropdown-panel {
+    z-index: 1060 !important; /* Mismo z-index que usan los modales de Bootstrap */
+}

@@ -70,7 +70,6 @@ export const routes: Routes = [
           },
           {path:'prediccion', component: PrediccionComponent},
           { path: 'prediccion/sucursal/:tenantCode/:locationId', component: PrediccionComponent },
-          { path: 'prediccion/impresora/:tenantCode/:locationId/:printerId', component: PrediccionComponent },
           { path: 'prediccion/impresora/:tenantCode/:locationId/:printerId', component: PrediccionDetalleComponent },
           {path: '', redirectTo: 'panel', pathMatch: 'full'}
         ]

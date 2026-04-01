@@ -1,4 +1,4 @@
-import { Component, Input, OnChanges, SimpleChanges, ElementRef, ViewChild, AfterViewInit } from '@angular/core';
+import { Component, Input, OnChanges, SimpleChanges, ElementRef, ViewChild, AfterViewInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TrendData } from '../../../../../../app/models/prediction';
 
@@ -12,7 +12,7 @@ Chart.register(...registerables);
   templateUrl: './trend-chart.html',
   styleUrl: './trend-chart.scss'
 })
-export class TrendChartComponent implements OnChanges, AfterViewInit {
+export class TrendChartComponent implements OnChanges, AfterViewInit, OnDestroy {
 
   @Input() trend: TrendData[] = [];
 
@@ -29,6 +29,13 @@ export class TrendChartComponent implements OnChanges, AfterViewInit {
       setTimeout(() => {
         this.createChart();
       }, 50);
+    }
+  }
+
+  ngOnDestroy(): void {
+    if (this.chart) {
+      this.chart.destroy();
+      this.chart = null;
     }
   }
 

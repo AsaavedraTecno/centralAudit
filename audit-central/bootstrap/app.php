@@ -23,18 +23,17 @@ return Application::configure(basePath: dirname(__DIR__))
 
         })->everyMinute();
 
+        $schedule->command('dashboard:update-global-status')
+        ->everyMinute()
+        ->withoutOverlapping();
+
     })
     
     ->withMiddleware(function (Middleware $middleware) {
         
-        $middleware->prepend(\Illuminate\Http\Middleware\HandleCors::class);
-
-        $middleware->web(append: [
-            //\App\Http\Middleware\HandleInertiaRequests::class,
-            \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
-        ]);
-
-        $middleware->api(append: [
+       $middleware->validateCsrfTokens(except: [
+            'api/*',
+            'tenant/*'
         ]);
 
         $middleware->alias([

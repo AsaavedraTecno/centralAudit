@@ -17,6 +17,11 @@ export interface Impresora {
   paginasBN?: number;
   paginasColor?: number;
 
+  cicloMotor?: number;      // Mapea a engine_cycles
+  paginasCopia?: number;    // Mapea a copy_pages
+  paginasScan?: number;     // Mapea a scan_pages
+  paginasFax?: number;      // Mapea a fax_pages 
+
   // Contadores por periodo
   impresoHoy?: number;
   impresoHoyBN?: number;
@@ -25,6 +30,9 @@ export interface Impresora {
   impresoMes?: number;
   impresoMesBN?: number;
   impresoMesColor?: number;
+
+  cicloMotorHoy?: number;
+  cicloMotorMes?: number;
 
   // Informacion de estados
   last_seen_at?: string;

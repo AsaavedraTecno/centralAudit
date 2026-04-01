@@ -300,19 +300,27 @@ export class ClienteIndexedDbService {
       this.db.close();
       
       if (typeof indexedDB !== 'undefined') {
-        await new Promise((resolve, reject) => {
+        await new Promise<void>((resolve, reject) => {
           const deleteRequest = indexedDB.deleteDatabase('ClienteDatabase');
           deleteRequest.onsuccess = () => {
-            this.db = new ClienteDatabase();
-            this.initDatabase();
-            resolve(true);
+            resolve();
           };
           deleteRequest.onerror = () => reject(deleteRequest.error);
+          deleteRequest.onblocked = () => {
+            console.warn('IndexedDB deletion blocked, retrying...');
+            setTimeout(() => {
+              indexedDB.deleteDatabase('ClienteDatabase');
+            }, 1000);
+          };
         });
+        
+        this.db = new ClienteDatabase();
+        await this.initDatabase();
       }
     } catch (error) {
       console.error('Error limpiando base de datos:', error);
-      throw error;
+      this.db = new ClienteDatabase();
+      await this.initDatabase();
     }
   }
 

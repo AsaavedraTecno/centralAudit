@@ -7,12 +7,12 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
 import Swal from 'sweetalert2';
-import { RouterLink } from '@angular/router';
+
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatTooltipModule, RouterLink],
+  imports: [CommonModule, FormsModule, MatTooltipModule],
   templateUrl: './login.html',
   styles: []
 })
@@ -47,10 +47,10 @@ export class LoginComponent implements OnInit {
 
         // 2. Solo si el dominio NO es el central, activamos el modo cliente
         // Comprobamos si el dominio empieza con algo antes de "centralaudit"
-        if (hostname.includes('.centralaudit.tecnodatasa.cl') && hostname !== 'centralaudit.tecnodatasa.cl') {
+        if (hostname.includes('.tdmonitor.cl') && hostname !== 'tdmonitor.cl') {
           // Es un subdominio de cliente (ej: test2-centralaudit...)
           this.isCentral = false;
-        } else if (hostname === 'centralaudit.tecnodatasa.cl' || hostname === 'localhost') {
+        } else if (hostname === 'tdmonitor.cl' || hostname === 'localhost') {
           // Es el dominio raíz o local
           this.isCentral = true;
         } else {

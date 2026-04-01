@@ -68,9 +68,21 @@
               </td>
 
               <td>
-                <code class="text-muted bg-light px-2 py-1 rounded small">ak_••••••••••••</code>
-                <small class="text-muted d-block" style="font-size:0.7rem">
-                  {{ agente.created_at | date:'dd/MM/yyyy' }}
+                <ng-container *ngIf="agente.masked_key; else oldKeyStyle">
+                  <div class="d-flex align-items-center">
+                    <i class="fas fa-key text-secondary opacity-50 me-2" style="font-size: 0.8rem;"></i>
+                    <code class="text-dark bg-light px-2 py-1 rounded small border fw-bold" style="letter-spacing: 1px;">
+                      {{ agente.masked_key }}
+                    </code>
+                  </div>
+                </ng-container>
+                
+                <ng-template #oldKeyStyle>
+                  <code class="text-muted bg-light px-2 py-1 rounded small border">•••••••••••••••</code>
+                </ng-template>
+
+                <small class="text-muted d-block mt-1" style="font-size:0.7rem">
+                  Creada: {{ agente.created_at | date:'dd/MM/yyyy' }}
                 </small>
               </td>
 
@@ -332,34 +344,41 @@
 <div class="modal fade show d-block" tabindex="-1" *ngIf="showNewKeyModal"
      style="background:rgba(0,0,0,0.5)">
   <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-warning">
-      <div class="modal-header bg-warning-subtle border-0">
-        <h5 class="modal-title text-warning">
-          <i class="fas fa-exclamation-triangle me-2"></i>¡Guarda tu Key ahora!
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-success text-white border-0">
+        <h5 class="modal-title">
+          <i class="fas fa-check-circle me-2"></i>¡Agente Creado Exitosamente!
         </h5>
       </div>
-      <div class="modal-body">
-        <div class="alert alert-warning py-2 small mb-3">
-          <strong>Esta es la única vez que verás esta key.</strong>
-          No la almacenamos en texto plano. Si la pierdes, deberás generar una nueva.
-        </div>
-        <label class="form-label fw-semibold small text-muted">AGENT KEY</label>
-        <div class="input-group">
-          <code class="form-control bg-light text-dark fw-bold" style="font-size:0.85rem; letter-spacing:0.04em">
-            {{ newKeyPlaintext }}
-          </code>
-          <button class="btn btn-outline-secondary" (click)="copyKey()">
+      <div class="modal-body p-4">
+        
+        <p class="text-center mb-4">La infraestructura del agente ha sido aprovisionada. A continuación, se muestra su Llave de Activación (Agent Key).</p>
+        
+        <div class="p-3 bg-dark rounded border border-dark d-flex flex-column align-items-center shadow-inner mb-4">
+          <span class="text-secondary small fw-bold mb-2">AGENT KEY</span>
+          <div class="d-flex w-100 justify-content-center align-items-center">
+            <span class="font-monospace fs-4 fw-bold text-success text-center" style="letter-spacing: 2px;">
+              {{ newKeyPlaintext }}
+            </span>
+          </div>
+          <button class="btn btn-outline-light mt-3 px-4 rounded-pill" (click)="copyKey()">
             <i class="fas" [ngClass]="newKeyCopied ? 'fa-check text-success' : 'fa-copy'"></i>
-            {{ newKeyCopied ? 'Copiado' : 'Copiar' }}
+            {{ newKeyCopied ? '¡Copiada!' : 'Copiar Llave' }}
           </button>
         </div>
-        <small class="text-muted d-block mt-2">
-          Pega esta key en el <code>config.yaml</code> del agente instalado en el cliente.
-        </small>
+
+        <div class="alert alert-warning border-0 bg-warning-subtle py-2 px-3 d-flex align-items-center mb-0">
+          <i class="fas fa-exclamation-triangle text-warning me-3 fs-3"></i>
+          <small class="text-dark fw-medium lh-sm">
+            <strong>¡Copia esta llave ahora!</strong><br>
+            Por seguridad, no la almacenamos en texto plano. Si cierras esta ventana sin copiarla, deberás revocar el agente y crear uno nuevo.
+          </small>
+        </div>
+
       </div>
-      <div class="modal-footer border-0">
-        <button class="btn btn-warning fw-semibold" (click)="closeNewKeyModal()">
-          <i class="fas fa-check me-1"></i>Ya la guardé, cerrar
+      <div class="modal-footer border-0 bg-light">
+        <button class="btn btn-primary fw-semibold px-4" (click)="closeNewKeyModal()">
+          Entendido, cerrar ventana
         </button>
       </div>
     </div>

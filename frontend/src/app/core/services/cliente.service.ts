@@ -59,12 +59,12 @@ export class ClienteService {
 
     return this.http.get<any>(this.baseUrl, { params }).pipe(
       map(response => {
-        const clients = response.data ?? response.clients ?? [];
+        const clients = response?.data ?? response?.clients ?? [];
         return {
           success: true,
           data: clients.map((c: any) => createCliente(c)),
-          total: response.total ?? clients.length,
-          pagination: response.pagination
+          total: response?.total ?? clients.length,
+          pagination: response?.pagination
         };
       })
     );
@@ -82,12 +82,12 @@ export class ClienteService {
     
     return this.http.get<any>(this.baseUrl, { params }).pipe(
       map(response => {
-        const clients = response.data ?? response.clients ?? [];
+        const clients = response?.data ?? response?.clients ?? [];
         return {
           success: true,
           data: clients.map((c: any) => createCliente(c)),
-          total: response.total ?? clients.length,
-          pagination: response.pagination
+          total: response?.total ?? clients.length,
+          pagination: response?.pagination
         };
       })
     );
@@ -101,7 +101,7 @@ export class ClienteService {
   // Obtener un cliente por código
   getCliente(code: string): Observable<Cliente> {
     return this.http.get<any>(`${this.baseUrl}/${code}`).pipe(
-      map(response => createCliente(response.client ?? response.data))
+      map(response => createCliente(response?.client ?? response?.data ?? {}))
     );
   }
 
@@ -113,7 +113,7 @@ export class ClienteService {
   // Actualizar cliente
   updateCliente(code: string, cliente: Partial<Cliente>): Observable<Cliente> {
     return this.http.put<any>(`${this.baseUrl}/${code}`, cliente).pipe(
-      map(response => createCliente(response.client ?? response.data))
+      map(response => createCliente(response?.client ?? response?.data ?? {}))
     );
   }
 

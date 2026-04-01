@@ -1,44 +1,66 @@
 <div class="split-layout">
 
-  <aside class="tree-sidebar">
+  <aside class="tree-sidebar d-flex flex-column h-100 bg-white border-end">
 
-    <div class="sidebar-header">
-      <h5><i class="fas fa-sitemap me-2 text-primary"></i> Navegación</h5>
+    <div class="sidebar-header p-3 pb-2 flex-shrink-0 border-bottom">
+      <div 
+        class="navigation-reset-btn d-flex align-items-center mb-3 p-2 rounded-3" 
+        (click)="irAlInicio()"
+        title="Volver al inicio">
+        <i class="fas fa-sitemap me-2 text-primary fs-5"></i>
+        <h5 class="mb-0 fw-bold text-primary flex-grow-1">Navegación</h5>
+        <i class="fas fa-home text-muted opacity-50"></i>
+      </div>
+      
+      <div class="input-group input-group-sm shadow-sm" style="border-radius: 6px; overflow: hidden;">
+        <span class="input-group-text bg-light border-0 text-muted px-2">
+          <i class="fas fa-search"></i>
+        </span>
+        <input 
+          type="text" 
+          class="form-control border-0 bg-light shadow-none" 
+          placeholder="Buscar cliente, RUT..."
+          [(ngModel)]="textoBusquedaCliente"
+          (input)="filtrarClientes()">
+      </div>
     </div>
 
-    <div class="loading-bar-container" *ngIf="cargandoArbol">
+    <div class="loading-bar-container flex-shrink-0" *ngIf="cargandoArbol">
       <div class="loading-bar"></div>
     </div>
 
-    <div class="tree-content">
+    <div class="tree-content flex-grow-1 overflow-auto p-2">
 
-      <div *ngFor="let cliente of clientes"
-           class="tree-node"
+      <div *ngFor="let cliente of clientesFiltrados"
+           class="tree-node mb-1"
            [style.opacity]="cargandoArbol ? '0.6' : '1'">
 
-        <div class="tree-client"
-             (click)="toggleCliente(cliente.code || cliente.id)">
+        <div class="tree-client p-2 rounded d-flex align-items-center"
+             (click)="toggleCliente(cliente.code || cliente.id)"
+             style="cursor: pointer; transition: background 0.2s;"
+             [ngClass]="{'bg-light fw-bold': seccionesExpandidas.get(cliente.code || cliente.id)}">
 
-          <i class="fas"
+          <i class="fas me-2" style="width: 16px;"
              [ngClass]="seccionesExpandidas.get(cliente.code || cliente.id)
              ? 'fa-folder-open text-warning'
              : 'fa-folder text-warning'">
           </i>
 
-          <span>{{ cliente.razon_social || cliente.nombre }}</span>
+          <span class="text-truncate">{{ cliente.razon_social || cliente.nombre }}</span>
 
         </div>
 
-        <div class="tree-branches"
+        <div class="tree-branches ps-4 py-1"
              *ngIf="seccionesExpandidas.get(cliente.code || cliente.id)">
 
           <div *ngFor="let suc of cliente.sucursales"
-               class="tree-sucursal"
-               [ngClass]="{'active': sucursalSeleccionada?.id === suc.id && clienteSeleccionado?.id === cliente.id}"
+               class="tree-sucursal p-2 rounded text-muted"
+               style="cursor: pointer; font-size: 0.9rem; transition: all 0.2s;"
+               [ngClass]="{'bg-primary text-white shadow-sm': sucursalSeleccionada?.id === suc.id && clienteSeleccionado?.id === cliente.id}"
                (click)="seleccionarSucursal(cliente, suc)">
 
-            <i class="fas fa-map-marker-alt me-2"></i>
-            {{ suc.nombre }}
+            <i class="fas fa-map-marker-alt me-2" [ngClass]="{'text-primary': sucursalSeleccionada?.id !== suc.id}"></i>
+            <span class="text-truncate">{{ suc.nombre }}</span>
 
           </div>
 
@@ -46,42 +68,94 @@
 
       </div>
 
-      <div *ngIf="!cargandoArbol && clientes.length === 0"
-           class="p-3 text-center text-muted small">
-        No se encontraron clientes.
+      <div *ngIf="!cargandoArbol && clientesFiltrados.length === 0" class="p-4 text-center text-muted">
+        <i class="fas fa-search-minus fa-2x mb-2 opacity-50"></i>
+        <p class="small mb-0">No se encontraron clientes con "{{ textoBusquedaCliente }}"</p>
       </div>
 
     </div>
 
   </aside>
 
-  <main class="main-content">
+  <main class="main-content d-flex flex-column h-100">
 
-    <!-- estado vacío -->
-    <div *ngIf="!sucursalSeleccionada" class="empty-state">
-      <i class="fas fa-print fa-4x mb-3 opacity-25"></i>
-      <h4>Selecciona una sucursal para gestionar equipos</h4>
-    </div>
+    <div *ngIf="!sucursalSeleccionada" class="d-flex flex-column align-items-center h-100 p-5 bg-light text-center w-100 flex-grow-1" style="overflow-y: auto; min-height: 0;">
+      
+      <div class="icon-circle mb-4 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 90px; height: 90px; background-color: #e0f2fe; border-radius: 50%; box-shadow: 0 4px 6px rgba(14, 165, 233, 0.1);">
+        <i class="fas fa-print fa-3x text-primary" style="opacity: 0.9;"></i>
+      </div>
 
-    <div *ngIf="sucursalSeleccionada">
-
-      <header class="content-header d-flex justify-content-between align-items-center">
-
-        <div>
-          <h2 class="mb-0">{{ sucursalSeleccionada.nombre }}</h2>
-          <span class="text-muted">
-            <i class="fas fa-building me-1"></i>
-            {{ clienteSeleccionado.razon_social }}
-          </span>
+      <h3 class="fw-bold text-dark mb-3">Gestión de Equipos</h3>
+      <p class="text-muted mb-4" style="max-width: 600px; font-size: 0.95rem; line-height: 1.6;">
+        Bienvenido al explorador de impresoras. Navega por tu árbol de clientes para monitorizar el estado, los niveles de suministro y la conectividad de todo el parque de impresión en tiempo real.
+      </p>
+      
+      <div class="d-flex flex-column gap-4 text-start bg-white p-4 rounded-4 border shadow-sm mb-5" style="max-width: 600px; width: 100%;">
+        
+        <div class="d-flex align-items-start">
+          <i class="fas fa-sitemap text-primary mt-1 me-3 fs-5"></i>
+          <div>
+            <strong class="text-dark d-block">Navegación Jerárquica</strong>
+            <span class="text-muted" style="font-size: 0.85rem;">Selecciona un cliente y sucursal a la izquierda. Si deseas volver a esta guía, pulsa el título <b>"Navegación"</b>.</span>
+          </div>
         </div>
 
-        <div class="badge bg-primary px-3 py-2">
-          {{ impresorasExhibidas.length }} Impresoras
+        <div class="d-flex align-items-start">
+          <i class="fas fa-search text-info mt-1 me-3 fs-5"></i>
+          <div>
+            <strong class="text-dark d-block">Búsqueda Inteligente y Filtros</strong>
+            <span class="text-muted" style="font-size: 0.85rem;">Encuentra impresoras rápidamente por IP, MAC, Serie o ID Interno, y aplica filtros por estado.</span>
+          </div>
+        </div>
+
+        <div class="d-flex align-items-start">
+          <i class="fas fa-th-large text-secondary mt-1 me-3 fs-5"></i>
+          <div>
+            <strong class="text-dark d-block">Vistas Personalizables</strong>
+            <span class="text-muted" style="font-size: 0.85rem;">Alterna entre la vista de tarjetas (ideal para ver los tóners) o la vista de tabla para un análisis masivo.</span>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="d-flex align-items-center text-primary fw-bold mt-2" style="animation: bounceLeft 2s infinite;">
+        <i class="fas fa-arrow-left me-2 fs-5"></i>
+        <span style="font-size: 1.1rem;">Selecciona una sucursal a la izquierda para comenzar</span>
+      </div>
+
+    </div>
+
+    <div *ngIf="sucursalSeleccionada" class="d-flex flex-column flex-grow-1" style="min-height: 0;">
+
+      <header class="content-header d-flex justify-content-between align-items-start mb-4 flex-shrink-0">
+
+        <div>
+          <div class="d-flex align-items-center text-muted mb-1" style="font-size: 0.85rem;">
+            <i class="fas fa-folder text-warning me-2"></i>
+            <span class="fw-medium">{{ clienteSeleccionado?.razon_social || clienteSeleccionado?.nombre || 'Cliente' }}</span>
+            
+            <i class="fas fa-chevron-right mx-2" style="font-size: 0.6rem; opacity: 0.4;"></i>
+            
+            <i class="fas fa-map-marker-alt text-primary me-1"></i>
+            <span>Sucursal</span>
+          </div>
+          
+          <h2 class="mb-0 fw-bold text-dark" style="letter-spacing: -0.5px;">{{ sucursalSeleccionada.nombre }}</h2>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+          
+          <div class="d-flex align-items-center bg-white border rounded-pill px-3 py-2 shadow-sm">
+            <i class="fas fa-print text-primary me-2"></i>
+            <strong class="text-dark me-1" style="font-size: 1.1rem;">{{ impresorasExhibidas.length }}</strong> 
+            <span class="text-muted" style="font-size: 0.85rem;">Equipos en total</span>
+          </div>
+
         </div>
 
       </header>
 
-      <app-toolbar-impresoras
+      <app-toolbar-impresoras class="flex-shrink-0"
         [modoVista]="modoVista"
         (cambiarVista)="cambiarVista($event)"
         (cambiarOrden)="cambiarOrden($event)">
@@ -93,27 +167,28 @@
 
       </app-toolbar-impresoras>
 
-      <!-- loading -->
-      <div *ngIf="cargando" class="text-center p-5">
+      <div *ngIf="cargando" class="text-center p-5 flex-grow-1">
         <i class="fas fa-spinner fa-spin fa-3x text-primary"></i>
       </div>
 
-      <!-- CARDS -->
-      <app-impresoras-cards
-        *ngIf="!cargando && modoVista === 'cards'"
-        [impresoras]="impresorasExhibidas"
-        (verDetalles)="abrirDetalles($event)">
-      </app-impresoras-cards>
+      <div class="flex-grow-1 overflow-auto" *ngIf="!cargando">
+        
+        <app-impresoras-cards
+          *ngIf="modoVista === 'cards'"
+          [impresoras]="impresorasExhibidas"
+          (verDetalles)="abrirDetalles($event)">
+        </app-impresoras-cards>
 
-      <!-- GRID -->
-      <app-impresoras-grid
-        *ngIf="!cargando && modoVista === 'grid'"
-        [impresoras]="impresorasExhibidas"
-        [ordenarPor]="ordenarPor"
-        [direccionOrden]="direccionOrden"
-        (verDetalles)="abrirDetalles($event)"
-        (ordenar)="cambiarOrden($event)">
-      </app-impresoras-grid>
+        <app-impresoras-grid
+          *ngIf="modoVista === 'grid'"
+          [impresoras]="impresorasExhibidas"
+          [ordenarPor]="ordenarPor"
+          [direccionOrden]="direccionOrden"
+          (verDetalles)="abrirDetalles($event)"
+          (ordenar)="cambiarOrden($event)">
+        </app-impresoras-grid>
+        
+      </div>
 
     </div>
 

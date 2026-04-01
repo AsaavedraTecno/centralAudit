@@ -89,17 +89,6 @@ class ColumnasDisponiblesSeeder extends Seeder
                 'activa' => true,
             ],
             [
-                'identificador' => 'imp_online',
-                'nombre' => 'Online',
-                'tipo' => 'impresora',
-                'categoria' => 'general',
-                'visible' => true,
-                'orden' => 11,
-                'ancho' => 100,
-                'componente' => 'badge',
-                'activa' => true,
-            ],
-            [
                 'identificador' => 'imp_minutos_sin_conexion',
                 'nombre' => 'Min. Sin Conexión',
                 'tipo' => 'impresora',
@@ -191,18 +180,6 @@ class ColumnasDisponiblesSeeder extends Seeder
             ],
 
             // ===== IMPRESORA - ESTADO Y OPERACIÓN =====
-            [
-                'identificador' => 'imp_estado',
-                'nombre' => 'Estado',
-                'tipo' => 'impresora',
-                'categoria' => 'general',
-                'visible' => true,
-                'orden' => 20,
-                'ancho' => 100,
-                'componente' => 'badge',
-                'activa' => true,
-            ],
-
             [
                 'identificador' => 'imp_ultima_conexion',
                 'nombre' => 'Última Conexión',
@@ -299,8 +276,6 @@ class ColumnasDisponiblesSeeder extends Seeder
                 'componente' => 'numero',
                 'activa' => true,
             ],
-           
-            
             [
                 'identificador' => 'imp_impreso_mes_bn',
                 'nombre' => 'Imp. Mes B/N',
@@ -320,6 +295,65 @@ class ColumnasDisponiblesSeeder extends Seeder
                 'visible' => false,
                 'orden' => 30,
                 'ancho' => 110,
+                'componente' => 'numero',
+                'activa' => true,
+            ],
+
+            // ===== NUEVAS MÉTRICAS (CICLO MOTOR, COPIA, SCAN) =====
+            [
+                'identificador' => 'imp_ciclo_motor',
+                'nombre' => 'Ciclo Motor (Ciclos/Pág)',
+                'tipo' => 'impresora',
+                'categoria' => 'metricas',
+                'visible' => true,
+                'orden' => 31,
+                'ancho' => 120,
+                'componente' => 'numero',
+                'activa' => true,
+            ],
+            [
+                'identificador' => 'imp_paginas_copia',
+                'nombre' => 'Págs. Copia',
+                'tipo' => 'impresora',
+                'categoria' => 'metricas',
+                'visible' => true,
+                'orden' => 32,
+                'ancho' => 110,
+                'componente' => 'numero',
+                'activa' => true,
+            ],
+            [
+                'identificador' => 'imp_paginas_scan',
+                'nombre' => 'Págs. Escaneo',
+                'tipo' => 'impresora',
+                'categoria' => 'metricas',
+                'visible' => true,
+                'orden' => 33,
+                'ancho' => 110,
+                'componente' => 'numero',
+                'activa' => true,
+            ],
+
+            // ===== DESGASTE MOTOR (HOY/MES) =====
+            [
+                'identificador' => 'imp_ciclo_motor_hoy',
+                'nombre' => 'Ciclo Motor Hoy',
+                'tipo' => 'impresora',
+                'categoria' => 'metricas',
+                'visible' => false, // Opcional por defecto
+                'orden' => 34,
+                'ancho' => 120,
+                'componente' => 'numero',
+                'activa' => true,
+            ],
+            [
+                'identificador' => 'imp_ciclo_motor_mes',
+                'nombre' => 'Ciclo Motor Mes',
+                'tipo' => 'impresora',
+                'categoria' => 'metricas',
+                'visible' => false,
+                'orden' => 35,
+                'ancho' => 120,
                 'componente' => 'numero',
                 'activa' => true,
             ],

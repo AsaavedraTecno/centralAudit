@@ -49,8 +49,8 @@ export class EditarClientesComponent implements OnInit {
     this.error = '';
     this.clienteService.getClienteByCode(code).subscribe({
       next: (cliente) => {
-        this.clienteOriginal = { ...cliente };
-        this.clienteSeleccionado = { ...cliente };
+        this.clienteOriginal = JSON.parse(JSON.stringify(cliente));
+        this.clienteSeleccionado = JSON.parse(JSON.stringify(cliente));
         this.actualizarComunas();
         this.cargando = false;
       },

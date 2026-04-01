@@ -305,6 +305,7 @@ export class ListarAgentesComponent implements OnInit {
       error: (err) => {
         console.error('Error al revocar agente:', err);
         this.revokingKey = false;
+        this.formError = err.error?.message || 'Error al revocar el agente.';
       }
     });
   }

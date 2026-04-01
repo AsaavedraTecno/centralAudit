@@ -12,17 +12,20 @@ export interface Toast {
 })
 export class ToastService {
   private toastSubject = new BehaviorSubject<Toast | null>(null);
+  private autoHideTimeout: any = null;
   
   // Exponemos el observable
   toast$: Observable<Toast | null> = this.toastSubject.asObservable();
 
   show(message: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') {
-    // ✅ CORRECTO: Pasamos un objeto literal que CUMPLE con la interfaz Toast
+    if (this.autoHideTimeout) {
+      clearTimeout(this.autoHideTimeout);
+    }
     this.toastSubject.next({ message, type });
     
-    // Auto-ocultar
-    setTimeout(() => {
+    this.autoHideTimeout = setTimeout(() => {
       this.toastSubject.next(null);
+      this.autoHideTimeout = null;
     }, 3000);
   }
 }

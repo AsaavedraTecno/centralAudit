@@ -11,6 +11,9 @@ export default defineConfig({
         tailwindcss(),
     ],
     server: {
+        allowedHosts: [
+            '.tdmonitor.cl'
+        ],
         watch: {
             ignored: ['**/storage/framework/views/**'],
         },

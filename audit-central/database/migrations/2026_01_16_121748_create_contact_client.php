@@ -17,8 +17,9 @@ return new class extends Migration
             $table->foreign('tenant_id')->references('id')->on('tenants')->onDelete('cascade');
 
             $table->string('nombre');
-            $table->string('email')->nullable();
-            $table->string('telefono')->nullable();
+            $table->string('email');
+            $table->string('telefono');
+            
             $table->string('telefono_alternativo')->nullable();
             $table->text('comentarios')->nullable();
             $table->timestamps();

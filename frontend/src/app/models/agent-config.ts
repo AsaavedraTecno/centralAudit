@@ -36,15 +36,16 @@ export interface AgentConfig {
 // ============ KEY DEL AGENTE ============
 export interface AgentKeyResponse {
   id: number;
-  key_hash: string;
+  masked_key?: string;
   name: string;
   created_at: string;
 }
 
 export interface AgentKey {
   id: number;
-  key_hash: string;
   name?: string;
+  key?: string;       
+  masked_key?: string;
   created_at?: string;
 }
 

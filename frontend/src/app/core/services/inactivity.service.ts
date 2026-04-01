@@ -46,14 +46,16 @@ export class InactivityService {
   /**
    * Inicializa la detección de inactividad
    */
+  private boundResetTimer = () => this.resetInactivityTimer();
+
   private initializeInactivityDetection(): void {
     // Escuchar eventos de usuario fuera de Angular para no afectar cambios de detección
     this.ngZone.runOutsideAngular(() => {
-      window.addEventListener('mousemove', () => this.resetInactivityTimer());
-      window.addEventListener('keydown', () => this.resetInactivityTimer());
-      window.addEventListener('click', () => this.resetInactivityTimer());
-      window.addEventListener('scroll', () => this.resetInactivityTimer());
-      window.addEventListener('touchstart', () => this.resetInactivityTimer());
+      window.addEventListener('mousemove', this.boundResetTimer);
+      window.addEventListener('keydown', this.boundResetTimer);
+      window.addEventListener('click', this.boundResetTimer);
+      window.addEventListener('scroll', this.boundResetTimer);
+      window.addEventListener('touchstart', this.boundResetTimer);
     });
 
     // Iniciar el timer de inactividad
@@ -122,5 +124,13 @@ export class InactivityService {
     clearTimeout(this.warningTimer);
     this.unsubscribe$.next();
     this.unsubscribe$.complete();
+
+    if (isPlatformBrowser(this.platformId)) {
+      window.removeEventListener('mousemove', this.boundResetTimer);
+      window.removeEventListener('keydown', this.boundResetTimer);
+      window.removeEventListener('click', this.boundResetTimer);
+      window.removeEventListener('scroll', this.boundResetTimer);
+      window.removeEventListener('touchstart', this.boundResetTimer);
+    }
   }
 }

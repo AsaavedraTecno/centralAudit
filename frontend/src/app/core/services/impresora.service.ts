@@ -15,7 +15,7 @@ export class ImpresoraService {
 
   getAll(): Observable<Impresora[]> {
     return this.http.get<any>(`${this.baseUrl}/impresoras`).pipe(
-      map(response => response.data || [])
+      map(response => response?.data || [])
     );
   }
 
@@ -36,7 +36,7 @@ export class ImpresoraService {
 
   getSeriesSucursales(): Observable<any[]> {
     return this.http.get<any>(`${this.baseUrl}/series-sucursales`).pipe(
-      map(response => response.data || [])
+      map(response => response?.data || [])
     );
   }
 

@@ -7,40 +7,46 @@ use Carbon\Carbon;
 
 class TonerPrediction
 {
-    public function predict(int $printerId, string $supplyType)
+    public function predict(int $printerId, string $supplyType, int $daysToAnalyze = 30)
     {
-        $records = PrinterSupply::where('printer_id', $printerId)
+        $currentSupply = PrinterSupply::where('printer_id', $printerId)
             ->where('supply_type', $supplyType)
             ->orderByDesc('read_at')
-            ->limit(20)
-            ->get()
-            ->reverse()
-            ->values();
+            ->first();
 
-        // Se requiere al menos 2 lecturas distintas dentro de esa ventana de 7 dias, sino returna null (sin predicción).
-        if ($records->count() < 2) {
-                return null;
-            }
+        if (!$currentSupply || $currentSupply->percentage <= 0) {
+            return 0; // Se acabó
+        }
 
-            $first = $records->first();
-            $last = $records->last();
+        if ($currentSupply->percentage >= 95) {
+             return null; // Está muy nuevo para predecir con precisión, evitamos números irreales como "900 días".
+        }
 
-            // Calculamos cuánto consumió en esta ventana de tiempo. consumido (%) = nivel inicial - nivel final
-            $consumed = $first->percentage - $last->percentage;
+        // Buscamos la lectura más antigua dentro de la ventana de análisis
+        $oldSupply = PrinterSupply::where('printer_id', $printerId)
+            ->where('supply_type', $supplyType)
+            ->where('read_at', '>=', now()->subDays($daysToAnalyze))
+            ->orderBy('read_at', 'asc')
+            ->first();
 
-            // Calculamos cuántos días pasaron en esta ventana de tiempo. Consumo Diario (%) = Consumido (%) / Dias transcurridos
-            $days = Carbon::parse($first->read_at)->diffInDays(Carbon::parse($last->read_at));
+        if (!$oldSupply) {
+            return null; // No hay historial
+        }
 
-            // Si no han pasado días o si mágicamente subió el porcentaje (ej. cambio de tóner), abortamos
-            if ($days === 0 || $consumed <= 0) {
-                return null;
-            }
+        $consumed = $oldSupply->percentage - $currentSupply->percentage;
+        $daysElapsed = Carbon::parse($oldSupply->read_at)->diffInDays($currentSupply->read_at);
 
-            // Consumo Diario (%) = Consumido (%) / Dias transcurridos
-            $dailyConsumption = $consumed / $days;
+        // Si pasaron menos de 24 horas (0 días completos) o si el nivel subió (cambio de tóner), abortamos.
+        if ($daysElapsed < 1 || $consumed <= 0) {
+            return null;
+        }
 
-            // Proyectamos los días restantes basados en el consumo diario actual
-            // Dias restantes = Nivel actual (%) / Consumo diario (%)
-            return (int) round($last->percentage / $dailyConsumption);
+        // Consumo Diario (%) = Consumido (%) / Días transcurridos
+        $dailyConsumption = $consumed / $daysElapsed;
+
+        // Días restantes = Nivel actual (%) / Consumo diario (%)
+        $daysRemaining = $currentSupply->percentage / $dailyConsumption;
+
+        return (int) round($daysRemaining);
     }
 }

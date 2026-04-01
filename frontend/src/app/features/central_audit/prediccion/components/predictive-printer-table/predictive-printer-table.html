@@ -13,7 +13,7 @@
       </th>
 
       <th (click)="ordenarColumna('daysRemaining')" class="sortable">
-        Días Restantes
+        Fecha Estimada
       </th>
 
       <th>Problema</th>
@@ -49,18 +49,18 @@
 
       <!--  DÍAS -->
       <td>
-        <strong>{{ imp.daysRemaining }} días</strong>
+        <strong>{{ imp.daysRemaining ?? '-' }} días</strong>
       </td>
 
       <!--  PROBLEMA -->
       <td>
-        {{ imp.predictedIssue }}
+        {{ imp.predictedIssue || '-' }}
       </td>
 
       <!-- ACCIÓN -->
       <td>
         <span class="text-primary fw-semibold">
-          {{ imp.recommendedAction }}
+          {{ imp.recommendedAction || '-' }}
         </span>
       </td>
 

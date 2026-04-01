@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { ImpresoraService } from '../../core/services/impresora.service';
 import { Observable, BehaviorSubject } from 'rxjs';
+import { tap } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'
@@ -22,8 +23,8 @@ export class DetalleImpresoraService {
   ): Observable<any> {
     this.cargando$.next(true);
     
-    return new Observable(observer => {
-      this.impresoraService.obtenerDetalleImpresora(clientCode, locationId, printerId).subscribe({
+    return this.impresoraService.obtenerDetalleImpresora(clientCode, locationId, printerId).pipe(
+      tap({
         next: (response: any) => {
           if (response.success && response.data) {
             this.impresoraActual$.next({
@@ -31,19 +32,14 @@ export class DetalleImpresoraService {
               cliente_rut: clientCode,
               locationId: locationId
             });
-            observer.next(response.data);
-            observer.complete();
-          } else {
-            observer.error('No se pudieron cargar los detalles');
           }
           this.cargando$.next(false);
         },
-        error: (err) => {
-          observer.error(err);
+        error: () => {
           this.cargando$.next(false);
         }
-      });
-    });
+      })
+    );
   }
 
   /**
@@ -56,19 +52,16 @@ export class DetalleImpresoraService {
   ): Observable<any> {
     this.cargando$.next(true);
     
-    return new Observable(observer => {
-      this.impresoraService.updateAdminFields(clientCode, printerId, datos).subscribe({
-        next: (response: any) => {
-          observer.next(response);
-          observer.complete();
+    return this.impresoraService.updateAdminFields(clientCode, printerId, datos).pipe(
+      tap({
+        next: () => {
           this.cargando$.next(false);
         },
-        error: (err) => {
-          observer.error(err);
+        error: () => {
           this.cargando$.next(false);
         }
-      });
-    });
+      })
+    );
   }
 
   /**

@@ -1,4 +1,6 @@
-import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, ViewChild, ElementRef, PLATFORM_ID, Inject, OnDestroy, NgModule } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, ViewChild, ElementRef, PLATFORM_ID, Inject, OnDestroy } from '@angular/core';
+import { Subject, timer } from 'rxjs';
+import { takeUntil, filter, switchMap } from 'rxjs/operators';
 import { CommonModule, isPlatformBrowser  } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ClienteService } from '../../../core/services/cliente.service';
@@ -10,7 +12,6 @@ import { Impresora } from '../../../models/impresora';
 import { DetalleImpresoraModalComponent } from '../../../shared/monitoreo/detalle-impresora-modal/detalle-impresora-modal.component';
 import { DetalleImpresoraService } from '../../../shared/services/detalle-impresora.service';
 import { ToastService } from '../../../core/services/toast.service'; 
-import { Subscription, interval } from 'rxjs';
 import { VistaStateService } from '../../../shared/services/vista-state.service';
 import { VistaPersonalizadaService } from '../../../shared/services/vista-personalizada.service';
 import {
@@ -69,8 +70,11 @@ export class ClienteTreeComponent implements OnInit, OnDestroy {
   impresora_seleccionada: Impresora | null = null;
   mostrar_modal_detalles: boolean = false;
 
+  isAutoRefreshing: boolean = false;
+  refreshStatus: 'idle' | 'success' | 'error' = 'idle';
+
   ultimaActualizacion: Date = new Date();
-  private autoRefreshSub?: Subscription;
+  private destroy$ = new Subject<void>();
 
   constructor(
     private TenantPanelService: TenantPanelService,
@@ -116,7 +120,6 @@ export class ClienteTreeComponent implements OnInit, OnDestroy {
     if (this.initialized) return;
     this.initialized = true;
 
-    this.cargarResumenGlobal();
 
     // Cargar vistas (central o tenant)
     if (this.TenantPanelService.isTenant())  {
@@ -157,9 +160,8 @@ export class ClienteTreeComponent implements OnInit, OnDestroy {
 
 
   ngOnDestroy(): void {
-    if (this.autoRefreshSub) {
-      this.autoRefreshSub.unsubscribe();
-    }
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   obtenerValor(impresora:any,col:any){
@@ -213,37 +215,83 @@ export class ClienteTreeComponent implements OnInit, OnDestroy {
     
 
   iniciarAutoRefresh(): void {
-    if (this.autoRefreshSub) return;
+    if (!isPlatformBrowser(this.platformId)) return;
 
-    this.autoRefreshSub = interval(600000).subscribe(() => {
-      if (!this.isSearching && !this.isLoadingData) {
-        this.recargarSilenciosamente();
-      }
-    });
+    // ACTUALIZAR TARJETAS GLOBALES (Online/Offline) - Cada 1 minuto
+    timer(0, 60000)
+      .pipe(
+        switchMap(() => this.impresoraService.obtenerResumenGlobalConexiones()),
+        takeUntil(this.destroy$)
+      )
+      .subscribe({
+        next: (res: any) => {
+          this.totalOnline = res.active || 0;
+          this.totalWarning = res.warning || 0;
+          this.totalOffline = res.offline || 0;
+          this.cdr.markForCheck();
+        }
+      });
+
+    // ACTUALIZAR ÁRBOL DE CLIENTES E IMPRESORAS (Cada 1 minuto)
+    // Usamos timer(60000, 60000) para darle 1 minuto de respiro antes del primer escaneo
+    timer(60000, 60000)
+      .pipe(
+        // Si el usuario está escribiendo en el buscador, no lo interrumpimos
+        filter(() => !this.isSearching && !this.isLoadingData), 
+        takeUntil(this.destroy$)
+      )
+      .subscribe(() => {
+        // Llamamos a nuestro nuevo super-método
+        this.actualizarArbolEnFondo();
+      });
   }
 
   async recargarSilenciosamente(): Promise<void> {
-    this.ultimaActualizacion = new Date();
-    this.cargarResumenGlobal();
+    // Encendemos el modo "Sincronizando..."
+    this.isAutoRefreshing = true;
+    this.refreshStatus = 'idle';
     this.cdr.markForCheck();
 
-    // Para recargar solo las impresoras que el usuario está viendo actualmente.
-    for (const nodeId of Object.keys(this.expandedNodes)) {
-      if (this.expandedNodes[nodeId] && nodeId.startsWith('sucursal_')) {
-        const parts = nodeId.split('_');
-        const clientCode = parts[1];
-        const sucursalIdStr = parts[parts.length - 1];
-        
-        const cliente = this.clientes.find(c => c.code === clientCode || c.rut === clientCode);
-        if (cliente && cliente.sucursales) {
-          const sucursalIdx = cliente.sucursales.findIndex(s => String(s.id) === sucursalIdStr);
-          if (sucursalIdx !== -1) {
-            await this.cargarImpresorasDelaSucursal(cliente, sucursalIdx, nodeId);
+    try {
+      for (const nodeId of Object.keys(this.expandedNodes)) {
+        if (this.expandedNodes[nodeId] && nodeId.startsWith('sucursal_')) {
+          const parts = nodeId.split('_');
+          const clientId = parts[1]; 
+          const sucursalIdStr = parts[parts.length - 1];
+          
+          const cliente = this.clientes.find(c => String(c.id) === String(clientId));
+          if (cliente && cliente.sucursales) {
+            const sucursalIdx = cliente.sucursales.findIndex(s => String(s.id) === sucursalIdStr);
+            if (sucursalIdx !== -1) {
+              await this.cargarImpresorasDelaSucursal(cliente, sucursalIdx, nodeId);
+            }
           }
         }
       }
+
+      // 2. Terminó bien. Actualizamos la hora y ponemos éxito.
+      this.ultimaActualizacion = new Date();
+      this.refreshStatus = 'success';
+      
+      //  AQUÍ BORRAMOS EL TOAST MOLESTO
+      // this.toastService.show('Datos de impresoras actualizados', 'info');
+      
+    } catch (error) {
+      this.refreshStatus = 'error';
+      console.error('Error en recarga de fondo:', error);
+    } finally {
+      // Apagamos la animación de "Sincronizando..."
+      this.isAutoRefreshing = false;
+      this.cdr.markForCheck();
+
+      //  Devolvemos el reloj a la normalidad después de 3 segundos
+      setTimeout(() => {
+        if (this.refreshStatus === 'success') {
+          this.refreshStatus = 'idle';
+          this.cdr.markForCheck();
+        }
+      }, 3000);
     }
-    this.toastService.show('Datos de impresoras actualizados', 'info');
   }
   
   loadClientes(): void {
@@ -588,6 +636,8 @@ export class ClienteTreeComponent implements OnInit, OnDestroy {
   trackBySucursalId(i: number, s: Sucursal) { return s.id; }
   trackByImpresoraId(i: number, imp: Impresora) { return imp.id }
 
+  trackByColumna(i: number, col: ColumnaVistaUI) { return col.identificador; }
+
   onTableScroll(e: Event): void {}
 
   getTónerByType(impresora: any, tipo: string): any {
@@ -864,4 +914,43 @@ export class ClienteTreeComponent implements OnInit, OnDestroy {
 
     return `hace ${d} d`;
   }
+
+  // ============ RECARGA REACTIVA (SIN CERRAR EL ÁRBOL) ============
+
+  actualizarArbolEnFondo(): void {
+    // IMPORTANTE: NO ponemos this.loading = true para no destruir la vista
+    
+    const request$ = this.isSearching 
+      ? this.clienteService.searchClientes(this.busqueda.trim(), this.currentPage, this.clientesPerPage)
+      : this.clienteService.getClientes(this.currentPage, this.clientesPerPage);
+
+    request$.subscribe({
+      next: (response) => {
+        const rawData = response?.data || response?.clients || response;
+        
+        if (rawData && Array.isArray(rawData)) {
+          // EL TRUCO DE ORO: Preservar lo que el usuario ya abrió
+          this.clientes = rawData.map((cNuevo: any) => {
+            // Buscamos si el cliente ya estaba en pantalla
+            const cViejo = this.clientes.find(c => c.code === cNuevo.code || c.rut === cNuevo.rut);
+
+            return {
+              ...cNuevo,
+              printers_count: cNuevo.printers_count ?? 0,
+              // Si el usuario ya había cargado las sucursales de este cliente, ¡se las devolvemos!
+              // Si no lo había abierto, lo dejamos como undefined para no gastar memoria.
+              sucursales: cViejo && cViejo.sucursales ? cViejo.sucursales : undefined
+            };
+          });
+
+          // Como ya refrescamos los clientes sin romper la estructura,
+          // ahora mandamos a actualizar las impresoras que estén a la vista
+          this.recargarSilenciosamente();
+        }
+      },
+      error: (error) => console.error('Error en recarga silenciosa de clientes:', error)
+    });
+  }
+
+
 }

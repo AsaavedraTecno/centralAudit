@@ -23,6 +23,8 @@ return new class extends Migration
             $table->bigInteger('fax_pages')->default(0)->after('copy_pages');
             $table->bigInteger('print_pages')->default(0)->after('fax_pages');
             $table->bigInteger('duplex_pages')->default(0)->after('print_pages');
+            $table->bigInteger('engine_cycles')->default(0)->after('duplex_pages');
+
 
             $table->timestamp('collected_at')->index();
             $table->timestamps();

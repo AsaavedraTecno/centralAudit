@@ -180,25 +180,19 @@ class PrinterController extends Controller
 
         }
 
-        $impHoyBN = 0;
-        $impHoyColor = 0;
-        $impMesBN = 0;
-        $impMesColor = 0;
+        $impHoyBN = 0; $impHoyColor = 0; $impHoyMotor = 0; // Hoy
+        $impMesBN = 0; $impMesColor = 0; $impMesMotor = 0; // Mes
 
         if ($counter) {
 
             // ===== HOY =====
+            $refHoy = $printer->lastCounterYesterday ?: $printer->firstCounterToday;
 
-            if ($printer->lastCounterYesterday) {
-
-                $impHoyBN = max(0, $counter->bw_pages - $printer->lastCounterYesterday->bw_pages);
-                $impHoyColor = max(0, $counter->color_pages - $printer->lastCounterYesterday->color_pages);
-
-            } elseif ($printer->firstCounterToday) {
-
-                $impHoyBN = max(0, $counter->bw_pages - $printer->firstCounterToday->bw_pages);
-                $impHoyColor = max(0, $counter->color_pages - $printer->firstCounterToday->color_pages);
-
+            if ($refHoy) {
+                $impHoyBN    = max(0, $counter->bw_pages - $refHoy->bw_pages);
+                $impHoyColor = max(0, $counter->color_pages - $refHoy->color_pages);
+                $impHoyMotor = max(0, $counter->engine_cycles - $refHoy->engine_cycles);
+                $impHoyCopia = max(0, $counter->copy_pages - $refHoy->copy_pages);
             }
 
             // ===== MES =====
@@ -207,6 +201,7 @@ class PrinterController extends Controller
 
                 $impMesBN = max(0, $counter->bw_pages - $printer->firstCounterThisMonth->bw_pages);
                 $impMesColor = max(0, $counter->color_pages - $printer->firstCounterThisMonth->color_pages);
+                $impMesMotor = max(0, $counter->engine_cycles - $printer->firstCounterThisMonth->engine_cycles);
 
             }
         }
@@ -274,14 +269,24 @@ class PrinterController extends Controller
             'paginasImpresas' => $counter?->total_pages ?? 0,
             'paginasBN' => $counter?->bw_pages ?? 0,
             'paginasColor' => $counter?->color_pages ?? 0,
-            'impresoHoy' => $impHoyBN + $impHoyColor,
-            'impresoMes' => $impMesBN + $impMesColor,
-            'imp_impreso_hoy_bn' => $impHoyBN,
-            'imp_impreso_hoy_color' => $impHoyColor,
+            'cicloMotor'      => $counter?->engine_cycles ?? 0, // Total histórico
+            'paginasCopia'    => $counter?->copy_pages ?? 0,
+            'paginasScan'     => $counter?->scan_pages ?? 0,
+            'paginasFax'      => $counter?->fax_pages ?? 0,
 
-            'imp_impreso_mes_bn' => $impMesBN,
+
+            // Deltas de Impresión
+            'impresoHoy'      => $impHoyBN + $impHoyColor,
+            'impresoMes'      => $impMesBN + $impMesColor,
+            'imp_impreso_hoy_bn'    => $impHoyBN,
+            'imp_impreso_hoy_color' => $impHoyColor,
+            'imp_impreso_mes_bn'    => $impMesBN,
             'imp_impreso_mes_color' => $impMesColor,
-            
+
+            // DESGASTE MOTOR (Deltas)
+            'cicloMotorHoy'   => $impHoyMotor, // Lo que ha girado solo hoy
+            'cicloMotorMes'   => $impMesMotor, // Lo que ha girado este mes
+
 
             // Suministros usando el Null Coalescing (??)
             'tonerBlack'   => $findSmart(['black', 'toner']) 
@@ -378,7 +383,7 @@ class PrinterController extends Controller
 
         // Entramos a la base de datos de ese cliente específico
         $this->tenantContext->run($tenant, function () use ($serie, $request) {
-            $printer = Printer::where('serial_number', $serie)->firstOrFail();
+            $printer = Printer::findOrFail($id);
             $printer->update(['status' => $request->status]);
         });
 
@@ -426,44 +431,14 @@ class PrinterController extends Controller
 
     public function globalConnectionStatus(): JsonResponse
     {
-        $summary = [
+        // Vamos directo a la memoria RAM (0.01 segundos)
+        // Si por alguna razón el trabajador no ha pasado, devolvemos puros ceros por defecto
+        $summary = \Illuminate\Support\Facades\Cache::get('global_printer_status', [
             'active' => 0,
             'warning' => 0,
             'offline' => 0,
             'total' => 0
-        ];
-
-        // Obtenemos todos los clientes (Tenants)
-        $tenants = \App\Models\Tenant::all();
-
-        foreach ($tenants as $tenant) {
-            // Entramos a la base de datos de cada cliente
-            $this->tenantContext->run($tenant, function () use (&$summary) {
-                $now = now()->utc();
-                
-                // Traemos solo los campos necesarios para no saturar la memoria
-                $printers = \App\Models\Tenant\Printer::select('id', 'last_seen_at', 'status')->get();
-
-                foreach ($printers as $printer) {
-                    $summary['total']++;
-                    
-                    if (!$printer->last_seen_at) {
-                        $summary['offline']++;
-                        continue;
-                    }
-
-                    $minutes = abs($now->diffInMinutes($printer->last_seen_at->utc()));
-
-                    if ($minutes > 30 || $printer->status !== 'active') {
-                        $summary['offline']++;
-                    } elseif ($minutes > 10) {
-                        $summary['warning']++;
-                    } else {
-                        $summary['active']++;
-                    }
-                }
-            });
-        }
+        ]);
 
         return response()->json($summary);
     }

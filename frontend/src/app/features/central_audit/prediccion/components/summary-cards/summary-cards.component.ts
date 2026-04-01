@@ -14,13 +14,15 @@ export class SummaryCardsComponent {
   @Input() summary: PredictionSummaryDetailed | PredictionSummary | null = null;
 
   get ok(): number {
-    // Si el summary aún no ha cargado, devolvemos 0 para que no se rompa la vista
     if (!this.summary) {
       return 0;
     }
     
-    // Si ya cargó, hacemos la matemática normal
-    return this.summary.total - this.summary.critical - this.summary.warning;
+    const total = this.summary.total ?? 0;
+    const critical = this.summary.critical ?? 0;
+    const warning = this.summary.warning ?? 0;
+    
+    return Math.max(0, total - critical - warning);
   }
 
 }

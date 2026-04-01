@@ -19,13 +19,17 @@ class PrinterCounter extends Model
         'scan_pages',
         'fax_pages',
         'duplex_pages',
+        'engine_cycles',
         'collected_at',
     ];
 
     protected $casts = [
-        'total_pages' => 'integer',
-        'bw_pages' => 'integer',
-        'color_pages' => 'integer',
+        'total_pages'   => 'integer',
+        'bw_pages'      => 'integer',
+        'color_pages'   => 'integer',
+        'copy_pages'    => 'integer',
+        'scan_pages'    => 'integer',
+        'engine_cycles' => 'integer',
         'collected_at' => 'datetime',
     ];
 

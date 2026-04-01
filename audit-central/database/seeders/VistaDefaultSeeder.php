@@ -26,7 +26,7 @@ class VistaDefaultSeeder extends Seeder
         });
 
         VistaPersonalizada::create([
-            'user_id' => 1, // o null si es global
+            'user_id' => 1, 
             'nombre' => 'Vista Completa',
             'descripcion' => 'Todas las columnas visibles',
             'columnas' => $configColumnas,

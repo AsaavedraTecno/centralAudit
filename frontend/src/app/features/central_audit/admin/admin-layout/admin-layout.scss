@@ -1,50 +1,130 @@
-/* Admin Container */
-.admin-container {
-  width: 100%;
-  background: #fff;
-}
-
-/* Sub-tabs (Usuarios | Roles | Logs) */
-.admin-tabs {
+/* Contenedor principal del módulo de administración */
+.admin-wrapper {
   display: flex;
-  gap: 2px;
-  padding: 0 12px 0 12px;
-  border-bottom: 1px solid rgba(0,0,0,.1);
-  background: #f8f9fa;
+  /* El 110px es aprox lo que mide tu topbar azul. Ajustalo si es necesario */
+  height: calc(100vh - 110px); 
+  width: 100%;
+  background-color: #f8f9fa; /* Fondo gris claro general */
+  overflow: hidden; /* Evita el doble scroll de toda la ventana */
 }
 
-.admin-tab-button {
+/* Menú lateral (Sidebar) a la izquierda */
+.admin-sidebar {
+  width: 250px;
+  min-width: 250px;
+  height: 100%;
+  background-color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+  overflow-y: auto;
+}
+
+/* Cabecera del sidebar ("Administración") */
+.sidebar-header {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* Contenedor de las opciones */
+.sidebar-nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px; /* Separación sutil entre los botones */
+}
+
+/* Estilos de cada botón del menú lateral */
+.admin-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   padding: 12px 16px;
-  background: transparent;
-  border: none;
-  color: rgba(0,0,0,.7);
+  color: #495057;
+  text-decoration: none;
+  border-radius: 8px;
   font-weight: 500;
-  font-size: 14px;
-  cursor: pointer;
-  border-bottom: 3px solid transparent;
-  transition: all 0.3s ease;
-  display: flex;       /* Agregado para alinear iconos */
-  align-items: center; /* Agregado para alinear iconos */
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+
+  /* Cajita para el icono (asegura que todos los textos queden alineados perfecto) */
+  .nav-icon {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6c757d;
+    font-size: 1.1rem;
+    transition: all 0.2s ease;
+  }
+
+  /* Efecto Hover (Al pasar el mouse) */
+  &:hover {
+    background-color: rgba(13, 110, 253, 0.05); /* Fondo azul tenue */
+    color: #0d6efd;
+    
+    .nav-icon {
+      color: #0d6efd;
+    }
+  }
+
+  /* Efecto Activo (Cuando estás navegando en esa pestaña) */
+  &.active-nav {
+    background-color: #eff6ff; /* Azul más marcado */
+    color: #0d6efd;
+    font-weight: 600;
+    
+    .nav-icon {
+      color: #0d6efd;
+    }
+  }
 }
 
-.admin-tab-button:hover {
-  color: #0d6efd;
-  background: rgba(13,110,253,.05);
-}
-
-.admin-tab-button.active {
-  color: #0d6efd;
-  border-bottom-color: #0d6efd;
-}
-
-.admin-content {
+/* Área de contenido a la derecha (Donde va el Router Outlet) */
+.admin-main-content {
+  flex: 1;
+  height: 100%;
+  overflow-y: auto; /* Scroll independiente solo para el contenido */
   padding: 24px;
-  min-height: 500px;
 }
 
-/* Responsive */
+
+/* ===================================================
+   Responsive (Celulares y Tablets pequeñas)
+   =================================================== */
 @media (max-width: 768px) {
-  .admin-tabs { padding: 0 8px; }
-  .admin-tab-button { padding: 10px 12px; font-size: 13px; }
-  .admin-content { padding: 16px; }
+  .admin-wrapper {
+    flex-direction: column; /* Apila el menú arriba y contenido abajo */
+    height: auto;
+    min-height: calc(100vh - 110px);
+  }
+
+  .admin-sidebar {
+    width: 100%;
+    min-width: 100%;
+    height: auto;
+    border-right: none !important;
+    border-bottom: 1px solid #dee2e6;
+  }
+
+  .sidebar-header {
+    display: none; /* Oculta el título "Administración" en móvil para ahorrar espacio */
+  }
+
+  .sidebar-nav {
+    flex-direction: row; /* Los botones se ponen uno al lado del otro */
+    overflow-x: auto; /* Permite deslizar con el dedo si son muchos */
+    padding: 8px !important;
+    gap: 8px;
+  }
+
+  .admin-nav-item {
+    padding: 8px 16px;
+    white-space: nowrap; /* Evita que el texto se parta en dos líneas */
+    border-radius: 20px; /* Estilo píldora para móviles */
+  }
+
+  .admin-main-content {
+    padding: 16px;
+  }
 }

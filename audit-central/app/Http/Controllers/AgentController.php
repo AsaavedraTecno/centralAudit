@@ -97,28 +97,6 @@ class AgentController extends Controller
         ]);
     }
 
-    /**
-     * Recibir telemetría del agente Go (batch de eventos)
-     * POST /api/agent/telemetry
-     * 
-     * Headers: X-Agent-Key
-     * Body: {
-     *   client_code: "ACME",
-     *   events: [
-     *     {
-     *       schema_version: "1.0.0",
-     *       collected_at: "2025-12-23T15:47:20Z",
-     *       source: { agent_id: "AGT-001", hostname: "server-01", os: "windows" },
-     *       printer: { id: "...", ip: "192.168.150.17", brand: "Samsung", model: "...", serial: "..." },
-     *       status: { state: "idle", page_count: 14372 },
-     *       counters: { total_pages: 14372, mono_pages: 600, color_pages: 600 },
-     *       supplies: [ { id: "toner_black", name: "Black Toner", level: 85 } ],
-     *       metrics: { polling: { response_time_ms: 1693 } }
-     *     }
-     *   ]
-     * }
-     */
-
     public function config(Request $request): JsonResponse
     {
         $agentKey = $this->validateAgentKey($request);
@@ -285,44 +263,67 @@ class AgentController extends Controller
             ? Carbon::parse($event['collected_at'], 'UTC')
             : now()->utc();
 
-        // 2. ID Único del Agente (Crucial para Xerox)
-        // El agente envía un 'id' que es la MAC, el Serial o la IP.
-        // Lo guardaremos en 'asset_tag' ya que no tienes 'hardware_id'.
+        // 2. ID Único del Agente y variables de búsqueda
         $uniqueId = $pData['id'] ?? null;
+        $macAddress = $pData['mac_address'] ?? null;
+        $serialNumber = $pData['serial_number'] ?? null;
 
         if (!$uniqueId) {
-            // Fallback de emergencia si el agente no manda ID (raro)
-            $uniqueId = $pData['serial_number'] ?? $pData['mac_address'] ?? $pData['ip'];
+            // Fallback de emergencia si el agente no manda ID
+            $uniqueId = $serialNumber ?? $macAddress ?? $pData['ip'];
         }
 
         if (!$uniqueId) return false; // Si no hay forma de identificarla, salir.
 
-        // 3. ACTUALIZAR O CREAR LA IMPRESORA
-        // Usamos asset_tag como clave de búsqueda primaria
-        $printer = Printer::updateOrCreate(
-            ['asset_tag' => $uniqueId], // Buscamos por el ID único del agente
-            [
-                'agent_id'         => $agentStatus->id,
-                'location_id'      => $location->id,
-                'location'         => $pData['location'] ?? null,
-                'hostname'         => $pData['hostname'] ?? null,
-                'name'             => $pData['hostname'] ?? $pData['model'] ?? 'Printer',
-                'model'            => $pData['model'] ?? 'Modelo Desconocido',
-                'brand'            => $pData['brand'] ?? 'Generica',
-                'serial_number'    => $pData['serial_number'], // Puede ser null (Xerox)
-                'ip_address'       => $pData['ip'],
-                'mac_address'      => $pData['mac_address'],
-                'status'           => 'active', 
-                'last_seen_at'     => $collectedAt,
-                // 'is_color'      => (lógica opcional si el agente la envía)
-                // 'printer_type'  => 'laser', (ejemplo)
-            ]
-        );
+        // 3. BÚSQUEDA INTELIGENTE Y ACTUALIZACIÓN (Upsert avanzado para evitar duplicados)
+        $printer = null;
+
+        // Intentar encontrarla por MAC Address en esta sucursal (La más precisa)
+        if ($macAddress) {
+            $printer = Printer::where('location_id', $location->id)
+                              ->where('mac_address', $macAddress)
+                              ->first();
+        }
+
+        // Si no la encontró por MAC, intentamos por Serial Number
+        if (!$printer && $serialNumber) {
+            $printer = Printer::where('location_id', $location->id)
+                              ->where('serial_number', $serialNumber)
+                              ->first();
+        }
+
+        // Último intento: por el ID antiguo que haya dejado el agente (asset_tag)
+        if (!$printer) {
+            $printer = Printer::where('asset_tag', $uniqueId)->first();
+        }
+
+        // Preparamos los datos frescos
+        $printerData = [
+            'agent_id'         => $agentStatus->id,
+            'location_id'      => $location->id,
+            'location'         => $pData['location'] ?? null,
+            'hostname'         => $pData['hostname'] ?? null,
+            'name'             => $pData['hostname'] ?? $pData['model'] ?? 'Printer',
+            'model'            => $pData['model'] ?? 'Modelo Desconocido',
+            'brand'            => $pData['brand'] ?? 'Generica',
+            'serial_number'    => $serialNumber,
+            'ip_address'       => $pData['ip'],
+            'mac_address'      => $macAddress,
+            'status'           => 'active', 
+            'last_seen_at'     => $collectedAt,
+            'asset_tag'        => $uniqueId, // Actualizamos al nuevo ID del agente
+        ];
+
+        // Decidimos si creamos o actualizamos
+        if ($printer) {
+            $printer->update($printerData);
+            $isNew = false;
+        } else {
+            $printer = Printer::create($printerData);
+            $isNew = true;
+        }
 
         // 4. GUARDAR CONTADORES (Historial Inteligente)
-        
-        $isNew = $printer->wasRecentlyCreated;
-        // Verificamos si hubo impresión en Mono o Color
         $hasActivity = ($deltaData['total_pages'] ?? 0) > 0;
 
         // Opcional: Actualizar 'last_counter_at' en la impresora
@@ -336,22 +337,23 @@ class AgentController extends Controller
                 'total_pages'  => $absData['total_pages'] ?? 0,
                 'bw_pages'     => $absData['mono_pages'] ?? 0,  // Mapeo mono -> bw
                 'color_pages'  => $absData['color_pages'] ?? 0,
-                'scan_pages'   => $absData['scan_pages'] ?? 0,
-                'copy_pages'   => $absData['copy_pages'] ?? 0,
-                'fax_pages'    => $absData['fax_pages'] ?? 0,
-                // 'print_pages' => ... (si el agente lo desglosa)
-                'collected_at' => $collectedAt,
+                'scan_pages'    => $absData['scan_pages'] ?? 0,
+                'copy_pages'    => $absData['copy_pages'] ?? 0,
+                'fax_pages'     => $absData['fax_pages'] ?? 0,
+                'engine_cycles' => $absData['engine_cycles'] ?? 0, 
+                'collected_at'  => $collectedAt
+            
             ]);
             
             Log::info("💾 Historial creado para {$uniqueId}. Delta: " . ($deltaData['total_pages'] ?? 0));
         }
 
+        // Actualizar tabla de agregados (Promedios)
         if (!empty($deltaData) && ($deltaData['total_pages'] ?? 0) > 0) {
-                $this->updateAggregates($printer, $deltaData, $collectedAt);
-            }
+            $this->updateAggregates($printer, $deltaData, $collectedAt);
+        }
 
-        // 5. GUARDAR SUMINISTROS
-        // Según tu modelo PrinterSupply, tienes campos limitados.
+        // 5. GUARDAR SUMINISTROS (Con Historial)
         if (!empty($suppliesData)) {
             foreach ($suppliesData as $supply) {
                 $mappedType = $this->mapSupplyId($supply['id'] ?? 'unknown');
@@ -361,21 +363,37 @@ class AgentController extends Controller
                 $name = $supply['name'] ?? null;
                 $serialNumber = $supply['serial_number'] ?? null;
                 $description = $supply['description'] ?? null;
-                
-                PrinterSupply::updateOrCreate(
-                    [
-                        'printer_id'  => $printer->id,
-                        'supply_type' => $mappedType, 
-                    ],
-                    [
-                        'name'          => $supply['name'] ?? null,          
-                        'percentage'    => $supply['percentage'] ?? 0,
-                        'status'        => $supply['status'] ?? 'unknown',
-                        'serial_number' => $supply['serial_number'] ?? null,
-                        'description'   => $supply['description'] ?? null,   
+
+                // 1. Buscamos la última lectura de este suministro
+                $lastSupply = PrinterSupply::where('printer_id', $printer->id)
+                    ->where('supply_type', $mappedType)
+                    ->orderByDesc('read_at')
+                    ->first();
+
+                // 2. ¿Debemos insertar un nuevo registro?
+                $shouldInsert = true;
+                if ($lastSupply) {
+                    $hoursSinceLastRead = $collectedAt->diffInHours($lastSupply->read_at);
+                    if ($lastSupply->percentage == $percentage && $hoursSinceLastRead < 24) {
+                        $shouldInsert = false; // No hay cambios hoy, no duplicamos data
+                    }
+                }
+
+                if ($shouldInsert) {
+                    PrinterSupply::create([
+                        'printer_id'    => $printer->id,
+                        'supply_type'   => $mappedType,
+                        'name'          => $name,          
+                        'percentage'    => $percentage,
+                        'status'        => $status,
+                        'serial_number' => $serialNumber,
+                        'description'   => $description,   
                         'read_at'       => $collectedAt,
-                    ]
-                );
+                    ]);
+                } else {
+                    // Actualizamos solo la fecha para saber que la vimos viva
+                    $lastSupply->update(['read_at' => $collectedAt]);
+                }
             }
         }
 
@@ -393,6 +411,9 @@ class AgentController extends Controller
             'total_pages' => $counters['total_pages'] ?? $counters['page_count'] ?? 0,
             'bw_pages' => $counters['mono_pages'] ?? $counters['bw_pages'] ?? 0,
             'color_pages' => $counters['color_pages'] ?? 0,
+            'scan_pages'    => $counters['scan_pages'] ?? 0,
+            'copy_pages'    => $counters['copy_pages'] ?? 0,
+            'engine_cycles' => $counters['engine_cycles'] ?? 0,
             'collected_at' => $collectedAt,
         ]);
     }
@@ -838,10 +859,12 @@ class AgentController extends Controller
             'total_pages' => $counters['total_pages'] ?? 0,
             'bw_pages' => $counters['bw_pages'] ?? 0,
             'color_pages' => $counters['color_pages'] ?? 0,
+
             'copy_pages' => $counters['copy_pages'] ?? null,
             'print_pages' => $counters['print_pages'] ?? null,
             'scan_pages' => $counters['scan_pages'] ?? null,
             'fax_pages' => $counters['fax_pages'] ?? null,
+            'engine_cycles' => $counters['engine_cycles'] ?? 0,
             'duplex_pages' => $counters['duplex_pages'] ?? null,
             'read_at' => now(),
         ]);
@@ -924,9 +947,10 @@ class AgentController extends Controller
         $totalPages = $delta['total_pages'] ?? 0;
         $bwPages    = $delta['mono_pages'] ?? 0;
         $colorPages = $delta['color_pages'] ?? 0;
+        $engineDelta = $delta['engine_cycles'] ?? 0;
 
         // Si no hay incremento real, salimos
-        if ($totalPages <= 0) return;
+        if ($totalPages <= 0 && $engineDelta <= 0) return;
 
         // ---------------------------------------------------------
         // A. AGREGADO DIARIO (daily_aggregates)
@@ -944,14 +968,16 @@ class AgentController extends Controller
                 'total_pages' => 0,
                 'bw_pages'    => 0,
                 'color_pages' => 0,
+                'engine_cycles' => 0
                 // 'supplies_avg' => null // Omitimos avg por rendimiento ahora
             ]
         );
 
         // Usamos increment() que es atómico y seguro
-        $daily->increment('total_pages', $totalPages);
+        $daily->increment('total_pages', $totalPages); 
         $daily->increment('bw_pages', $bwPages);
         $daily->increment('color_pages', $colorPages);
+        $daily->increment('engine_cycles', $engineDelta);
 
         // ---------------------------------------------------------
         // B. AGREGADO MENSUAL (monthly_aggregates)
@@ -968,12 +994,14 @@ class AgentController extends Controller
                 'total_pages' => 0,
                 'bw_pages'    => 0,
                 'color_pages' => 0,
+                'engine_cycles' => 0
             ]
         );
 
         $monthly->increment('total_pages', $totalPages);
         $monthly->increment('bw_pages', $bwPages);
         $monthly->increment('color_pages', $colorPages);
+        $monthly->increment('engine_cycles', $engineDelta);
         
         Log::info("📈 Agregados actualizados para Impresora {$printer->id} (Día: $date, +$totalPages pags)");
     }

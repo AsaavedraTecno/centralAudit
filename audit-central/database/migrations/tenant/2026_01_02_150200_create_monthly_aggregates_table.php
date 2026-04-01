@@ -18,6 +18,9 @@ return new class extends Migration
             $table->integer('total_pages')->default(0);
             $table->integer('bw_pages')->default(0);
             $table->integer('color_pages')->default(0);
+
+            $table->bigInteger('engine_cycles')->default(0);
+            
             $table->json('supplies_avg')->nullable();
             $table->timestamps();
 

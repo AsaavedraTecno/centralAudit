@@ -4,7 +4,7 @@ import { RouterModule } from '@angular/router';
 import { TenantPanelService } from '../../../core/services/tenant-panel.service';
 
 @Component({
-  selector: 'app-monitoreo-layout.component',
+  selector: 'app-monitoreo-layout',
   standalone: true,
   imports: [CommonModule, RouterModule],
   templateUrl: './monitoreo-layout.component.html',

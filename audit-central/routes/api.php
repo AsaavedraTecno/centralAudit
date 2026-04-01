@@ -21,8 +21,7 @@ use App\Http\Controllers\{
 /*
 | API Routes - Sistema Multi-Tenant Monitoreo
 */
-
-$centralDomain = config('tenancy.central_domains')[0] ?? 'centralaudit.tecnodatasa.cl';
+$centralDomain = env('CENTRAL_DOMAIN', request()->getHost());
 
     // 2. AGENT ENDPOINTS (Auth por Header X-Agent-Key)
 
@@ -35,6 +34,8 @@ $centralDomain = config('tenancy.central_domains')[0] ?? 'centralaudit.tecnodata
         Route::post('/sync', [AgentController::class, 'sync']);
         Route::post('/telemetry', [AgentController::class, 'telemetry']);
     });
+
+
 
 // =============================================
 // 1. RUTAS PÚBLICAS (Abiertas)

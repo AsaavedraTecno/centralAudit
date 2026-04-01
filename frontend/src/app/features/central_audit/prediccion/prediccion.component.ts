@@ -150,7 +150,7 @@ export class PrediccionComponent implements OnInit {
       next: (res) => {
         this.globalData = {
           summary: res.summary,
-          locations: res.locations.slice(0, 5),
+          locations: (res.locations || []).slice(0, 5),
           urgent: res.urgent,
           trend: res.trend,
           lastUpdate: res.lastUpdate?.last_update || null
@@ -158,7 +158,9 @@ export class PrediccionComponent implements OnInit {
         this.cargando = false;
         this.cdr.detectChanges();
       },
-      error: () => this.cargando = false
+      error: () => {
+        this.cargando = false;
+      }
     });
   }
 
@@ -166,16 +168,22 @@ export class PrediccionComponent implements OnInit {
     this.cargandoArbol = true;
     this.clienteService.getClientes().subscribe({
       next: (resp: any) => {
-        this.clientes = Array.isArray(resp) ? resp : (resp.data || []);
+        this.clientes = Array.isArray(resp) ? resp : (resp?.data || []);
         let cargadas = 0;
+        const totalClientes = this.clientes.length;
+        if (totalClientes === 0) {
+          this.cargandoArbol = false;
+          return;
+        }
         this.clientes.forEach((c, index) => {
           this.sucursalService.getByClientCode(c.code || c.id).subscribe({
             next: (sucResp: any) => {
-              this.clientes[index].sucursales = Array.isArray(sucResp) ? sucResp : (sucResp.data || []);
+              if (this.clientes[index]) {
+                this.clientes[index].sucursales = Array.isArray(sucResp) ? sucResp : (sucResp?.data || []);
+              }
               cargadas++;
-              if (cargadas === this.clientes.length) {
+              if (cargadas === totalClientes) {
                 this.cargandoArbol = false;
-                // Intentar sincronizar el sidebar si las sucursales cargan DESPUÉS que la URL
                 if((this.vistaActiva === 'sucursal' || this.vistaActiva === 'detalle') && !this.sucursalSeleccionada) {
                   const tenantCodeUrl = this.route.snapshot.paramMap.get('tenantCode');
                   const locationIdUrl = Number(this.route.snapshot.paramMap.get('locationId'));
@@ -188,10 +196,13 @@ export class PrediccionComponent implements OnInit {
             },
             error: () => {
               cargadas++;
-              if (cargadas === this.clientes.length) this.cargandoArbol = false;
+              if (cargadas === totalClientes) this.cargandoArbol = false;
             }
           });
         });
+      },
+      error: () => {
+        this.cargandoArbol = false;
       }
     });
   }

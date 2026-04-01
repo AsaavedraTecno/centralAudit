@@ -1,184 +1,189 @@
-/* Estilos específicos para la sección Admin Roles, basados en admin-usuarios */
+/* ========================================================
+   DISEÑO SaaS PREMIUM (AWS/Vercel style)
+   ======================================================== */
 
-/* Layout principal */
-.roles-container {
-	display: grid;
-	grid-template-columns: 1fr 1fr; /* 50% y 50% */
-	gap: 24px;
-	width: 100%;
+.modern-card {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.025);
+    border: 1px solid rgba(0,0,0,0.05);
+    overflow: hidden;
 }
 
-/* Formulario de creación/edición */
-.roles-form-col .rol-form {
-	background: #f8f9fa;
-	padding: 16px;
-	border-radius: 8px;
+.modern-btn {
+    border-radius: 8px;
+    font-weight: 600;
+    padding: 10px 20px;
+    transition: all 0.2s;
+    
+    &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(13, 110, 253, 0.2);
+    }
 }
 
-/* Columna de lista de roles */
-.roles-list-col .roles-list-content {
-	background: #f8f9fa;  
-	padding: 16px;
-	border-radius: 8px;
-}
-
-.roles-form-col .permissions-checkboxes {
-	background: white;
-	padding: 12px;
-	border-radius: 4px;
-	border: 1px solid #ddd;
-	max-height: 220px; /* Igualado a la altura de la lista de clientes en usuarios */
-	overflow: auto;
-}
-
-.roles-form-col .checkbox-todos {
-    font-weight: bold;
-    padding-bottom: 5px;
-}
-
-
-.roles-form-col .form-group {
-	margin-bottom: 14px;
-}
-
-/* Espacio entre la etiqueta (título) y el campo de texto */
-.rol-form .form-group > label,
-.modal-body .form-group > label {
-    display: block;
-    margin-bottom: 0.25rem; /* 4px de espacio */
-}
-
-.permissions-grid {
-    display: grid;
-    /* Crea columnas automáticas con un ancho mínimo, ideal para responsividad */
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 24px; /* Espacio entre las columnas de categorías */
-}
-
-.permission-category {
-    margin-bottom: 8px;
-    font-weight: bold;
-    color: #333;
-    border-bottom: 1px solid #dee2e6;
-    padding-bottom: 5px;
-    text-transform: capitalize; /* Pone la primera letra en mayúscula, se ve mejor */
-}
-
-.permission-item {
-    display: block;
-    margin-left: 0; /* Eliminamos el margen que creaba la lista vertical */
-    font-weight: normal;
-    margin-bottom: 4px; /* Pequeño espacio entre cada permiso */
-}
-
-/* Tabla de roles */
-.roles-list-col .roles-table.table {
-    width: 95%;
-    margin: 0 auto;
-    border-collapse: collapse;
+.btn-back {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
     border: 1px solid #dee2e6;
-    table-layout: auto;
+    background: white;
+    color: #495057;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    
+    &:hover {
+        background: #f8f9fa;
+        color: #0d6efd;
+        border-color: #0d6efd;
+    }
 }
 
-.roles-list-col .roles-table.table th,
-.roles-list-col .roles-table.table td {
-    border: 1px solid #dee2e6;
-    padding: 3px 8px; 
-    font-size: 0.95rem; 
-    vertical-align: middle;
+/* TABLA MODERNA */
+.modern-table {
+    margin-bottom: 0;
+
+    thead th {
+        background-color: #f8fafc;
+        color: #64748b;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 16px 20px;
+        border-bottom: 1px solid #e2e8f0;
+        border-top: none;
+    }
+
+    tbody td {
+        padding: 16px 20px;
+        border-bottom: 1px solid #f1f5f9;
+        color: #334155;
+        vertical-align: middle;
+    }
+
+    tbody tr {
+        transition: background-color 0.2s;
+        &:hover { background-color: #f8fafc; }
+    }
 }
 
-.roles-list-col .roles-table.table thead {
-    background: #f0f0f0;
+/* El punto de color al lado del nombre del rol */
+.color-dot {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid white;
 }
 
-.roles-list-col .roles-table.table .btn-sm {
-    padding: 1px 6px; 
-    font-size: 0.75rem; 
-    margin: 0 2px;
+/* BOTONES DE ACCIÓN */
+.btn-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+
+    &:hover {
+        background: #f1f5f9;
+        color: #0f172a;
+    }
+    
+    &.hover-danger:hover {
+        background: #fee2e2;
+        color: #dc2626;
+    }
 }
 
-.usuarios-list-col .table-responsive {
-    padding: 8px;
+/* FORMULARIOS */
+.modern-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 6px;
+    display: block;
 }
+
+.modern-input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background-color: #fff;
+    font-size: 0.95rem;
+    color: #1e293b;
+    transition: all 0.2s;
+
+    &:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    }
+    
+    &.disabled, &:disabled {
+        background-color: #f8fafc !important;
+        color: #94a3b8;
+        pointer-events: none;
+    }
+}
+
+.modern-alert {
+    padding: 16px 20px;
+    border-radius: 8px;
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 500;
+}
+
+/* GRID DE PERMISOS */
+.clientes-grid {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px;
+}
+
+.permission-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border-color: #e2e8f0 !important;
+    
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        border-color: #cbd5e1 !important;
+    }
+}
+
+.cursor-pointer { cursor: pointer; }
+
+/* Animaciones */
+.animate-fade-in { animation: fadeIn 0.3s ease; }
+.animate-slide-in { animation: slideIn 0.3s ease; }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideIn { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
 
 /* Modales */
 .modal-overlay {
-	position: fixed;
-	top: 0;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	background-color: rgba(10, 10, 10, 0.8);
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	z-index: 1050;
-	padding: 1rem;
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background-color: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(2px);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1050; padding: 1rem;
 }
 
-.modal-header {
-	display: flex;
-	align-items: flex-start;
-	justify-content: space-between;
-	padding: 1rem 1rem;
-	border-bottom: 1px solid #dee2e6;
-	border-top-left-radius: 8px;
-	border-top-right-radius: 8px;
-}
-
-.modal-body {
-	position: relative;
-	flex: 1 1 auto;
-	padding: 1rem;
-}
-
-.modal-footer {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: center;
-	justify-content: flex-end;
-	padding: 0.75rem;
-	border-top: 1px solid #dee2e6;
-	border-bottom-right-radius: 8px;
-	border-bottom-left-radius: 8px;
-	gap: 0.5rem;
-}
-
-.modal-header .close {
-    padding: 1rem 1rem;
-    margin: -1rem -1rem -1rem auto;
-    background-color: transparent;
-    border: 0;
-    font-size: 1.5rem;
-    cursor: pointer;
-}
-
-.modal-content-editarRol,
 .modal-content-eliminarRol {
-	background-color: white;
-	border-radius: 8px;
-	box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
-	position: relative;
-	display: flex;
-	flex-direction: column;
-	width: 100%;
-	pointer-events: auto;
-	max-width: 600px;
-}
-
-.color-dot {
-    display: inline-block;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    margin-right: 8px;
-    border: 1px solid rgba(0,0,0,0.2);
-}
-
-/* Responsive */
-@media (max-width: 1024px) {
-	.roles-container {
-		grid-template-columns: 1fr;
-	}
+    width: 100%;
+    max-width: 450px;
+    animation: fadeIn 0.2s ease-out;
 }

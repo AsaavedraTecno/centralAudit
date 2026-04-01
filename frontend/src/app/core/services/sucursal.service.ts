@@ -15,7 +15,9 @@ export class SucursalService {
   constructor(private http: HttpClient) { }
   
   getAll(): Observable<Sucursal[]> {
-    return of([]); 
+    return this.http.get<any>(`${this.baseUrl}/sucursales`).pipe(
+      map(response => response?.sucursales || response?.data || [])
+    );
   }
 
   /**
@@ -25,7 +27,7 @@ export class SucursalService {
   getByClientCode(clientCode: string): Observable<Sucursal[]> {
     return this.http.get<any>(`${this.baseUrl}/tenants/${clientCode}/sucursales`).pipe(
       map(response => {
-        return response.sucursales || response.data || [];
+        return response?.sucursales || response?.data || [];
       })
     );
   }
@@ -35,10 +37,9 @@ export class SucursalService {
    * GET /api/tenants/{clientCode}/sucursales/{id}
    */
   getById(id: number | string, clientCode: string): Observable<Sucursal> {
-     // 👇 AQUÍ TAMBIÉN
     return this.http.get<any>(`${this.baseUrl}/tenants/${clientCode}/sucursales/${id}`).pipe(
       map(response => {
-        return response.sucursal || response.data;
+        return response?.sucursal || response?.data;
       })
     );
   }
@@ -48,10 +49,9 @@ export class SucursalService {
    * POST /api/tenants/{clientCode}/sucursales
    */
   create(data: Partial<Sucursal>, clientCode: string): Observable<Sucursal> {
-     // 👇 AQUÍ TAMBIÉN
     return this.http.post<any>(`${this.baseUrl}/tenants/${clientCode}/sucursales`, data).pipe(
       map(response => {
-        return response.sucursal || response.data;
+        return response?.sucursal || response?.data;
       })
     );
   }
@@ -61,10 +61,9 @@ export class SucursalService {
    * PUT /api/tenants/{clientCode}/sucursales/{id}
    */
   update(id: number | string, data: Partial<Sucursal>, clientCode: string): Observable<Sucursal> {
-     // 👇 AQUÍ TAMBIÉN
     return this.http.put<any>(`${this.baseUrl}/tenants/${clientCode}/sucursales/${id}`, data).pipe(
       map(response => {
-        return response.sucursal || response.data;
+        return response?.sucursal || response?.data;
       })
     );
   }
@@ -74,7 +73,6 @@ export class SucursalService {
    * DELETE /api/tenants/{clientCode}/sucursales/{id}
    */
   delete(id: number | string, clientCode: string): Observable<void> {
-     // 👇 AQUÍ TAMBIÉN
     return this.http.delete<void>(`${this.baseUrl}/tenants/${clientCode}/sucursales/${id}`);
   }
 }

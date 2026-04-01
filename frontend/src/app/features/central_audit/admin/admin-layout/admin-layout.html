@@ -1,25 +1,40 @@
-<div class="admin-container">
-  <div class="admin-tabs">
-    <a routerLink="usuarios" 
-       routerLinkActive="active" 
-       class="admin-tab-button text-decoration-none">
-       <i class="fas fa-user-tie me-2"></i> Usuarios
-    </a>
+<div class="admin-wrapper">
+  
+  <aside class="admin-sidebar bg-white shadow-sm border-end">
+    
+    <div class="sidebar-header">
+      <h6 class="text-uppercase fw-bold text-muted mb-0 small px-3 pt-4 pb-2">
+        Administración
+      </h6>
+    </div>
 
-    <a routerLink="roles" 
-       routerLinkActive="active" 
-       class="admin-tab-button text-decoration-none">
-       <i class="fas fa-key me-2"></i> Roles
-    </a>
+    <nav class="sidebar-nav p-2">
+      <a routerLink="usuarios" 
+         routerLinkActive="active-nav" 
+         class="admin-nav-item">
+        <div class="nav-icon"><i class="fas fa-user-tie"></i></div>
+        <span>Usuarios</span>
+      </a>
 
-    <a routerLink="audit-logs" 
-       routerLinkActive="active" 
-       class="admin-tab-button text-decoration-none">
-       <i class="fas fa-history me-2"></i> Audit Logs
-    </a>
-  </div>
+      <a routerLink="roles" 
+         routerLinkActive="active-nav" 
+         class="admin-nav-item">
+        <div class="nav-icon"><i class="fas fa-key"></i></div>
+        <span>Roles</span>
+      </a>
 
-  <div class="admin-content">
+      <!-- <a routerLink="audit-logs" 
+         routerLinkActive="active-nav" 
+         class="admin-nav-item">
+        <div class="nav-icon"><i class="fas fa-history"></i></div>
+        <span>Audit Logs</span>
+      </a> !-->
+    </nav>
+
+  </aside>
+
+  <main class="admin-main-content">
     <router-outlet></router-outlet>
-  </div>
+  </main>
+
 </div>

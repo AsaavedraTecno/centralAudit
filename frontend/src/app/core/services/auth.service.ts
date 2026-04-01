@@ -95,7 +95,7 @@ export class AuthService {
       catchError(err => {
 
         this.logout2();
-        return of(err);
+        return of({ success: false, error: err });
 
       })
 

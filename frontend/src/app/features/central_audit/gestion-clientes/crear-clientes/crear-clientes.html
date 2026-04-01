@@ -1,8 +1,7 @@
 <div class="container py-5">
   <div class="text-center mb-5">
     <h2 class="fw-bold text-dark">
-      <i class="fas fa-rocket text-primary me-2"></i> 
-      Alta de Nuevo Tenant
+      <i class="fas fa-rocket text-primary me-2"></i> Alta de Nuevo Tenant
     </h2>
     <p class="text-muted">Configure la infraestructura inicial y los parámetros de monitoreo para el nuevo cliente.</p>
   </div>
@@ -30,10 +29,6 @@
       <div class="card shadow border-0 overflow-hidden">
         <div class="card-body p-5">
           
-          <div *ngIf="error" class="alert alert-danger border-0 shadow-sm mb-4 animate__animated animate__fadeInDown d-flex justify-content-between align-items-center">
-            <div><i class="fas fa-exclamation-circle me-2"></i> {{ error }}</div>
-            <button type="button" class="btn-close" (click)="error = ''"></button>
-          </div>
           <div *ngIf="success" class="alert alert-success border-0 shadow-sm mb-4 animate__animated animate__fadeIn">
             <i class="fas fa-check-circle me-2"></i> {{ success }}
           </div>
@@ -41,41 +36,57 @@
           <div *ngIf="pasoActual === 1" class="animate__animated animate__fadeIn">
             <h5 class="fw-bold mb-4 text-primary"><i class="fas fa-id-card me-2"></i>Identificación y Ubicación Legal</h5>
             <div class="row g-3">
+              
               <div class="col-md-4">
-                <label class="form-label small fw-bold">RUT Empresa</label>
-                <input type="text" 
-                       class="form-control" 
+                <label class="form-label small fw-bold">RUT Empresa <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" 
                        [class.is-invalid]="!clienteForm.rut && intentoSiguiente" 
-                       (input)="validarEntradaRut($event)" 
-                       [(ngModel)]="clienteForm.rut" 
-                       placeholder="12.345.678-K"
-                       maxlength="12"> 
-                <div class="invalid-feedback">El RUT es obligatorio.</div>
+                       [class.animate__animated]="!clienteForm.rut && intentoSiguiente && animarErrores"
+                       [class.animate__shakeX]="!clienteForm.rut && intentoSiguiente && animarErrores"
+                       (input)="validarEntradaRut($event)" [(ngModel)]="clienteForm.rut" placeholder="12.345.678-K" maxlength="12"> 
+                <div class="invalid-feedback"><i class="fas fa-exclamation-triangle me-1"></i> Obligatorio</div>
               </div>
+              
               <div class="col-md-8">
-                <label class="form-label small fw-bold">Razón Social</label>
-                <input type="text" class="form-control" [class.is-invalid]="!clienteForm.nombre && intentoSiguiente" 
+                <label class="form-label small fw-bold">Razón Social <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" 
+                       [class.is-invalid]="!clienteForm.nombre && intentoSiguiente"
+                       [class.animate__animated]="!clienteForm.nombre && intentoSiguiente && animarErrores"
+                       [class.animate__shakeX]="!clienteForm.nombre && intentoSiguiente && animarErrores"
                        [(ngModel)]="clienteForm.nombre" placeholder="Nombre de la empresa">
+                <div class="invalid-feedback"><i class="fas fa-exclamation-triangle me-1"></i> Obligatorio</div>
               </div>
               
               <div class="col-md-6">
-                <label class="form-label small fw-bold text-secondary">Región (Casa Matriz)</label>
+                <label class="form-label small fw-bold text-secondary">Región (Casa Matriz) <span class="text-danger">*</span></label>
                 <ng-select [items]="regionesChile" bindLabel="NombreRegion" bindValue="NombreRegion" placeholder="Buscar región..."
-                           [(ngModel)]="clienteForm.region" (change)="onRegionChange()" [class.is-invalid-custom]="!clienteForm.region && intentoSiguiente">
+                           [(ngModel)]="clienteForm.region" (change)="onRegionChange()" appendTo="body"
+                           [class.is-invalid-custom]="!clienteForm.region && intentoSiguiente"
+                           [class.animate__animated]="!clienteForm.region && intentoSiguiente && animarErrores"
+                           [class.animate__shakeX]="!clienteForm.region && intentoSiguiente && animarErrores">
                 </ng-select>
+                <div *ngIf="!clienteForm.region && intentoSiguiente" class="text-danger small mt-1"><i class="fas fa-exclamation-triangle me-1"></i> Seleccione una región</div>
               </div>
 
               <div class="col-md-6">
-                <label class="form-label small fw-bold text-secondary">Comuna</label>
+                <label class="form-label small fw-bold text-secondary">Comuna <span class="text-danger">*</span></label>
                 <ng-select [items]="comunasDisponibles" placeholder="Seleccione comuna..." [(ngModel)]="clienteForm.comuna" 
-                           [disabled]="!clienteForm.region" [class.is-invalid-custom]="!clienteForm.comuna && intentoSiguiente">
+                           [disabled]="!clienteForm.region" appendTo="body"
+                           [class.is-invalid-custom]="!clienteForm.comuna && intentoSiguiente"
+                           [class.animate__animated]="!clienteForm.comuna && intentoSiguiente && animarErrores"
+                           [class.animate__shakeX]="!clienteForm.comuna && intentoSiguiente && animarErrores">
                 </ng-select>
+                <div *ngIf="!clienteForm.comuna && intentoSiguiente" class="text-danger small mt-1"><i class="fas fa-exclamation-triangle me-1"></i> Seleccione una comuna</div>
               </div>
 
               <div class="col-md-12">
-                <label class="form-label small fw-bold">Dirección Comercial Principal</label>
-                <input type="text" class="form-control" [class.is-invalid]="!clienteForm.direccion && intentoSiguiente" 
+                <label class="form-label small fw-bold">Dirección Comercial Principal <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" 
+                       [class.is-invalid]="!clienteForm.direccion && intentoSiguiente" 
+                       [class.animate__animated]="!clienteForm.direccion && intentoSiguiente && animarErrores"
+                       [class.animate__shakeX]="!clienteForm.direccion && intentoSiguiente && animarErrores"
                        [(ngModel)]="clienteForm.direccion" placeholder="Calle, número, oficina o depto.">
+                <div class="invalid-feedback"><i class="fas fa-exclamation-triangle me-1"></i> Obligatorio</div>
               </div>
 
               <div class="col-md-12 mt-5">
@@ -97,43 +108,39 @@
                     
                     <div class="row g-3">
                       <div class="col-md-6">
-                        <label class="form-label small fw-bold">Nombre Completo</label>
-                        <input type="text" class="form-control form-control-sm" [class.is-invalid]="!contacto.nombre && intentoSiguiente" [(ngModel)]="contacto.nombre">
+                        <label class="form-label small fw-bold">Nombre Completo <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control form-control-sm" 
+                               [class.is-invalid]="!contacto.nombre && intentoSiguiente" 
+                               [class.animate__animated]="!contacto.nombre && intentoSiguiente && animarErrores"
+                               [class.animate__shakeX]="!contacto.nombre && intentoSiguiente && animarErrores"
+                               [(ngModel)]="contacto.nombre">
+                        <div class="invalid-feedback">Requerido</div>
                       </div>
                       <div class="col-md-6">
-                        <label class="form-label small fw-bold">Email</label>
-                        <input type="email" class="form-control form-control-sm" [class.is-invalid]="(!contacto.email || !esEmailValido(contacto.email)) && intentoSiguiente" [(ngModel)]="contacto.email">
+                        <label class="form-label small fw-bold">Email <span class="text-danger">*</span></label>
+                        <input type="email" class="form-control form-control-sm" 
+                               [class.is-invalid]="(!contacto.email || !esEmailValido(contacto.email)) && intentoSiguiente" 
+                               [class.animate__animated]="(!contacto.email || !esEmailValido(contacto.email)) && intentoSiguiente && animarErrores"
+                               [class.animate__shakeX]="(!contacto.email || !esEmailValido(contacto.email)) && intentoSiguiente && animarErrores"
+                               [(ngModel)]="contacto.email">
+                        <div class="invalid-feedback">Email válido requerido</div>
                       </div>
                       <div class="col-md-6">
-                        <label class="form-label small fw-bold">Teléfono Principal</label>
-                        <input type="text" 
-                               class="form-control form-control-sm" 
+                        <label class="form-label small fw-bold">Teléfono Principal <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control form-control-sm" 
                                [class.is-invalid]="(!contacto.telefono || contacto.telefono.length < 15) && intentoSiguiente"
-                               (focus)="prepararTelefono('telefono', i)" 
-                               (input)="validarTelefono($event, 'telefono', i)"
-                               [(ngModel)]="contacto.telefono"
-                               placeholder="+56"
-                               maxlength="15">
+                               [class.animate__animated]="(!contacto.telefono || contacto.telefono.length < 15) && intentoSiguiente && animarErrores"
+                               [class.animate__shakeX]="(!contacto.telefono || contacto.telefono.length < 15) && intentoSiguiente && animarErrores"
+                               (focus)="prepararTelefono('telefono', i)" (input)="validarTelefono($event, 'telefono', i)" [(ngModel)]="contacto.telefono" placeholder="+56" maxlength="15">
+                        <div class="invalid-feedback">Formato incompleto</div>
                       </div>
                       <div class="col-md-6">
-                        <label class="form-label small fw-bold">Teléfono Alternativo</label>
-                        <input type="text" 
-                               class="form-control form-control-sm" 
-                               [class.is-invalid]="(!contacto.telefono_alternativo || contacto.telefono_alternativo.length < 15) && intentoSiguiente"
-                               (focus)="prepararTelefono('telefono_alternativo', i)"
-                               (input)="validarTelefono($event, 'telefono_alternativo', i)"
-                               [(ngModel)]="contacto.telefono_alternativo"
-                               placeholder="+56"
-                               maxlength="15">
+                        <label class="form-label small fw-bold text-muted">Teléfono Alternativo (Opcional)</label>
+                        <input type="text" class="form-control form-control-sm" (focus)="prepararTelefono('telefono_alternativo', i)" (input)="validarTelefono($event, 'telefono_alternativo', i)" [(ngModel)]="contacto.telefono_alternativo" placeholder="+56" maxlength="15">
                       </div>
                       <div class="col-md-12">
-                        <label class="form-label small text-muted">Comentarios específicos</label>
-                        <textarea class="form-control form-control-sm"
-                            [(ngModel)]="contacto.comentarios" 
-                            placeholder="Ej: Gerente de Finanzas, Soporte Nivel 1..."
-                            rows="5"
-                            style="resize: vertical; min-height: 60px;">
-                        </textarea>
+                        <label class="form-label small text-muted">Comentarios específicos (Opcional)</label>
+                        <textarea class="form-control form-control-sm" [(ngModel)]="contacto.comentarios" placeholder="Ej: Gerente de Finanzas..." rows="2" style="resize: vertical; min-height: 60px;"></textarea>
                       </div>
                     </div>
                   </div>
@@ -167,17 +174,45 @@
                   <label class="form-check-label fw-bold" for="usarDireccionLegal">¿Misma dirección legal?</label>
                 </div>
               </div>
-              <div class="col-md-8">
-                <label class="form-label small fw-bold">Nombre de la Sucursal</label>
-                <input type="text" class="form-control" [class.is-invalid]="!clienteForm.sucursal_nombre && intentoSiguiente" [(ngModel)]="clienteForm.sucursal_nombre" placeholder="Ej: Casa Matriz">
-              </div>
-              <div class="col-md-4">
-                <label class="form-label small fw-bold">Código Interno</label>
-                <input type="text" class="form-control" [(ngModel)]="clienteForm.sucursal_codigo" placeholder="Ej: SUC-01">
-              </div>
               <div class="col-md-12">
-                <label class="form-label small fw-bold">Dirección Física</label>
-                <input type="text" class="form-control" [class.is-invalid]="!clienteForm.sucursal_direccion && intentoSiguiente" [(ngModel)]="clienteForm.sucursal_direccion" [disabled]="usarDireccionLegal">
+                <label class="form-label small fw-bold">Nombre de la Sucursal <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" 
+                       [class.is-invalid]="!clienteForm.sucursal_nombre && intentoSiguiente" 
+                       [class.animate__animated]="!clienteForm.sucursal_nombre && intentoSiguiente && animarErrores"
+                       [class.animate__shakeX]="!clienteForm.sucursal_nombre && intentoSiguiente && animarErrores"
+                       [(ngModel)]="clienteForm.sucursal_nombre" placeholder="Ej: Casa Matriz">
+                <div class="invalid-feedback">Obligatorio</div>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label small fw-bold">Región <span class="text-danger">*</span></label>
+                <ng-select [items]="regionesChile" bindLabel="NombreRegion" bindValue="NombreRegion" placeholder="Seleccione región..."
+                           [(ngModel)]="clienteForm.sucursal_region" (change)="onSucursalRegionChange()" [disabled]="usarDireccionLegal" appendTo="body"
+                           [class.is-invalid-custom]="!clienteForm.sucursal_region && intentoSiguiente"
+                           [class.animate__animated]="!clienteForm.sucursal_region && intentoSiguiente && animarErrores"
+                           [class.animate__shakeX]="!clienteForm.sucursal_region && intentoSiguiente && animarErrores">
+                </ng-select>
+                <div *ngIf="!clienteForm.sucursal_region && intentoSiguiente" class="text-danger small mt-1"><i class="fas fa-exclamation-triangle me-1"></i> Obligatorio</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-bold">Comuna <span class="text-danger">*</span></label>
+                <ng-select [items]="comunasSucursalDisponibles" placeholder="Seleccione comuna..." [(ngModel)]="clienteForm.sucursal_comuna" 
+                           [disabled]="usarDireccionLegal || !clienteForm.sucursal_region" appendTo="body"
+                           [class.is-invalid-custom]="!clienteForm.sucursal_comuna && intentoSiguiente"
+                           [class.animate__animated]="!clienteForm.sucursal_comuna && intentoSiguiente && animarErrores"
+                           [class.animate__shakeX]="!clienteForm.sucursal_comuna && intentoSiguiente && animarErrores">
+                </ng-select>
+                <div *ngIf="!clienteForm.sucursal_comuna && intentoSiguiente" class="text-danger small mt-1"><i class="fas fa-exclamation-triangle me-1"></i> Obligatorio</div>
+              </div>
+
+              <div class="col-md-12">
+                <label class="form-label small fw-bold">Dirección Física <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" 
+                       [class.is-invalid]="!clienteForm.sucursal_direccion && intentoSiguiente" 
+                       [class.animate__animated]="!clienteForm.sucursal_direccion && intentoSiguiente && animarErrores"
+                       [class.animate__shakeX]="!clienteForm.sucursal_direccion && intentoSiguiente && animarErrores"
+                       [(ngModel)]="clienteForm.sucursal_direccion" [disabled]="usarDireccionLegal">
+                <div class="invalid-feedback">Obligatorio</div>
               </div>
             </div>
 
@@ -194,43 +229,52 @@
             </div>
 
             <div class="row g-3 mb-4">
-              <div class="col-md-12">
-                <div class="form-check form-switch mb-3">
-                  <input class="form-check-input" type="checkbox" id="usarContactoPrincipal" [(ngModel)]="usarContactoPrincipal" (change)="clonarContacto()">
-                  <label class="form-check-label fw-bold" for="usarContactoPrincipal">¿Mismo Contacto #1 de la empresa?</label>
-                </div>
+              <div class="col-md-12 mb-3">
+                <label class="form-label small fw-bold text-secondary">¿Quién es el responsable en esta ubicación?</label>
+                <ng-select [(ngModel)]="contactoSeleccionadoIndex" (change)="onResponsableChange($event)" [clearable]="false" appendTo="body">
+                  <ng-option value="nuevo">-- Ingresar nuevo contacto para esta sucursal --</ng-option>
+                  <ng-option *ngFor="let c of clienteForm.contactos; let i = index" [value]="i">
+                    {{ c.nombre }} ({{ c.email }})
+                  </ng-option>
+                </ng-select>
               </div>
 
-              <div *ngIf="!usarContactoPrincipal" class="row g-3 animate__animated animate__fadeIn">
-                <div class="col-md-6">
-                  <label class="form-label small fw-bold">Nombre Contacto</label>
-                  <input type="text" class="form-control" [(ngModel)]="clienteForm.sucursal_nombre_contacto">
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label small fw-bold">Email</label>
-                  <input type="email" class="form-control" [(ngModel)]="clienteForm.sucursal_email_contacto">
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label small fw-bold">Teléfono Principal</label>
-                  <input type="text" 
-                         class="form-control" 
-                         (focus)="prepararTelefono('sucursal_telefono_contacto')"
-                         (input)="validarTelefono($event, 'sucursal_telefono_contacto')"
-                         [(ngModel)]="clienteForm.sucursal_telefono_contacto"
-                         placeholder="+56">
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label small fw-bold">Teléfono Alternativo</label>
-                  <input type="text" class="form-control" 
-                         (focus)="prepararTelefono('sucursal_telefono_alternativo')"
-                         (input)="validarTelefono($event, 'sucursal_telefono_alternativo')"
-                         [(ngModel)]="clienteForm.sucursal_telefono_alternativo"
-                         placeholder="+56">
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label small fw-bold">Comentarios/Observaciones</label>
-                  <input type="text" class="form-control" [(ngModel)]="clienteForm.sucursal_comentarios">
-                </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-bold">Nombre Contacto <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" 
+                       [class.is-invalid]="!clienteForm.sucursal_nombre_contacto && intentoSiguiente" 
+                       [class.animate__animated]="!clienteForm.sucursal_nombre_contacto && intentoSiguiente && animarErrores"
+                       [class.animate__shakeX]="!clienteForm.sucursal_nombre_contacto && intentoSiguiente && animarErrores"
+                       [(ngModel)]="clienteForm.sucursal_nombre_contacto" [readonly]="contactoSeleccionadoIndex !== 'nuevo'" [class.input-locked]="contactoSeleccionadoIndex !== 'nuevo'">
+                <div class="invalid-feedback">Obligatorio</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-bold">Email <span class="text-danger">*</span></label>
+                <input type="email" class="form-control" 
+                       [class.is-invalid]="(!clienteForm.sucursal_email_contacto || !esEmailValido(clienteForm.sucursal_email_contacto)) && intentoSiguiente" 
+                       [class.animate__animated]="(!clienteForm.sucursal_email_contacto || !esEmailValido(clienteForm.sucursal_email_contacto)) && intentoSiguiente && animarErrores"
+                       [class.animate__shakeX]="(!clienteForm.sucursal_email_contacto || !esEmailValido(clienteForm.sucursal_email_contacto)) && intentoSiguiente && animarErrores"
+                       [(ngModel)]="clienteForm.sucursal_email_contacto" [readonly]="contactoSeleccionadoIndex !== 'nuevo'" [class.input-locked]="contactoSeleccionadoIndex !== 'nuevo'">
+                <div class="invalid-feedback">Email válido requerido</div>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small fw-bold">Teléfono Principal <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" 
+                       [class.is-invalid]="(!clienteForm.sucursal_telefono_contacto || clienteForm.sucursal_telefono_contacto.length < 15) && intentoSiguiente"
+                       [class.animate__animated]="(!clienteForm.sucursal_telefono_contacto || clienteForm.sucursal_telefono_contacto.length < 15) && intentoSiguiente && animarErrores"
+                       [class.animate__shakeX]="(!clienteForm.sucursal_telefono_contacto || clienteForm.sucursal_telefono_contacto.length < 15) && intentoSiguiente && animarErrores"
+                       (focus)="prepararTelefono('sucursal_telefono_contacto')" (input)="validarTelefono($event, 'sucursal_telefono_contacto')"
+                       [(ngModel)]="clienteForm.sucursal_telefono_contacto" placeholder="+56" [readonly]="contactoSeleccionadoIndex !== 'nuevo'" [class.input-locked]="contactoSeleccionadoIndex !== 'nuevo'">
+                <div class="invalid-feedback">Formato incompleto</div>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small fw-bold text-muted">Teléfono Alternativo (Opcional)</label>
+                <input type="text" class="form-control" (focus)="prepararTelefono('sucursal_telefono_alternativo')" (input)="validarTelefono($event, 'sucursal_telefono_alternativo')"
+                       [(ngModel)]="clienteForm.sucursal_telefono_alternativo" placeholder="+56" [readonly]="contactoSeleccionadoIndex !== 'nuevo'" [class.input-locked]="contactoSeleccionadoIndex !== 'nuevo'">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small fw-bold text-muted">Observaciones (Opcional)</label>
+                <input type="text" class="form-control" [(ngModel)]="clienteForm.sucursal_comentarios" [readonly]="contactoSeleccionadoIndex !== 'nuevo'" [class.input-locked]="contactoSeleccionadoIndex !== 'nuevo'">
               </div>
             </div>
 
@@ -238,73 +282,160 @@
               <button class="btn btn-outline-secondary px-4" (click)="anteriorPaso()">Regresar</button>
               <button class="btn btn-primary px-5 shadow-sm" (click)="siguientePaso()" [disabled]="guardando">
                 <span *ngIf="guardando" class="spinner-border spinner-border-sm me-2"></span>
-                {{ guardando ? 'Creando Infraestructura...' : 'Finalizar y Activar' }} <i class="fas fa-rocket ms-2"></i>
+                Finalizar y Activar <i class="fas fa-rocket ms-2"></i>
               </button>
             </div>
           </div>
 
           <div *ngIf="pasoActual === 3" class="animate__animated animate__fadeIn">
-            <div class="text-center mb-4">
-              <div class="bg-success-subtle d-inline-block p-3 rounded-circle mb-2">
-                <i class="fas fa-network-wired text-success fs-3"></i>
+            
+            <div class="text-center mb-5">
+              <div class="bg-success-subtle d-inline-flex align-items-center justify-content-center p-4 rounded-circle mb-3" style="width: 80px; height: 80px;">
+                <i class="fas fa-network-wired text-success fs-1"></i>
               </div>
-              <h3 class="fw-bold">Configuración del Agente de Monitoreo</h3>
-              <p class="text-muted">Infraestructura creada. Defina los parámetros técnicos para el escaneo de red.</p>
+              <h3 class="fw-bold text-dark">Configuración del Agente de Monitoreo</h3>
+              <p class="text-muted">Infraestructura creada con éxito. Defina los parámetros técnicos a continuación.</p>
             </div>
 
-            <div class="row g-4">
-              <div class="col-md-5">
-                <div class="card border-0 shadow-sm h-100 bg-light">
-                  <div class="card-body p-4">
-                    <h6 class="text-uppercase fw-bold text-primary small mb-3">Datos de Activación</h6>
-                    
-                    <div class="mb-4">
-                      <label class="small fw-bold text-secondary d-block mb-1">Dominio del Cliente</label>
-                      <div class="p-2 bg-white rounded border d-flex justify-content-between align-items-center">
-                        <span class="font-monospace small text-truncate">{{ generatedData.domain || 'Generando...' }}</span>
-                        <button class="btn btn-sm btn-link text-primary p-0" (click)="copiarTexto(generatedData.domain)">
-                          <i class="fas fa-copy"></i>
+
+            <div class="card shadow-sm mb-5 border-0 rounded-4" style="background-color: #ffffff;">
+              <div class="card-body p-4 p-md-4 border border-primary-subtle rounded-4" style="background: linear-gradient(to right, #ffffff, #f8fafc);">
+                <div class="row align-items-center g-4">
+                  
+                  <div class="col-lg-4 border-end-lg border-light-subtle">
+                    <div class="d-flex flex-column pe-lg-3">
+                      <span class="text-uppercase small fw-bold text-muted mb-2">
+                        <i class="fas fa-globe text-primary opacity-75 me-2"></i>Dominio del Cliente
+                      </span>
+                      <div class="input-group shadow-sm rounded-3">
+                        <input type="text" class="form-control bg-white font-monospace text-dark border-end-0" 
+                               [value]="generatedData.domain || 'Generando...'" readonly style="font-size: 0.9rem;">
+                        <button class="btn btn-white border border-start-0 text-primary" type="button" 
+                                (click)="copiarTexto(generatedData.domain)" title="Copiar Dominio">
+                          <i class="far fa-copy"></i>
                         </button>
                       </div>
                     </div>
+                  </div>
 
-                    <div class="mb-4">
-                      <label class="small fw-bold text-secondary d-block mb-1">Llave de Activación (Key)</label>
-                      <div class="p-2 bg-white rounded border d-flex justify-content-between align-items-center">
-                        <span class="font-monospace fw-bold text-dark">{{ generatedData.agent_key || '---' }}</span>
-                        <button class="btn btn-sm btn-link text-primary p-0" (click)="copiarKey()">
-                          <i class="fas fa-copy"></i>
+                  <div class="col-lg-5 border-end-lg border-light-subtle">
+                    <div class="d-flex flex-column px-lg-3">
+                      <span class="text-uppercase small fw-bold text-muted mb-2 d-flex align-items-center">
+                        <i class="fas fa-key text-warning me-2"></i>Llave de Activación 
+                        <span class="badge bg-warning-subtle text-warning-emphasis ms-2 border border-warning-subtle">Única vez</span>
+                      </span>
+                      <div class="d-flex align-items-center bg-white p-2 rounded-3 border shadow-sm">
+                        <span class="font-monospace fs-5 fw-bold text-dark flex-grow-1 text-center" style="letter-spacing: 1.5px;">
+                          {{ generatedData.agent_key || 'GENERANDO...' }}
+                        </span>
+                        <button class="btn btn-primary btn-sm ms-2 px-3 rounded-2 shadow-sm" 
+                                (click)="copiarKey()" title="Copiar Llave">
+                          <i class="far fa-copy"></i>
                         </button>
                       </div>
-                      <small class="text-muted mt-1 d-block"><i class="fas fa-info-circle me-1"></i>Esta llave se usa una sola vez en el instalador.</small>
                     </div>
+                  </div>
 
-                    <div class="d-grid mt-auto">
-                      <a href="https://tu-api.com/download/agent.exe" class="btn btn-outline-dark">
-                        <i class="fas fa-download me-2"></i> Descargar Instalador .EXE
+                  <div class="col-lg-3 text-center text-lg-end">
+                    <div class="d-flex flex-column ps-lg-3">
+                      <span class="text-uppercase small fw-bold text-muted mb-2">Instalador</span>
+                      <a href="https://tu-api.com/download/agent.exe" class="btn btn-outline-dark fw-bold w-100 shadow-sm rounded-3">
+                        <i class="fas fa-download me-2 text-primary"></i> Descargar .EXE
                       </a>
                     </div>
                   </div>
-                </div>
-              </div>
 
-              <div class="col-md-7">
-                <div class="card border-0 shadow-sm h-100">
-                  <div class="card-body p-4">
-                    <h6 class="text-uppercase fw-bold text-warning small mb-3">Parámetros de Escaneo</h6>
-                    
-                    <app-agent-config-form 
-                      [isLoading]="guardandoConfig"
-                      (onSave)="finalizarOnboarding($event)">
-                    </app-agent-config-form>
-
-                  </div>
                 </div>
               </div>
             </div>
-          </div> 
-        </div> 
-      </div> 
-    </div> 
-  </div> 
+            
+            <div class="row">
+              <div class="col-12">
+                <div class="d-flex align-items-center mb-4">
+                  <h5 class="fw-bold text-primary m-0"><i class="fas fa-sliders-h me-2"></i>Parámetros de Escaneo</h5>
+                  <div class="flex-grow-1 ms-3 border-top border-2 border-light"></div>
+                </div>
+                
+                <app-agent-config-form 
+                  [isLoading]="guardandoConfig" 
+                  (onSave)="finalizarOnboarding($event)">
+                </app-agent-config-form>
+                
+              </div>
+            </div>
+          </div>
+        </div> </div> </div> </div> <div *ngIf="mostrarModalError" class="custom-modal-overlay animate__animated animate__fadeIn">
+    <div class="modal-content-custom animate__animated animate__shakeX" style="max-width: 450px;">
+      <div class="p-5 text-center">
+        <div class="icon-box-confirm" style="background: rgba(220, 53, 69, 0.1); color: #dc3545;">
+          <i class="fas fa-exclamation-circle"></i>
+        </div>
+        <h4 class="fw-bold text-dark">¡Atención!</h4>
+        <p class="text-muted">{{ mensajeErrorModal }}</p>
+        <button class="btn btn-danger w-100 py-3 fw-bold mt-3" (click)="mostrarModalError = false">Entendido</button>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="mostrarModalExitoFinal" class="custom-modal-overlay animate__animated animate__fadeIn">
+    <div class="modal-content-custom animate__animated animate__zoomIn" style="max-width: 500px;">
+      <div class="p-5 text-center">
+        <div class="icon-box-confirm" style="background: rgba(25, 135, 84, 0.1); color: #198754;">
+          <i class="fas fa-check-double"></i>
+        </div>
+        <h3 class="fw-bold text-dark">¡Configuración Exitosa!</h3>
+        <p class="text-muted">El cliente ha sido dado de alta y el agente de monitoreo está listo para operar.</p>
+        <div class="d-grid gap-2 mt-4">
+          <button class="btn btn-success btn-lg py-3 fw-bold shadow-sm" (click)="irAListado()">
+            Ir al Listado de Clientes <i class="fas fa-arrow-right ms-2"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="mostrarModalConfirmacion" class="custom-modal-overlay animate__animated animate__fadeIn">
+    <div class="modal-content-custom animate__animated animate__zoomIn" style="max-width: 480px;">
+      <div class="p-5 text-center">
+        <div class="icon-box-confirm">
+          <i class="fas fa-cloud-upload-alt"></i>
+        </div>
+        <h4 class="fw-bold text-dark mb-3">¿Confirmar Infraestructura?</h4>
+        <p class="text-muted mb-4">
+          Está por crear el tenant para <strong>{{ clienteForm.nombre }}</strong>. 
+          Esto iniciará la creación de bases de datos y subdominios en el servidor.
+        </p>
+        <div class="d-grid gap-2">
+          <button class="btn btn-primary btn-lg shadow-sm fw-bold py-3" (click)="confirmarYCrear()" [disabled]="guardando">
+            <span *ngIf="guardando" class="spinner-border spinner-border-sm me-2"></span>
+            <i *ngIf="!guardando" class="fas fa-check me-2"></i>
+            {{ guardando ? 'Creando...' : 'Sí, Crear Ahora' }}
+          </button>
+          <button class="btn btn-link text-secondary" (click)="mostrarModalConfirmacion = false" [disabled]="guardando">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="mostrarModalLimpiar" class="custom-modal-overlay animate__animated animate__fadeIn">
+    <div class="modal-content-custom animate__animated animate__zoomIn" style="max-width: 400px;">
+      <div class="p-5 text-center">
+        <div class="icon-box-confirm" style="background: rgba(220, 53, 69, 0.1); color: #dc3545;">
+          <i class="fas fa-trash-alt"></i>
+        </div>
+        <h4 class="fw-bold text-dark mb-3">¿Limpiar Formulario?</h4>
+        <p class="text-muted mb-4">
+          Se perderán todos los datos ingresados hasta ahora y la página se recargará.
+        </p>
+        <div class="d-grid gap-2">
+          <button class="btn btn-danger btn-lg shadow-sm fw-bold py-3" (click)="ejecutarLimpieza()">
+            Sí, Limpiar Todo
+          </button>
+          <button class="btn btn-link text-secondary" (click)="mostrarModalLimpiar = false">
+            Continuar Editando
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>

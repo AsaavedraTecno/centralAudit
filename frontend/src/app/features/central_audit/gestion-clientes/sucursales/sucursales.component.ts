@@ -172,7 +172,11 @@ export class SucursalesComponent implements OnInit {
 
   loadClientes(): void {
     this.clienteService.getClientes().subscribe({
-      next: (data: any) => this.clientes = data.data || data
+      next: (data: any) => this.clientes = data?.data || data || [],
+      error: (error) => {
+        console.error('Error loading clientes:', error);
+        this.clientes = [];
+      }
     });
   }
 

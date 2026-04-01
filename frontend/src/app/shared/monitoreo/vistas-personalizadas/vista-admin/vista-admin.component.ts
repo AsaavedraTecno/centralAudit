@@ -31,7 +31,7 @@ export class VistaAdminComponent implements OnInit {
   loading = false;
   guardando = false;
 
-  modo: 'crear' | 'editar' | 'asignar' = 'crear';
+  modo: 'inicio' | 'crear' | 'editar' | 'asignar' = 'inicio';
   vistaAsignacionId?: number;
   clientesDisponibles: any[] = [];
   clientesAsignados: any[] = [];
@@ -72,8 +72,7 @@ export class VistaAdminComponent implements OnInit {
 
         this.columnasMaestras = res.columnas.columnas || [];
         this.vistas = res.vistas.data || res.vistas || [];
-
-        this.crearNuevaVista();
+        this.vistas.sort((a, b) => (a.es_default === b.es_default) ? 0 : a.es_default ? -1 : 1);
         this.loading = false;
 
       },
@@ -104,6 +103,11 @@ export class VistaAdminComponent implements OnInit {
     };
 
     this.construirCategoriasUI(this.vistaActual.columnas);
+  }
+
+  volverAlInicio(): void {
+    this.modo = 'inicio';
+    this.vistaActual = { columnas: [] };
   }
 
   editarVista(vista: VistaPersonalizada): void 
@@ -226,6 +230,7 @@ export class VistaAdminComponent implements OnInit {
         this.toastService.show('Vista guardada correctamente', 'success');
         this.cargarDatosIniciales();
         this.guardando = false;
+        this.volverAlInicio();
       },
       error: () => {
         this.toastService.show('Error al guardar', 'error');

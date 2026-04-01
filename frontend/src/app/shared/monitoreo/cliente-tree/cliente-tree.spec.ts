@@ -8,7 +8,7 @@ describe('ClienteTree', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ClienteTreeComponent]
+      imports: [ClienteTreeComponent]
     })
     .compileComponents();
 
