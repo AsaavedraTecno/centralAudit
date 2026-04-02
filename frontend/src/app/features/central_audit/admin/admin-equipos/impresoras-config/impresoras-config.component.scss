@@ -1,0 +1,64 @@
+.impresoras-config-container {
+  padding: 0;
+}
+
+.pagination .page-link {
+  cursor: pointer;
+  border: none;
+  color: #0d6efd;
+  background: transparent;
+  padding: 0.35rem 0.65rem;
+
+  &:hover { background-color: #e9ecef; }
+}
+
+.pagination .page-item.active .page-link {
+  background-color: #0d6efd;
+  color: #fff;
+  border-radius: 4px;
+}
+
+.pagination .page-item.disabled .page-link {
+  color: #adb5bd;
+  cursor: not-allowed;
+}
+
+.badge {
+  padding: 0.4rem 0.75rem;
+  font-weight: 500;
+  font-size: 0.75rem;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.table {
+  thead th {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: #6c757d;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #dee2e6;
+    background-color: #f8f9fa;
+    padding: 1rem;
+  }
+
+  tbody tr {
+    border-bottom: 1px solid #dee2e6;
+    transition: background-color 0.2s ease;
+
+    &:hover { background-color: #f8f9fa; }
+
+    td {
+      padding: 1rem;
+      vertical-align: middle;
+    }
+  }
+}
+
+.form-check-input[type="checkbox"] {
+  width: 2.25em;
+  height: 1.15em;
+  cursor: pointer;
+}

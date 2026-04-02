@@ -1,0 +1,478 @@
+<div class="agente-form-inline">
+
+  <!-- CABECERA -->
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <h3 class="h4 mb-0 fw-bold text-dark">
+        <i class="fas fa-plus-circle text-primary me-2"></i>Nuevo Agente
+      </h3>
+      <p class="text-muted small mb-0">Complete los datos para crear un nuevo agente de monitoreo</p>
+    </div>
+    <button class="btn btn-outline-secondary" (click)="cancelar()">
+      <i class="fas fa-arrow-left me-1"></i> Volver
+    </button>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="formError" class="alert alert-danger py-2 small mb-3">
+    <i class="fas fa-exclamation-circle me-1"></i>{{ formError }}
+  </div>
+
+  <!-- VISTA DE ÉXITO -->
+  <div *ngIf="successKey" class="text-center py-5">
+    <i class="fas fa-check-circle text-success fa-4x mb-3"></i>
+    <h4 class="fw-bold mb-2">¡Agente creado exitosamente!</h4>
+    <p class="text-muted mb-4">Copia la siguiente llave de activación. Por seguridad, no la almacenamos y no se mostrará nuevamente.</p>
+
+    <div class="card border-0 shadow-sm mx-auto mb-4" style="max-width: 620px;">
+      <div class="card-body p-4">
+        <div class="d-flex align-items-center gap-3 p-3 rounded" style="background-color: #f1f3f5;">
+          <code class="flex-grow-1 text-dark fw-bold text-start"
+                style="font-family: 'Courier New', monospace; font-size: 0.95rem; letter-spacing: 1px; word-break: break-all;">
+            {{ successKey }}
+          </code>
+          <button class="btn btn-sm btn-outline-secondary flex-shrink-0" (click)="copyKey()">
+            <i class="fas" [ngClass]="isKeyCopied ? 'fa-check text-success' : 'fa-copy'"></i>
+            {{ isKeyCopied ? '¡Copiada!' : 'Copiar llave' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex flex-column align-items-center gap-3">
+      <a class="btn btn-outline-secondary" href="#">
+        <i class="fas fa-download me-2"></i>Descargar Agente de Monitoreo (Windows)
+      </a>
+      <button type="button" class="btn btn-primary px-5 py-2" (click)="cancelar()">
+        Listo, volver a Agentes
+      </button>
+    </div>
+  </div>
+
+  <!-- FORMULARIO -->
+  <form *ngIf="!successKey" [formGroup]="form" (ngSubmit)="crearAgente()">
+
+    <!-- SECCIÓN 1: CLIENTE -->
+    <div class="card shadow-sm mb-4 border-0">
+      <div class="card-header bg-light py-3 border-bottom">
+        <h6 class="m-0 fw-bold text-dark">
+          <i class="fas fa-building me-2"></i>Paso 1: Seleccionar Cliente
+        </h6>
+      </div>
+      <div class="card-body p-4">
+        <div class="form-group mb-0">
+          <label class="form-label small fw-bold">Cliente <span class="text-danger">*</span></label>
+          <ng-select
+            class="d-block w-100 mb-3"
+            style="width: 100%;"
+            [items]="clientes"
+            bindLabel="nombre"
+            bindValue="code"
+            [ngModel]="selectedClientCode"
+            [ngModelOptions]="{ standalone: true }"
+            (ngModelChange)="onClientChange($event)"
+            (change)="onClientChange($event?.code || $event)"
+            placeholder="Seleccione un cliente..."
+            appendTo="body"
+            [searchable]="true"
+            [virtualScroll]="true"
+            [minTermLength]="1"
+            notFoundText="No se encontraron clientes"
+            typeToSearchText="Escribe para buscar..."
+          >
+            <ng-template ng-label-tmp let-item="item">
+              <span><i class="fas fa-building me-1 text-muted"></i>{{ item.nombre || item.razon_social || item.code }}</span>
+            </ng-template>
+            <ng-template ng-option-tmp let-item="item">
+              <div>
+                <div class="fw-medium">{{ item.nombre || item.razon_social || 'Sin nombre' }}</div>
+                <small class="text-muted">{{ item.code }}</small>
+              </div>
+            </ng-template>
+          </ng-select>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECCIONES 2-4: Solo visibles si hay cliente seleccionado -->
+    <ng-container *ngIf="clienteSeleccionado">
+
+      <!-- SECCIÓN 2: IDENTIDAD -->
+      <div class="card shadow-sm mb-4 border-0">
+        <div class="card-header bg-light py-3 border-bottom">
+          <h6 class="m-0 fw-bold text-dark">
+            <i class="fas fa-tag me-2"></i>Paso 2: Identidad del Agente
+          </h6>
+        </div>
+        <div class="card-body p-4">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label small fw-bold">Nombre del agente <span class="text-danger">*</span></label>
+              <input type="text" class="form-control"
+                     formControlName="name"
+                     [class.is-invalid]="form.get('name')?.invalid && form.get('name')?.touched"
+                     placeholder="Ej: Agente Sucursal Norte">
+              <div class="invalid-feedback" *ngIf="form.get('name')?.invalid && form.get('name')?.touched">
+                El nombre del agente es obligatorio.
+              </div>
+              <small class="text-muted">Identifica desde qué ubicación monitorea.</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECCIÓN 3: SUCURSAL -->
+      <div class="card shadow-sm mb-4 border-0">
+        <div class="card-header bg-light py-3 border-bottom">
+          <h6 class="m-0 fw-bold text-dark">
+            <i class="fas fa-map-marker-alt me-2"></i>Paso 3: Sucursal Asociada
+          </h6>
+        </div>
+        <div class="card-body p-4">
+
+          <!-- Tabs selector -->
+          <div class="btn-group w-100 mb-3" role="group">
+            <button type="button" class="btn btn-sm"
+                    [ngClass]="sucursalMode === 'existing' ? 'btn-primary' : 'btn-outline-secondary'"
+                    (click)="onSucursalModeChange('existing')"
+                    [disabled]="locations.length === 0">
+              <i class="fas fa-search me-1"></i>
+              Sucursal existente
+              <span *ngIf="locations.length === 0" class="ms-1 opacity-50">(ninguna disponible)</span>
+            </button>
+            <button type="button" class="btn btn-sm"
+                    [ngClass]="sucursalMode === 'new' ? 'btn-primary' : 'btn-outline-secondary'"
+                    (click)="onSucursalModeChange('new')">
+              <i class="fas fa-plus me-1"></i> Crear nueva sucursal
+            </button>
+          </div>
+
+          <!-- Opción A: Existente -->
+          <div *ngIf="sucursalMode === 'existing'">
+            <select class="form-select"
+                    formControlName="location_id"
+                    [class.is-invalid]="form.get('location_id')?.invalid && form.get('location_id')?.touched">
+              <option [ngValue]="null" disabled>— Seleccionar sucursal —</option>
+              <option *ngFor="let loc of locations" [ngValue]="loc.id">
+                {{ loc.nombre }} — {{ loc.comuna }}, {{ loc.region }}
+              </option>
+            </select>
+            <div class="invalid-feedback" *ngIf="form.get('location_id')?.invalid && form.get('location_id')?.touched">
+              Debe seleccionar una sucursal.
+            </div>
+            <div class="alert alert-info py-2 small mt-2" *ngIf="locations.length > 0">
+              <i class="fas fa-info-circle me-1"></i>Se encontraron {{ locations.length }} sucursal(es).
+            </div>
+          </div>
+
+          <!-- Opción B: Nueva -->
+          <div *ngIf="sucursalMode === 'new'" class="row g-3 mt-1">
+            <div class="col-md-12">
+              <label class="form-label small fw-bold">Nombre <span class="text-danger">*</span></label>
+              <input type="text" class="form-control"
+                     formControlName="sucursal_nombre"
+                     [class.is-invalid]="form.get('sucursal_nombre')?.invalid && form.get('sucursal_nombre')?.touched"
+                     placeholder="Ej: Sucursal Norte">
+              <div class="invalid-feedback" *ngIf="form.get('sucursal_nombre')?.invalid && form.get('sucursal_nombre')?.touched">
+                El nombre de la sucursal es obligatorio.
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-bold">Región <span class="text-danger">*</span></label>
+              <ng-select [items]="regionesChile"
+                         bindLabel="NombreRegion"
+                         bindValue="NombreRegion"
+                         placeholder="Seleccionar región..."
+                         [ngModel]="form.get('sucursal_region')?.value"
+                         [ngModelOptions]="{ standalone: true }"
+                         (ngModelChange)="form.patchValue({ sucursal_region: $event }); onSucursalRegionChange()"
+                         appendTo="body"
+                         [searchable]="true">
+              </ng-select>
+              <div class="invalid-feedback d-block"
+                   *ngIf="form.get('sucursal_region')?.invalid && form.get('sucursal_region')?.touched">
+                La región es obligatoria.
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-bold">Comuna <span class="text-danger">*</span></label>
+              <ng-select [items]="comunasDisponibles"
+                         placeholder="Seleccionar comuna..."
+                         [ngModel]="form.get('sucursal_comuna')?.value"
+                         [ngModelOptions]="{ standalone: true }"
+                         (ngModelChange)="form.patchValue({ sucursal_comuna: $event })"
+                         appendTo="body"
+                         [disabled]="!form.get('sucursal_region')?.value">
+              </ng-select>
+              <div class="invalid-feedback d-block"
+                   *ngIf="form.get('sucursal_comuna')?.invalid && form.get('sucursal_comuna')?.touched">
+                La comuna es obligatoria.
+              </div>
+            </div>
+            <div class="col-md-12">
+              <label class="form-label small fw-bold">Dirección <span class="text-danger">*</span></label>
+              <input type="text" class="form-control"
+                     formControlName="sucursal_direccion"
+                     [class.is-invalid]="form.get('sucursal_direccion')?.invalid && form.get('sucursal_direccion')?.touched"
+                     placeholder="Av. Principal 123">
+              <div class="invalid-feedback" *ngIf="form.get('sucursal_direccion')?.invalid && form.get('sucursal_direccion')?.touched">
+                La dirección es obligatoria.
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-bold">Nombre contacto 1 <span class="text-danger">*</span></label>
+              <input type="text" class="form-control"
+                     formControlName="sucursal_nombre_contacto"
+                     [class.is-invalid]="form.get('sucursal_nombre_contacto')?.invalid && form.get('sucursal_nombre_contacto')?.touched"
+                     placeholder="Nombre completo">
+              <div class="invalid-feedback" *ngIf="form.get('sucursal_nombre_contacto')?.invalid && form.get('sucursal_nombre_contacto')?.touched">
+                El nombre de contacto es obligatorio.
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-bold">Email contacto 1 <span class="text-danger">*</span></label>
+              <input type="email" class="form-control"
+                     formControlName="sucursal_email_contacto"
+                     [class.is-invalid]="form.get('sucursal_email_contacto')?.invalid && form.get('sucursal_email_contacto')?.touched"
+                     placeholder="contacto@empresa.cl">
+              <div class="invalid-feedback" *ngIf="form.get('sucursal_email_contacto')?.hasError('required') && form.get('sucursal_email_contacto')?.touched">
+                El email es obligatorio.
+              </div>
+              <div class="invalid-feedback" *ngIf="form.get('sucursal_email_contacto')?.hasError('email') && form.get('sucursal_email_contacto')?.touched">
+                Email no válido.
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-bold">Teléfono contacto 1 <span class="text-danger">*</span></label>
+              <input type="text" class="form-control"
+                     formControlName="sucursal_telefono_contacto"
+                     [class.is-invalid]="form.get('sucursal_telefono_contacto')?.invalid && form.get('sucursal_telefono_contacto')?.touched"
+                     placeholder="+56 9 1234 5678">
+              <div class="invalid-feedback" *ngIf="form.get('sucursal_telefono_contacto')?.invalid && form.get('sucursal_telefono_contacto')?.touched">
+                El teléfono es obligatorio.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECCIÓN 4: CONFIGURACIÓN SNMP Y ESCANEO -->
+      <div class="card shadow-sm mb-4 border-0">
+        <div class="card-header bg-light py-3 border-bottom">
+          <h6 class="m-0 fw-bold text-dark">
+            <i class="fas fa-cog me-2"></i>Paso 4: Configuración de Red
+          </h6>
+        </div>
+        <div class="card-body p-4">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label small fw-bold">Comunidad SNMP <span class="text-danger">*</span></label>
+              <input type="text"
+                     class="form-control"
+                     formControlName="snmp_community"
+                     [class.is-invalid]="form.get('snmp_community')?.invalid && form.get('snmp_community')?.touched"
+                     placeholder="public">
+              <div class="invalid-feedback" *ngIf="form.get('snmp_community')?.invalid && form.get('snmp_community')?.touched">
+                Community es obligatorio.
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-bold">Frecuencia de Escaneo (minutos) <span class="text-danger">*</span></label>
+              <select class="form-select"
+                      formControlName="scan_interval"
+                      [class.is-invalid]="form.get('scan_interval')?.invalid && form.get('scan_interval')?.touched">
+                <option [value]="1">Cada 1 minuto</option>
+                <option [value]="5">Cada 5 minutos</option>
+                <option [value]="15">Cada 15 minutos</option>
+                <option [value]="30">Cada 30 minutos</option>
+                <option [value]="60">Cada 1 hora</option>
+                <option [value]="1440">Diario</option>
+              </select>
+              <div class="invalid-feedback" *ngIf="form.get('scan_interval')?.invalid && form.get('scan_interval')?.touched">
+                Requerido.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECCIÓN 4b: RANGOS DE IP PARA ESCANEO -->
+      <div class="card shadow-sm mb-4 border-0">
+        <div class="card-header bg-light py-3 border-bottom d-flex justify-content-between align-items-center">
+          <h6 class="m-0 fw-bold text-dark">
+            <i class="fas fa-network-wired me-2"></i>Rangos de IP para Escaneo
+          </h6>
+          <button type="button"
+                  class="btn btn-sm btn-primary"
+                  [disabled]="editingRangeIndex !== null"
+                  title="Complete el rango actual antes de agregar uno nuevo"
+                  (click)="addRange()">
+            <i class="fas fa-plus me-1"></i> Agregar Rango
+          </button>
+        </div>
+        <div class="card-body p-4">
+
+          <!-- TABLA DE RANGOS -->
+          <div *ngIf="ipRangesArray.length > 0" class="table-responsive mb-4">
+            <table class="table table-sm table-hover align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th style="width: 25%">IP Desde</th>
+                  <th style="width: 25%">IP Hasta</th>
+                  <th style="width: 20%">Máscara</th>
+                  <th class="text-center" style="width: 12%">Estado</th>
+                  <th class="text-end" style="width: 18%">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let range of ipRangesArray.controls; let i = index"
+                    [ngClass]="{'table-light': editingRangeIndex === i}">
+                  <td>
+                    <code class="bg-light px-2 py-1 rounded small">{{ range.get('ip_from')?.value || '-' }}</code>
+                  </td>
+                  <td>
+                    <code class="bg-light px-2 py-1 rounded small">{{ range.get('ip_to')?.value || '-' }}</code>
+                  </td>
+                  <td>
+                    <code class="bg-light px-2 py-1 rounded small">{{ range.get('subnet_mask')?.value }}</code>
+                  </td>
+                  <td class="text-center">
+                    <span class="badge" [ngClass]="range.get('active')?.value ? 'bg-success' : 'bg-secondary'">
+                      {{ range.get('active')?.value ? 'Activo' : 'Inactivo' }}
+                    </span>
+                  </td>
+                  <td class="text-end">
+                    <div class="btn-group btn-group-sm">
+                      <button type="button"
+                              class="btn btn-outline-info"
+                              [disabled]="editingRangeIndex !== null && editingRangeIndex !== i"
+                              (click)="editRange(i)"
+                              title="Editar">
+                        <i class="fas fa-edit"></i>
+                      </button>
+                      <button type="button"
+                              class="btn btn-outline-danger"
+                              [disabled]="editingRangeIndex !== null && editingRangeIndex !== i"
+                              (click)="deleteRange(i)"
+                              title="Eliminar">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <!-- RESUMEN -->
+            <div class="alert alert-info d-flex justify-content-between align-items-center mb-0">
+              <div>
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>Total de rangos:</strong> {{ ipRangesArray.length }} |
+                <strong class="ms-3">Total de IPs:</strong> {{ getTotalIPs() }}
+              </div>
+            </div>
+          </div>
+
+          <!-- VALIDACIÓN: Sin rangos -->
+          <div *ngIf="ipRangesArray.length === 0" class="alert alert-warning mb-0">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>No hay rangos configurados.</strong> Agregue al menos uno para continuar.
+          </div>
+
+          <!-- FORMULARIO: AGREGAR/EDITAR RANGO -->
+          <div *ngIf="showRangeForm" class="card border-primary mt-4">
+            <div class="card-header bg-primary-subtle py-3">
+              <h6 class="m-0 fw-bold">
+                <i class="fas me-2" [ngClass]="editingRangeIndex !== null ? 'fa-edit' : 'fa-plus-circle'"></i>
+                {{ editingRangeIndex !== null ? 'Editar Rango de IP' : 'Nuevo Rango de IP' }}
+              </h6>
+            </div>
+            <div class="card-body p-4" [formGroup]="getRangeGroup(editingRangeIndex)">
+              <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                  <label class="form-label small fw-bold">IP Desde <span class="text-danger">*</span></label>
+                  <input type="text"
+                         class="form-control"
+                         formControlName="ip_from"
+                         placeholder="192.168.1.1"
+                         [class.is-invalid]="getRangeGroup(editingRangeIndex).get('ip_from')?.invalid && getRangeGroup(editingRangeIndex).get('ip_from')?.touched">
+                  <div class="invalid-feedback" *ngIf="ipRangesArray.at(editingRangeIndex || 0)?.get('ip_from')?.hasError('required')">
+                    IP es obligatoria
+                  </div>
+                  <div class="invalid-feedback" *ngIf="ipRangesArray.at(editingRangeIndex || 0)?.get('ip_from')?.hasError('invalidIp')">
+                    IP no válida (Ej: 192.168.1.1)
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label small fw-bold">IP Hasta <span class="text-danger">*</span></label>
+                  <input type="text"
+                         class="form-control"
+                         formControlName="ip_to"
+                         placeholder="192.168.1.254"
+                         [class.is-invalid]="getRangeGroup(editingRangeIndex).get('ip_to')?.invalid && getRangeGroup(editingRangeIndex).get('ip_to')?.touched">
+                  <div class="invalid-feedback" *ngIf="ipRangesArray.at(editingRangeIndex || 0)?.get('ip_to')?.hasError('required')">
+                    IP es obligatoria
+                  </div>
+                  <div class="invalid-feedback" *ngIf="ipRangesArray.at(editingRangeIndex || 0)?.get('ip_to')?.hasError('invalidIp')">
+                    IP no válida (Ej: 192.168.1.254)
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label small fw-bold">Máscara de Subred <span class="text-danger">*</span></label>
+                  <input type="text"
+                         class="form-control"
+                         formControlName="subnet_mask"
+                         placeholder="255.255.255.0"
+                         [class.is-invalid]="getRangeGroup(editingRangeIndex).get('subnet_mask')?.invalid && getRangeGroup(editingRangeIndex).get('subnet_mask')?.touched">
+                  <div class="invalid-feedback" *ngIf="ipRangesArray.at(editingRangeIndex || 0)?.get('subnet_mask')?.invalid">
+                    Máscara es obligatoria
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label small fw-bold">Estado</label>
+                  <div class="form-check form-switch pt-2">
+                    <input class="form-check-input"
+                           type="checkbox"
+                           formControlName="active"
+                           [id]="'rangoActive_' + (editingRangeIndex || 0)">
+                    <label class="form-check-label" [for]="'rangoActive_' + (editingRangeIndex || 0)">
+                      Rango Activo
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="d-flex gap-2 justify-content-end">
+                <button type="button" class="btn btn-light border" (click)="cancelRange()">
+                  <i class="fas fa-times me-1"></i>Cancelar
+                </button>
+                <button type="button"
+                        class="btn btn-primary"
+                        [disabled]="getRangeGroup(editingRangeIndex).invalid"
+                        (click)="editingRangeIndex = null; showRangeForm = false">
+                  <i class="fas fa-save me-1"></i>
+                  {{ editingRangeIndex !== null ? 'Actualizar' : 'Agregar' }} Rango
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- BOTÓN GUARDAR -->
+      <div class="d-flex justify-content-end">
+        <button type="submit" class="btn btn-success w-100 py-2 shadow-sm"
+                [disabled]="loading || form.invalid || ipRangesArray.length === 0 || editingRangeIndex !== null">
+          <i class="fas" [ngClass]="loading ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+          <span class="me-2" *ngIf="loading">Creando...</span>
+          <span *ngIf="!loading">Crear Agente</span>
+        </button>
+      </div>
+
+    </ng-container>
+  </form>
+</div>

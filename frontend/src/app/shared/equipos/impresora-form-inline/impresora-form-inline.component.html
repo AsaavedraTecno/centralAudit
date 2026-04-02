@@ -1,0 +1,179 @@
+<div class="impresora-form-inline">
+
+  <!-- CABECERA -->
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <h3 class="h4 mb-0 fw-bold text-dark">
+        <i class="fas fa-plus-circle text-primary me-2"></i>Agregar Impresora Manual
+      </h3>
+      <p class="text-muted small mb-0">Registra una impresora que será monitoreada desde la red local</p>
+    </div>
+    <button class="btn btn-outline-secondary" (click)="cancelar()">
+      <i class="fas fa-arrow-left me-1"></i> Volver
+    </button>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="formError" class="alert alert-danger py-2 small mb-3">
+    <i class="fas fa-exclamation-circle me-1"></i>{{ formError }}
+  </div>
+
+  <!-- VISTA DE ÉXITO -->
+  <div *ngIf="success" class="text-center py-5">
+    <i class="fas fa-check-circle text-success fa-4x mb-3"></i>
+    <h4 class="fw-bold mb-2">¡Impresora agregada exitosamente!</h4>
+    <p class="text-muted mb-4">
+      La impresora ha sido registrada y comenzará a ser detectada por el agente de monitoreo de su red local.
+    </p>
+    <div class="alert alert-info d-inline-flex align-items-center gap-2 mb-4 px-4 py-3">
+      <i class="fas fa-info-circle"></i>
+      <span>Estado inicial: <strong>Offline</strong> — El agente la detectará en el próximo ciclo de escaneo.</span>
+    </div>
+    <div>
+      <button type="button" class="btn btn-primary px-5 py-2" (click)="cancelar()">
+        Listo, volver a Impresoras
+      </button>
+    </div>
+  </div>
+
+  <!-- FORMULARIO -->
+  <ng-container *ngIf="!success">
+
+    <!-- PASO 1: CLIENTE (fuera del formGroup para evitar conflicto ngModel) -->
+    <div class="card shadow-sm mb-4 border-0">
+      <div class="card-header bg-light py-3 border-bottom">
+        <h6 class="m-0 fw-bold text-dark">
+          <i class="fas fa-building me-2"></i>Paso 1: Seleccionar Cliente
+        </h6>
+      </div>
+      <div class="card-body p-4">
+        <label class="form-label small fw-bold">Cliente <span class="text-danger">*</span></label>
+        <app-cliente-selector
+          [clientes]="clientes"
+          [ngModel]="selectedClientCode"
+          (ngModelChange)="onClientChange($event)"
+          placeholder="Buscar cliente...">
+        </app-cliente-selector>
+      </div>
+    </div>
+
+    <!-- PASOS 2 y 3: Solo visibles tras seleccionar cliente -->
+    <form *ngIf="clienteSeleccionado" [formGroup]="form" (ngSubmit)="guardar()">
+
+      <!-- PASO 2: SUCURSAL -->
+      <div class="card shadow-sm mb-4 border-0">
+        <div class="card-header bg-light py-3 border-bottom">
+          <h6 class="m-0 fw-bold text-dark">
+            <i class="fas fa-map-marker-alt me-2"></i>Paso 2: Sucursal
+          </h6>
+        </div>
+        <div class="card-body p-4">
+          <label class="form-label small fw-bold">Sucursal <span class="text-danger">*</span></label>
+          <ng-select
+            [items]="sucursales"
+            bindLabel="nombre"
+            bindValue="id"
+            formControlName="sucursal_id"
+            placeholder="Seleccionar sucursal..."
+            appendTo="body"
+            [searchable]="true"
+            notFoundText="No se encontraron sucursales"
+            [class.is-invalid]="form.get('sucursal_id')?.invalid && form.get('sucursal_id')?.touched">
+          </ng-select>
+          <div class="invalid-feedback d-block"
+               *ngIf="form.get('sucursal_id')?.invalid && form.get('sucursal_id')?.touched">
+            Debe seleccionar una sucursal.
+          </div>
+          <div *ngIf="sucursales.length === 0" class="alert alert-warning py-2 small mt-2 mb-0">
+            <i class="fas fa-exclamation-triangle me-1"></i>
+            Este cliente no tiene sucursales registradas. Créala primero desde Gestión de Clientes.
+          </div>
+        </div>
+      </div>
+
+      <!-- PASO 3: DATOS DEL EQUIPO -->
+      <div class="card shadow-sm mb-4 border-0">
+        <div class="card-header bg-light py-3 border-bottom">
+          <h6 class="m-0 fw-bold text-dark">
+            <i class="fas fa-print me-2"></i>Paso 3: Datos del Equipo
+          </h6>
+        </div>
+        <div class="card-body p-4">
+          <div class="row g-3">
+
+            <div class="col-md-6">
+              <label class="form-label small fw-bold">
+                Dirección IP <span class="text-danger">*</span>
+              </label>
+              <input type="text" class="form-control"
+                     formControlName="ip"
+                     [class.is-invalid]="form.get('ip')?.invalid && form.get('ip')?.touched"
+                     placeholder="Ej: 192.168.1.100">
+              <div class="invalid-feedback" *ngIf="form.get('ip')?.hasError('required') && form.get('ip')?.touched">
+                La dirección IP es obligatoria.
+              </div>
+              <div class="invalid-feedback" *ngIf="form.get('ip')?.hasError('invalidIp') && form.get('ip')?.touched">
+                Formato inválido. Usa el formato: 192.168.1.100
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label small fw-bold">
+                N° Serie / MAC <span class="text-danger">*</span>
+              </label>
+              <input type="text" class="form-control"
+                     formControlName="serie"
+                     [class.is-invalid]="form.get('serie')?.invalid && form.get('serie')?.touched"
+                     placeholder="Ej: VNC4X01234 o AA:BB:CC:DD:EE:FF">
+              <div class="invalid-feedback" *ngIf="form.get('serie')?.invalid && form.get('serie')?.touched">
+                El número de serie o MAC es obligatorio.
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label small fw-bold">Modelo</label>
+              <input type="text" class="form-control"
+                     formControlName="modelo"
+                     placeholder="Ej: HP LaserJet Pro M404dn">
+              <small class="text-muted">Opcional. Ayuda a identificar el equipo.</small>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label small fw-bold">Nombre / Descripción</label>
+              <input type="text" class="form-control"
+                     formControlName="nombre"
+                     placeholder="Ej: Impresora Sala de Reuniones">
+              <small class="text-muted">Opcional. Nombre descriptivo para ubicar el equipo.</small>
+            </div>
+
+          </div>
+
+          <!-- Aviso de estado inicial -->
+          <div class="alert alert-light border mt-4 mb-0 d-flex align-items-start gap-3">
+            <i class="fas fa-info-circle text-primary mt-1"></i>
+            <div>
+              <strong class="text-dark">Comportamiento por defecto al crear:</strong>
+              <ul class="mb-0 mt-1 small text-muted">
+                <li>Monitoreo: <span class="badge bg-success-subtle text-success border border-success">Activado</span></li>
+                <li>Estado de Red: <span class="badge bg-secondary-subtle text-secondary">Offline</span> — el agente la detectará en el próximo escaneo</li>
+              </ul>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- BOTÓN GUARDAR -->
+      <div class="d-flex justify-content-end">
+        <button type="submit" class="btn btn-success w-100 py-2 shadow-sm"
+                [disabled]="loading || form.invalid || sucursales.length === 0">
+          <i class="fas" [ngClass]="loading ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+          <span *ngIf="loading"> Guardando...</span>
+          <span *ngIf="!loading"> Agregar Impresora</span>
+        </button>
+      </div>
+
+    </form>
+  </ng-container>
+
+</div>

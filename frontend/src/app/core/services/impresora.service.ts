@@ -86,4 +86,11 @@ export class ImpresoraService {
   obtenerResumenGlobalConexiones(): Observable<any> {
     return this.http.get(`${this.baseUrl}/global-connection-status`);
   }
+
+  crearManual(clientCode: string, sucursalId: number, data: any): Observable<any> {
+    return this.http.post(
+      `${this.baseUrl}/tenants/${clientCode}/sucursales/${sucursalId}/impresoras`,
+      data
+    );
+  }
 }

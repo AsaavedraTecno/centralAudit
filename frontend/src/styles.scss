@@ -6,6 +6,9 @@
 /* Importar Bootstrap */
 @import '../node_modules/bootstrap/dist/css/bootstrap.min.css';
 
+/* Importar tema de ng-select (DESPUES de Bootstrap para que prevalezca) */
+@import '../node_modules/@ng-select/ng-select/themes/default.theme.css';
+
 /* Importar Font Awesome */
 @import '../node_modules/@fortawesome/fontawesome-free/css/all.min.css';
 

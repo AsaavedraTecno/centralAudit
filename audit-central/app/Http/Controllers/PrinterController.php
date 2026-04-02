@@ -431,6 +431,13 @@ class PrinterController extends Controller
 
     public function globalConnectionStatus(): JsonResponse
     {
+
+        // LOG TEMPORAL: Revisa storage/logs/laravel.log
+        \Illuminate\Support\Facades\Log::info('Consultando caché de impresoras', [
+            'existe' => \Illuminate\Support\Facades\Cache::has('global_printer_status')
+        ]);
+
+
         // Vamos directo a la memoria RAM (0.01 segundos)
         // Si por alguna razón el trabajador no ha pasado, devolvemos puros ceros por defecto
         $summary = \Illuminate\Support\Facades\Cache::get('global_printer_status', [

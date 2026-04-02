@@ -177,4 +177,8 @@ export class ClienteService {
     return this.http.delete(`${this.baseUrl}/${clientCode}/agent-keys/${keyId}`);
   }
 
+  reactivateAgentKey(clientCode: string, keyId: number): Observable<any> {
+    return this.http.patch(`${this.baseUrl}/${clientCode}/agent-keys/${keyId}/reactivate`, {});
+  }
+
 }

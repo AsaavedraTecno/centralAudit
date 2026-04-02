@@ -1,0 +1,46 @@
+<div class="cliente-selector-wrapper">
+  <label *ngIf="label" class="form-label small fw-bold mb-1">{{ label }}</label>
+  
+  <ng-select
+    [items]="clientes"
+    bindLabel="nombre"
+    bindValue="code"
+    [placeholder]="placeholder"
+    [clearable]="clearable"
+    [disabled]="disabled"
+    [searchable]="true"
+    [virtualScroll]="true"
+    [minTermLength]="1"
+    [ngModel]="selectedCode"
+    (ngModelChange)="onSelectChange($event)"
+    (blur)="onTouched()"
+    notFoundText="No se encontraron clientes"
+    typeToSearchText="Escribe para buscar..."
+    [trackByFn]="trackByCode"
+    appendTo="body"
+  >
+    <ng-template ng-label-tmp let-item="item">
+      <span class="cliente-label">
+        <i class="fas fa-building me-1 text-muted"></i>
+        {{ item.nombre || item.razon_social || item.code }}
+      </span>
+    </ng-template>
+    
+    <ng-template ng-option-tmp let-item="item">
+      <div class="cliente-option">
+        <div class="cliente-nombre fw-medium">
+          <i class="fas fa-building me-2 text-primary opacity-50"></i>
+          {{ item.nombre || item.razon_social || 'Sin nombre' }}
+        </div>
+        <div class="cliente-meta text-muted small mt-1">
+          <span *ngIf="item.rut" class="me-2">
+            <i class="fas fa-id-card me-1"></i>{{ item.rut }}
+          </span>
+          <span>
+            <i class="fas fa-code me-1"></i>{{ item.code }}
+          </span>
+        </div>
+      </div>
+    </ng-template>
+  </ng-select>
+</div>

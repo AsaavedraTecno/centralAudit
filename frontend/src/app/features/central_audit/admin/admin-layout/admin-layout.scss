@@ -25,6 +25,12 @@
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
+.sidebar-divider {
+  height: 1px;
+  background-color: rgba(0, 0, 0, 0.08);
+  margin: 8px 16px;
+}
+
 /* Contenedor de las opciones */
 .sidebar-nav {
   flex: 1;
@@ -33,47 +39,72 @@
   gap: 4px; /* Separación sutil entre los botones */
 }
 
-/* Estilos de cada botón del menú lateral */
+/* ==============================================
+   ESTILO DE LOS BOTONES DEL MENÚ (Unificados)
+   ============================================== */
 .admin-nav-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  color: #495057;
+  padding: 12px 20px;
+  color: #6c757d; /* Color gris/plomo para el texto inactivo */
   text-decoration: none;
-  border-radius: 8px;
-  font-weight: 500;
-  font-size: 0.95rem;
-  transition: all 0.2s ease;
+  transition: all 0.2s ease-in-out;
+  border-radius: 0; 
+  position: relative; /* Importante para el punto */
 
-  /* Cajita para el icono (asegura que todos los textos queden alineados perfecto) */
+  /* 1. DIBUJAMOS EL PUNTO PLOMO POR DEFECTO */
+  &::before {
+    content: '';
+    position: absolute;
+    left: 8px; /* Separación desde el borde izquierdo */
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 6px;
+    background-color: #ced4da; /* Color gris/plomo apagado */
+    border-radius: 50%;
+    transition: background-color 0.2s ease-in-out;
+  }
+
+  /* Cajita para el icono */
   .nav-icon {
-    width: 24px;
-    height: 24px;
+    width: 25px; 
     display: flex;
     align-items: center;
-    justify-content: center;
-    color: #6c757d;
+    justify-content: flex-start;
+    color: #a3a6a9; 
     font-size: 1.1rem;
-    transition: all 0.2s ease;
+    margin-right: 12px;
+    transition: color 0.2s ease-in-out;
   }
 
   /* Efecto Hover (Al pasar el mouse) */
   &:hover {
-    background-color: rgba(13, 110, 253, 0.05); /* Fondo azul tenue */
-    color: #0d6efd;
+    color: #495057; 
+    background-color: #f8f9fa; 
     
     .nav-icon {
-      color: #0d6efd;
+      color: #6c757d;
+    }
+
+    /* El punto plomo se oscurece un poquito al pasar el mouse */
+    &::before {
+      background-color: #adb5bd; 
     }
   }
 
-  /* Efecto Activo (Cuando estás navegando en esa pestaña) */
+  /* 2. EFECTO ACTIVO (Cuando estás en esa pestaña) */
   &.active-nav {
-    background-color: #eff6ff; /* Azul más marcado */
-    color: #0d6efd;
-    font-weight: 600;
+    color: #0d6efd; 
+    background-color: #f0f6ff; 
+    font-weight: 600; 
+    border-left: none; 
     
+    /* ¡Encendemos el punto en azul! */
+    &::before {
+      background-color: #0d6efd; 
+    }
+
     .nav-icon {
       color: #0d6efd;
     }
@@ -87,7 +118,6 @@
   overflow-y: auto; /* Scroll independiente solo para el contenido */
   padding: 24px;
 }
-
 
 /* ===================================================
    Responsive (Celulares y Tablets pequeñas)
@@ -122,6 +152,11 @@
     padding: 8px 16px;
     white-space: nowrap; /* Evita que el texto se parta en dos líneas */
     border-radius: 20px; /* Estilo píldora para móviles */
+    
+    /* Apagamos el punto azul en móviles para que no se vea raro en formato píldora */
+    &.active-nav::before {
+      display: none;
+    }
   }
 
   .admin-main-content {

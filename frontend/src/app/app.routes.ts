@@ -15,6 +15,9 @@ import { ImpresoresComponent } from './features/central_audit/impresoras/impreso
 import { AdminUsuariosComponent } from './features/central_audit/admin/admin-usuarios/admin-usuarios.component';
 import { AdminRolesComponent } from './features/central_audit/admin/admin-roles/admin-roles';
 import { AdminLayoutComponent } from './features/central_audit/admin/admin-layout/admin-layout.component';
+import { AgentesComponent } from './features/central_audit/admin/admin-equipos/agentes/agentes.component';
+import { ImpresorasConfigComponent } from './features/central_audit/admin/admin-equipos/impresoras-config/impresoras-config.component';
+import { SucursalesMasterComponent } from './features/central_audit/admin/admin-equipos/sucursales-master/sucursales-master.component';
 
 
 // Componentes de Monitoreo
@@ -81,6 +84,9 @@ export const routes: Routes = [
         children: [
           {path: 'usuarios', component: AdminUsuariosComponent},
           {path: 'roles', component: AdminRolesComponent},
+          {path: 'agentes', component: AgentesComponent},
+          {path: 'impresoras-config', component: ImpresorasConfigComponent},
+          {path: 'sucursales', component: SucursalesMasterComponent},
           {path: '', redirectTo: 'usuarios', pathMatch: 'full'}
         ]
       },

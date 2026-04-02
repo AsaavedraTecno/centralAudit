@@ -14,7 +14,8 @@ export const tenantInterceptor: HttpInterceptorFn = (req, next) => {
   // Ahora estamos seguros de que estamos en el Navegador
   const hostname = window.location.hostname;
   const protocol = window.location.protocol;
-  const baseUrl = `${protocol}//${hostname}:8000`;
+  const port = (hostname === 'localhost' || hostname === '127.0.0.1') ? ':8000' : '';
+  const baseUrl = `${protocol}//${hostname}${port}`;
 
   const isCentral =
     hostname === 'localhost' ||

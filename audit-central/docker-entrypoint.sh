@@ -67,4 +67,8 @@ chmod 600 /var/www/html/storage/oauth-*.key || true
 
 # 8. INICIAR EL SERVIDOR WEB
 echo "🚀 Todo listo. Iniciando Apache..."
-exec apache2-foreground
+if [ $# -gt 0 ]; then
+    exec "$@"
+else
+    exec apache2-foreground
+fi

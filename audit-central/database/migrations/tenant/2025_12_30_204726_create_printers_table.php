@@ -28,7 +28,7 @@ return new class extends Migration
             // Atributos del dispositivo
             $table->string('model')->nullable();
             $table->string('brand')->nullable();
-            $table->string('serial_number')->index();
+            $table->string('serial_number')->nullable();
             $table->string('status')->default('active');
             $table->string('ip_address', 45)->nullable(); // IPv4/IPv6
             $table->string('location')->nullable(); // texto libre de ubicación física
